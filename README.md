@@ -182,7 +182,7 @@ For technical information, type: "Get-Help Rename-InProject -Full"
     Find-Item
 
 ## SYNOPSIS
-    Finds files by seachmask
+    Finds files by searchmask
 
 
 ## SYNTAX
