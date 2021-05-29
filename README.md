@@ -106,8 +106,8 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
     * Recovery mode (copy from failing disks)
 
 ## RELATED LINKS
-    [Microsoft](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/robocopy)\
-    [Wikipedia](https://en.wikipedia.org/wiki/Robocopy)
+[Microsoft](https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/robocopy)
+[Wikipedia](https://en.wikipedia.org/wiki/Robocopy)
 
 ## REMARKS
 ````Powershell
