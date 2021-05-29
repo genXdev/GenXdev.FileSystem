@@ -164,7 +164,7 @@ Rename-InProject [[-Source] <String>] [-FindText] <String> [-ReplacementText] <S
 
 -------------------------- EXAMPLE 1 --------------------------
 
-Rename-InProject -Source .\src\*.js -FindText "tsconfig.json" - ReplacementText "typescript.configuration.json"
+Rename-InProject -Source .\src\*.js -FindText "tsconfig.json" -ReplacementText "typescript.configuration.json"
 
 Rename-InProject .\src\ "MyCustomClass"  "MyNewRenamedClass" -WhatIf
 ````
