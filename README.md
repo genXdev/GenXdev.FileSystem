@@ -269,4 +269,3 @@ To see the examples, type: "Get-Help ExpandPath -Examples"
 For more information, type: "Get-Help ExpandPath -Detailed"
 For technical information, type: "Get-Help ExpandPath -Full"
 ````
-<br/><hr/><hr/><hr/><hr/><br/>
