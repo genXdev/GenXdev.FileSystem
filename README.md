@@ -26,8 +26,11 @@
     # clone the repo
     git clone https://github.com/renevaessen/GenXdev.FileSystem.git GenXdev.FileSystem
 
-    # import module
-    Import-Module "GenXdev.FileSystem"
+    # soon this becomes the default, according to Microsoft
+    Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+    # until it becomes a NuGet package, this should do it
+    Import-Module ".\GenXdev.FileSystem\GenXdev.FileSystem.psm1" -Force
 
     # show manual pages for the new CmdLets
     Get-Module "GenXdev.*" | % ExportedCommands | % Values | Where-Object -Property CommandType -NotLike "Alias" | % Name | % {
