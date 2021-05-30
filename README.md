@@ -63,7 +63,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
     [-MonitorModeThresholdMinutes <Int32>] [-MonitorModeThresholdNrOfChanges <Int32>]
     [-MonitorModeRunHoursFrom <Int32>] [-MonitorModeRunHoursUntil <Int32>] [-LogFilePath <String>]
     [-LogfileOverwrite] [-LogDirectoryNames] [-LogAllFileNames] [-LargeFiles] [-MultiThreaded]
-    [-CompressibleContent] [-WhatIf] [<CommonParameters>]
+    [-CompressibleContent] [[-Override] <String>] [-WhatIf] [<CommonParameters>]
 
 Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>]
     [-Mirror] [-Move] [-IncludeSecurity] [-SkipEmptyDirectories] [-CopyOnlyDirectoryTreeStructure]
@@ -79,7 +79,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
     [-MonitorModeThresholdMinutes <Int32>] [-MonitorModeThresholdNrOfChanges <Int32>]
     [-MonitorModeRunHoursFrom <Int32>] [-MonitorModeRunHoursUntil <Int32>] [-LogFilePath <String>]
     [-LogfileOverwrite] [-LogDirectoryNames] [-LogAllFileNames] [-LargeFiles] [-MultiThreaded]
-    [-CompressibleContent] [-WhatIf] [<CommonParameters>]
+    [-CompressibleContent] [[-Override] <String>] [-WhatIf] [<CommonParameters>]
 ````
 
 ## DESCRIPTION
@@ -93,7 +93,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
     Windows NT 4.0 Resource Kit, it has been a standard feature of Windows since Windows Vista and
     Windows Server 2008.
 
-## Key features
+## KEY FEATURES OF ROBOCOPY
 
     * Folder synchronization
     * Support for extra long pathnames > 256 characters
@@ -143,24 +143,177 @@ Rename-InProject [[-Source] <String>] [-FindText] <String> [-ReplacementText] <S
 ## PARAMETERS
 ````Powershell
 
--Source <String>
-    The directory, filepath, or directory+searchmask
 
--FindText <String>
-    The case sensitive phrase to search for, when making replacements
+PARAMETERS
+    -Source <String>
+        The directory, filepath, or directory+searchmask
 
--ReplacementText <String>
-    The text that will replace the found occurance
+    -DestinationDirectory <String>
+        The destination directory to place the copied files and directories into.
+        If this directory does not exist yet, all missing directories will be created.
+        Default value = `.\`
 
--WhatIf [<SwitchParameter>]
-    Displays a message that describes the effect of the command, instead of executing the
-    command.
+    -Files <String[]>
 
-<CommonParameters>
-    This cmdlet supports the common parameters: Verbose, Debug,
-    ErrorAction, ErrorVariable, WarningAction, WarningVariable,
-    OutBuffer, PipelineVariable, and OutVariable. For more information, see
-    about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
+    -Mirror [<SwitchParameter>]
+        Synchronizes the content of specified directories, will also delete any files and
+        directories in the destination that do not exist in the source
+
+    -Move [<SwitchParameter>]
+        Will move instead of copy all files from source to destination
+
+    -IncludeSecurity [<SwitchParameter>]
+        Will also copy ownership, security descriptors and auditing information of files and
+        directories
+
+    -SkipDirectories [<SwitchParameter>]
+        Copies only files from source and skips sub-directories (no recurse)
+
+    -SkipEmptyDirectories [<SwitchParameter>]
+        Does not copy directories if they would be empty
+
+    -CopyOnlyDirectoryTreeStructure [<SwitchParameter>]
+        Create directory tree only
+
+    -CopyOnlyDirectoryTreeStructureAndEmptyFiles [<SwitchParameter>]
+        Create directory tree and zero-length files only
+
+    -SkipAllSymbolicLinks [<SwitchParameter>]
+        Do not copy symbolic links, junctions or the content they point to
+
+    -SkipSymbolicFileLinks [<SwitchParameter>]
+        Do not copy file symbolic links but do follow directory junctions
+
+    -CopySymbolicLinksAsLinks [<SwitchParameter>]
+        Instead of copying the content where symbolic links point to, copy the links themselves
+
+    -SkipJunctions [<SwitchParameter>]
+        Do not copy directory junctions (symbolic link for a folder) or the content they point to
+
+    -CopyJunctionsAsJunctons [<SwitchParameter>]
+        Instead of copying the content where junctions point to, copy the junctions themselves
+
+    -Force [<SwitchParameter>]
+        Will copy all files even if they are older then the ones in the destination
+
+    -SkipFilesWithoutArchiveAttribute [<SwitchParameter>]
+        Copies only files that have the archive attribute set
+
+    -ResetArchiveAttributeAfterSelection [<SwitchParameter>]
+        In addition of copying only files that have the archive attribute set, will then reset
+        this attribute on the source
+
+    -FileExcludeFilter <String[]>
+        Exclude any files that matches any of these names/paths/wildcards
+
+    -DirectoryExcludeFilter <String[]>
+        Exclude any directories that matches any of these names/paths/wildcards
+
+    -AttributeIncludeFilter <String>
+        Copy only files that have all these attributes set [RASHCNETO]
+
+    -AttributeExcludeFilter <String>
+        Exclude files that have any of these attributes set [RASHCNETO]
+
+    -SetAttributesAfterCopy <String>
+        Will set the given attributes to copied files [RASHCNETO]
+
+    -RemoveAttributesAfterCopy <String>
+        Will remove the given attributes from copied files [RASHCNETO]
+
+    -MaxSubDirTreeLevelDepth <Int32>
+        Only copy the top n levels of the source directory tree
+
+    -MinFileSize <Int32>
+        Skip files that are not at least n bytes in size
+
+    -MaxFileSize <Int32>
+        Skip files that are larger then n bytes
+
+    -MinFileAge <Int32>
+        Skip files that are not at least: n days old OR created before n date (if n < 1900 then n
+        = n days, else n = YYYYMMDD date)
+
+    -MaxFileAge <Int32>
+        Skip files that are older then: n days OR created after n date (if n < 1900 then n = n
+        days, else n = YYYYMMDD date)
+
+    -MinLastAccessAge <Int32>
+        Skip files that are accessed within the last: n days OR before n date (if n < 1900 then n
+        = n days, else n = YYYYMMDD date)
+
+    -MaxLastAccessAge <Int32>
+        Skip files that have not been accessed in: n days OR after n date (if n < 1900 then n = n
+        days, else n = YYYYMMDD date)
+
+    -RecoveryMode [<SwitchParameter>]
+        Will shortly pause and retry when I/O errors occur during copying
+
+    -MonitorMode [<SwitchParameter>]
+        Will stay active after copying, and copy additional changes after a a default threshold of
+        10 minutes
+
+    -MonitorModeThresholdMinutes <Int32>
+        Run again in n minutes Time, if changed
+
+    -MonitorModeThresholdNrOfChanges <Int32>
+        Run again when more then n changes seen
+
+    -MonitorModeRunHoursFrom <Int32>
+        Run hours - times when new copies may be started, start-time, range 0000:2359
+
+    -MonitorModeRunHoursUntil <Int32>
+        Run hours - times when new copies may be started, end-time, range 0000:2359
+
+    -LogFilePath <String>
+        If specified, logging will also be done to specified file
+
+    -LogfileOverwrite [<SwitchParameter>]
+        Do not append to the specified logfile, but overwrite instead
+
+    -LogDirectoryNames [<SwitchParameter>]
+        Include all scanned directory names in output
+
+    -LogAllFileNames [<SwitchParameter>]
+        Include all scanned file names in output, even skipped onces
+
+    -LargeFiles [<SwitchParameter>]
+        Enables optimization for copying large files
+
+    -MultiThreaded [<SwitchParameter>]
+        Optimize performance by doing multithreaded copying
+
+    -CompressibleContent [<SwitchParameter>]
+        If applicable use compression when copying files between servers to safe bandwidth and time
+
+    -Override <String>
+        Overrides, Removes, or Adds any specified robocopy parameter.
+
+        Usage:
+
+        Add or replace parameter:
+
+            -Override /SwitchWithValue:'SomeValue'
+
+            -Override /Switch
+
+        Remove parameter:
+
+            -Override -/Switch
+
+        Multiple overrides:
+
+            -Override "/ReplaceThisSwitchWithValue:'SomeValue' -/RemoveThisSwitch /AddThisSwitch"
+
+    -WhatIf [<SwitchParameter>]
+        Displays a message that describes the effect of the command, instead of executing the
+        command.
+
+    <CommonParameters>
+        This cmdlet supports the common parameters: Verbose, Debug,
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see
+        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
 
 -------------------------- EXAMPLE 1 --------------------------
 

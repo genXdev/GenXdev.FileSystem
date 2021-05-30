@@ -296,6 +296,25 @@ Optimize performance by doing multithreaded copying
 .PARAMETER CompressibleContent
 If applicable use compression when copying files between servers to safe bandwidth and time
 
+.PARAMETER Override
+Overrides, Removes, or Adds any specified robocopy parameter.
+
+Usage:
+
+Add or replace parameter:
+
+    -Override /SwitchWithValue:'SomeValue'
+
+    -Override /Switch
+
+Remove parameter:
+
+    -Override -/Switch
+
+Multiple overrides:
+
+    -Override "/ReplaceThisSwitchWithValue:'SomeValue' -/RemoveThisSwitch /AddThisSwitch"
+
 .PARAMETER WhatIf
 Displays a message that describes the effect of the command, instead of executing the command.
 
@@ -416,14 +435,14 @@ function Start-RoboCopy {
             ValueFromPipeline = $false,
             HelpMessage = "Don't copy file symbolic links but do follow directory junctions"
         )]
-         [switch] $SkipSymbolicFileLinks,
+        [switch] $SkipSymbolicFileLinks,
         ################################################################################
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
             HelpMessage = "Instead of copying the content where symbolic links point to, copy the links themselves"
         )]
-       [switch] $CopySymbolicLinksAsLinks,
+        [switch] $CopySymbolicLinksAsLinks,
         ################################################################################
         [Parameter(
 
@@ -467,14 +486,14 @@ function Start-RoboCopy {
         [switch] $ResetArchiveAttributeAfterSelection,
         ################################################################################
         [Parameter(
-             Mandatory = $false,
+            Mandatory = $false,
             ValueFromPipeline = $false,
             HelpMessage = "Exclude any files that matches any of these names/paths/wildcards"
         )]
         [string[]] $FileExcludeFilter = @(),
         ################################################################################
         [Parameter(
-            ParameterSetName="SkipDirectories",
+            ParameterSetName = "SkipDirectories",
             Mandatory = $false,
             ValueFromPipeline = $false,
             HelpMessage = "Exclude any directories that matches any of these names/paths/wildcards"
@@ -512,7 +531,7 @@ function Start-RoboCopy {
         ################################################################################
         [ValidateRange(1, 1000000)]
         [Parameter(
-            ParameterSetName="SkipDirectories",
+            ParameterSetName = "SkipDirectories",
             Mandatory = $false,
             ValueFromPipeline = $false,
             HelpMessage = "Only copy the top n levels of the source directory tree"
@@ -666,6 +685,32 @@ function Start-RoboCopy {
         )]
         [switch] $CompressibleContent,
         ################################################################################
+        [Parameter(
+            Mandatory = $false,
+            ValueFromPipeline = $false,
+            ValueFromRemainingArguments = $true,
+            Position = 3,
+            HelpMessage = "Overrides, Removes, or Adds any specified robocopy parameter.
+
+Usage:
+
+Add or replace parameter:
+
+    -Override /SwitchWithValue:'SomeValue'
+
+    -Override /Switch
+
+Remove parameter:
+
+    -Override -/Switch
+
+Multiple overrides:
+
+    -Override `"/ReplaceThisSwitchWithValue:'SomeValue' -/RemoveThisSwitch /AddThisSwitch`"
+"
+        )]
+        [string] $Override,
+        ################################################################################
         ################################################################################
         [Parameter(
             Mandatory = $false,
@@ -676,6 +721,7 @@ function Start-RoboCopy {
     )
 
     Begin {
+
 
         #######################################################################################
 
@@ -789,377 +835,450 @@ function Start-RoboCopy {
             }
         }
 
+        function getSwitchesDictionary([string] $Switches) {
+
+            # initialize
+            $switchesDictionary = New-Object "System.Collections.Generic.Dictionary[String, String]";
+
+            if ([String]::IsNullOrWhiteSpace($Switches)) {
+
+                return $switchesDictionary
+            }
+
+            $switchesCleaned = " $Switches ";
+
+            # remove spaces
+            while ($switchesCleaned.IndexOf("  /") -ge 0) {
+
+                $switchesCleaned = $switchesCleaned.Replace("  /", " /");
+            }
+            while ($switchesCleaned.IndexOf("  -/") -ge 0) {
+
+                $switchesCleaned = $switchesCleaned.Replace("  -/", " -/");
+            }
+
+            # split up
+            $allSwitches = $switchesCleaned.Replace(" -/", " /-").Split(" /", [System.StringSplitOptions]::RemoveEmptyEntries);
+
+            # enumerate switches
+            $allSwitches | ForEach-Object -ErrorAction SilentlyContinue {
+
+                # add to Dictionary
+                $switchesDictionary["$($PSItem.Trim().Split(" ")[0].Split(":" )[0].Trim().ToUpperInvariant())"] = $PSItem.Trim()
+            }
+
+            return $switchesDictionary;
+        }
+
+        function overrideAndCleanSwitches([string] $Switches) {
+
+            $autoGeneratedSwitches = (getSwitchesDictionary $Switches)
+            $overridenSwitches = (getSwitchesDictionary $Override)
+
+            $newSwitches = "";
+
+            $autoGeneratedSwitches.GetEnumerator() | ForEach-Object -ErrorAction SilentlyContinue {
+
+                # should NOT remove it?
+                if (!$overridenSwitches.ContainsKey("-$($PSItem.Key)")) {
+
+                    # should replace it?
+                    if ($overridenSwitches.ContainsKey($PSItem.Key)) {
+
+                        $newSwitches += " /$($overridenSwitches[$PSItem.Key])"
+                    }
+                    else {
+
+                        # keep the autogenerated switch
+                        $newSwitches += " /$($PSItem.Value)"
+                    }
+                }
+            }
+
+            $overridenSwitches.GetEnumerator() | ForEach-Object -ErrorAction SilentlyContinue {
+
+                # not already processed above?
+                if (!$PSItem.Key.StartsWith("-") -and !$autoGeneratedSwitches.ContainsKey("$($PSItem.Key)")) {
+
+                    # add it
+                    $newSwitches += " /$($PSItem.Value)"
+                }
+            }
+
+            return $newSwitches.Trim();
+        }
+
         #######################################################################################
 
-        # /MOV			█  MOVE files AND dirs (delete from source after copying).
+        # /MOV			█  MOVE files AND dirs (delete from source after copying).
         $ParamMOV = "";
 
-        # /MIR			█  MIRror a directory tree (equivalent to /E plus /PURGE).
+        # /MIR			█  MIRror a directory tree (equivalent to /E plus /PURGE).
         $ParamMIR = "";
 
-        # /SECFIX		█  FIX file SECurity on all files, even skipped files.
+        # /SECFIX		█  FIX file SECurity on all files, even skipped files.
         $ParamSECFIX = "";
 
-        # /E			█  copy subdirectories, including Empty ones.
-        # /S			█  copy Subdirectories, but not empty ones.
+        # /E			█  copy subdirectories, including Empty ones.
+        # /S			█  copy Subdirectories, but not empty ones.
         $ParamDirs = "/E"
 
-        # /COPY			█  what to COPY for files (default is /COPY:DAT).
+        # /COPY			█  what to COPY for files (default is /COPY:DAT).
         $ParamCOPY = "/COPY:DAT"
 
-        # /XO			█  eXclude Older files.
+        # /XO			█  eXclude Older files.
         $ParamXO = "/XO";
 
-        # /IM			█  Include Modified files (differing change times).
+        # /IM			█  Include Modified files (differing change times).
         $ParamIM = "/IM";
 
-        # /IT			█  Include Tweaked files.
+        # /IT			█  Include Tweaked files.
         $ParamIT = "/IT";
 
-        # /IS			█  Include Same files.
+        # /IS			█  Include Same files.
         $ParamIS = "";
 
-        # /EFSRAW		█  copy all encrypted files in EFS RAW mode.
+        # /EFSRAW		█  copy all encrypted files in EFS RAW mode.
         $ParamEFSRAW = "";
 
-        # /NOOFFLOAD	█ 	copy files without using the Windows Copy Offload mechanism.
+        # /NOOFFLOAD	█ 	copy files without using the Windows Copy Offload mechanism.
         $ParamNOOFFLOAD = "";
 
-        # /R			█  number of Retries on failed copies: default 1 million.
+        # /R			█  number of Retries on failed copies: default 1 million.
         $ParamR = "/R:0";
 
-        # /W			█  Wait time between retries: default is 30 seconds.
+        # /W			█  Wait time between retries: default is 30 seconds.
         $ParamW = "/W:0";
 
-        # /J			█  copy using unbuffered I/O (recommended for large files).
+        # /J			█  copy using unbuffered I/O (recommended for large files).
         $paramJ = "";
 
-        # /MT           █ Do multi-threaded copies with n threads (default 8).
+        # /MT           █ Do multi-threaded copies with n threads (default 8).
         $paramMT = "";
 
-        # /NDL			█  No Directory List - don't log directory names.
+        # /NDL			█  No Directory List - don't log directory names.
         $ParamNDL = "/NDL";
 
-        # /X			█  report all eXtra files, not just those selected.
+        # /X			█  report all eXtra files, not just those selected.
         $ParamX = "";
 
-        # /V			█  produce Verbose output, showing skipped files.
+        # /V			█  produce Verbose output, showing skipped files.
         $ParamV = "";
 
-        # /CREATE		█  CREATE directory tree and zero-length files only.
+        # /CREATE		█  CREATE directory tree and zero-length files only.
         $ParamCREATE = "";
 
-        # /XJ			█  eXclude symbolic links (for both files and directories) and Junction points.
+        # /XJ			█  eXclude symbolic links (for both files and directories) and Junction points.
         $ParamXJ = "";
 
-        # /XJD			█  eXclude symbolic links for Directories and Junction points.
+        # /XJD			█  eXclude symbolic links for Directories and Junction points.
         $ParamXJD = "";
 
-        # /XJF			█  eXclude symbolic links for Files.
+        # /XJF			█  eXclude symbolic links for Files.
         $ParamXJF = "";
 
-        # /SJ			█  copy Junctions as junctions instead of as the junction targets.
+        # /SJ			█  copy Junctions as junctions instead of as the junction targets.
         $ParamSJ = "";
 
-        # /SL			█  copy Symbolic Links as links instead of as the link targets.
+        # /SL			█  copy Symbolic Links as links instead of as the link targets.
         $ParamSL = "";
 
-        # /A			█  copy only files with the Archive attribute set.
-        # /M			█  copy only files with the Archive attribute and reset it.
+        # /A			█  copy only files with the Archive attribute set.
+        # /M			█  copy only files with the Archive attribute and reset it.
         $ParamArchive = "";
 
         # /XF
-        $ParamXF = "" # █ eXclude Files matching given names/paths/wildcards.
+        $ParamXF = "" # █ eXclude Files matching given names/paths/wildcards.
 
-        # /XD
-        $ParamXD = "" # █ eXclude Directories matching given names/paths/wildcards.
+        # /XD
+        $ParamXD = "" # █ eXclude Directories matching given names/paths/wildcards.
 
-        # /IA			█  Include only files with any of the given Attributes set.
+        # /IA			█  Include only files with any of the given Attributes set.
         $ParamIA = "";
 
-        # /XA			█  eXclude files with any of the given Attributes set.
+        # /XA			█  eXclude files with any of the given Attributes set.
         $ParamXA = "";
 
-        # /A+			█  add the given Attributes to copied files
+        # /A+			█  add the given Attributes to copied files
         $ParamAttrSet = "";
 
-        # /A-			█  remove the given Attributes from copied files.
+        # /A-			█  remove the given Attributes from copied files.
         $ParamAttrRemove = "";
 
-        # /LEV			█  only copy the top n LEVels of the source directory tree.
+        # /LEV			█  only copy the top n LEVels of the source directory tree.
         $ParamLEV = "";
 
-        # /MIN			█  MINimum file size - exclude files smaller than n bytes.
+        # /MIN			█  MINimum file size - exclude files smaller than n bytes.
         $ParamMIN = "";
 
-        # /MAX			█  MAXimum file size - exclude files bigger than n bytes.
+        # /MAX			█  MAXimum file size - exclude files bigger than n bytes.
         $ParamMAX = "";
 
-        # /MINAGE		█  MINimum file AGE - exclude files newer than n days/date.
+        # /MINAGE		█  MINimum file AGE - exclude files newer than n days/date.
         $ParamMINAGE = "";
 
-        # /MAXAGE		█  MAXimum file AGE - exclude files older than n days/date.
+        # /MAXAGE		█  MAXimum file AGE - exclude files older than n days/date.
         $ParamMaxAGE = "";
 
-        # /LOG			█  output status to LOG file (overwrite existing log).
-        # /LOG+         █ output status to LOG file (append to existing log).
+        # /LOG			█  output status to LOG file (overwrite existing log).
+        # /LOG+         █ output status to LOG file (append to existing log).
         $ParamLOG = "";
 
-        # /RH			█  Run Hours - times when new copies may be started.
+        # /RH			█  Run Hours - times when new copies may be started.
         $ParamRH = "";
 
-        # /MON			█  MONitor source; run again when more than n changes seen.
-        # /MOT          █ MOnitor source; run again in m minutes Time, if changed.
+        # /MON			█  MONitor source; run again when more than n changes seen.
+        # /MOT          █ MOnitor source; run again in m minutes Time, if changed.
         $ParamMON = "";
 
-        # /MAXLAD		█  MAXimum Last Access Date - exclude files unused since n.
+        # /MAXLAD		█  MAXimum Last Access Date - exclude files unused since n.
         $ParamMAXLAD = "";
 
-        # /MINLAD		█  MINimum Last Access Date - exclude files used since n.
+        # /MINLAD		█  MINimum Last Access Date - exclude files used since n.
         $ParamMINLAD = "";
 
-        # /COMPRESS		█  Request network compression during file transfer, if applicable.
+        # /COMPRESS		█  Request network compression during file transfer, if applicable.
         $ParamCOMPRESS = "";
 
         #######################################################################################
 
-        # -Mirror ➜ Synchronizes the content of specified directories, will also delete any files and directories in the destination that do not exist in the source
+        # -Mirror ➜ Synchronizes the content of specified directories, will also delete any files and directories in the destination that do not exist in the source
         if ($Mirror -eq $true) {
 
-            $ParamMIR = "/MIR" #                          █ MIRror a directory tree (equivalent to /E plus /PURGE).
+            $ParamMIR = "/MIR" #                          █ MIRror a directory tree (equivalent to /E plus /PURGE).
         }
 
-        # -Move ➜ Will move instead of copy all files from source to destination
+        # -Move ➜ Will move instead of copy all files from source to destination
         if ($Move -eq $true) {
 
-            $ParamMOV = "/MOV" #                          █ MOVE files AND dirs (delete from source after copying).
+            $ParamMOV = "/MOV" #                          █ MOVE files AND dirs (delete from source after copying).
         }
 
-        # -IncludeSecurity ➜ Will also copy ownership, security descriptors and auditing information of files and directories
+        # -IncludeSecurity ➜ Will also copy ownership, security descriptors and auditing information of files and directories
         if ($IncludeSecurity -eq $true) {
 
-            $ParamSECFIX = "/SECFIX" #                    █ FIX file SECurity on all files, even skipped files.
-            $ParamCOPY = "$($ParamCOPY)SOU" #             █ what to COPY for files (default is /COPY:DAT).
-            $ParamEFSRAW = "/EFSRAW" #                    █ copy all encrypted files in EFS RAW mode.
+            $ParamSECFIX = "/SECFIX" #                    █ FIX file SECurity on all files, even skipped files.
+            $ParamCOPY = "$($ParamCOPY)SOU" #             █ what to COPY for files (default is /COPY:DAT).
+            $ParamEFSRAW = "/EFSRAW" #                    █ copy all encrypted files in EFS RAW mode.
         }
 
-        # -SkipDirectories ➜ Copies only files from source and skips sub-directories (no recurse)
+        # -SkipDirectories ➜ Copies only files from source and skips sub-directories (no recurse)
         if ($SkipDirectories -eq $true) {
 
-            $ParamDirs = "" #                             █ copy subdirectories, including Empty ones.
+            $ParamDirs = "" #                             █ copy subdirectories, including Empty ones.
         }
         else {
 
-            # -SkipEmptyDirectories ➜ Does not copy directories if they would be empty
+            # -SkipEmptyDirectories ➜ Does not copy directories if they would be empty
             if ($SkipEmptyDirectories -eq $true) {
 
-                $ParamDirs = "/S" #                       █ copy Subdirectories, but not empty ones.
+                $ParamDirs = "/S" #                       █ copy Subdirectories, but not empty ones.
             }
         }
 
-        # -CopyOnlyDirectoryTreeStructure ➜ Create directory tree only
+        # -CopyOnlyDirectoryTreeStructure ➜ Create directory tree only
         if ($CopyOnlyDirectoryTreeStructure -eq $true) {
 
-            $ParamCREATE = "/CREATE"; #                   █ CREATE directory tree and zero-length files only.
-            $Files = @("DontCopy4nyF1lés") #              █ File(s) to copy  (names/wildcards: default is "*.*")
+            $ParamCREATE = "/CREATE"; #                   █ CREATE directory tree and zero-length files only.
+            $Files = @("DontCopy4nyF1lés") #              █ File(s) to copy  (names/wildcards: default is "*.*")
         }
         else {
-            # -CopyOnlyDirectoryTreeStructureAndEmptyFiles ➜ Create directory tree and zero-length files only
+            # -CopyOnlyDirectoryTreeStructureAndEmptyFiles ➜ Create directory tree and zero-length files only
             if ($CopyOnlyDirectoryTreeStructureAndEmptyFiles -eq $true) {
 
-                $ParamCREATE = "/CREATE"; #               █ CREATE directory tree and zero-length files only.
+                $ParamCREATE = "/CREATE"; #               █ CREATE directory tree and zero-length files only.
             }
         }
 
-        # -SkipAllSymbolicLinks ➜ Don't copy symbolic links, junctions or the content they point to
+        # -SkipAllSymbolicLinks ➜ Don't copy symbolic links, junctions or the content they point to
         if ($SkipAllSymbolicLinks -eq $true) {
 
-            $ParamXJ = "/XJ"; #                           █ eXclude symbolic links (for both files and directories) and Junction points.
+            $ParamXJ = "/XJ"; #                           █ eXclude symbolic links (for both files and directories) and Junction points.
         }
         else {
 
-            # -SkipSymbolicFileLinks ➜ Don't copy file symbolic links but do follow directory junctions
+            # -SkipSymbolicFileLinks ➜ Don't copy file symbolic links but do follow directory junctions
             if ($SkipSymbolicFileLinks -eq $true) {
 
-                $ParamXJF = "/XJF"; #                     █ eXclude symbolic links for Files.
+                $ParamXJF = "/XJF"; #                     █ eXclude symbolic links for Files.
             }
             else {
 
-                # -CopySymbolicLinksAsLinks ➜ Instead of copying the content where symbolic links point to, copy the links themselves
+                # -CopySymbolicLinksAsLinks ➜ Instead of copying the content where symbolic links point to, copy the links themselves
                 if ($CopySymbolicLinksAsLinks -eq $true) {
 
-                    $ParamSL = "/SL"; #                   █ copy Symbolic Links as links instead of as the link targets.
+                    $ParamSL = "/SL"; #                   █ copy Symbolic Links as links instead of as the link targets.
                 }
             }
 
-            # -SkipJunctions ➜ Don't copy directory junctions (symbolic link for a folder) or the content they point to
+            # -SkipJunctions ➜ Don't copy directory junctions (symbolic link for a folder) or the content they point to
             if ($SkipJunctions -eq $true) {
 
-                $ParamXJD = "/XJD"; #                     █ eXclude symbolic links for Directories and Junction points.
+                $ParamXJD = "/XJD"; #                     █ eXclude symbolic links for Directories and Junction points.
             }
             else {
 
-                # -CopyJunctionsAsJunctons ➜ Instead of copying the content where junctions point to, copy the junctions themselves
+                # -CopyJunctionsAsJunctons ➜ Instead of copying the content where junctions point to, copy the junctions themselves
                 if ($CopyJunctionsAsJunctons -eq $true) {
 
-                    $ParamSJ = "/SJ"; #                   █ copy Junctions as junctions instead of as the junction targets.
+                    $ParamSJ = "/SJ"; #                   █ copy Junctions as junctions instead of as the junction targets.
                 }
             }
         }
 
         ##########################################################################################
 
-        # -Force ➜ Will copy all files even if they are older then the ones in the destination
+        # -Force ➜ Will copy all files even if they are older then the ones in the destination
         if ($Force -eq $true) {
 
-            $ParamXO = "" #                               █ eXclude Older files.
-            $ParamIM = "" #                               █ Include Modified files (differing change times).
-            $ParamIT = "" #                               █ Include Tweaked files.
-            $ParamIS = "/IS" #                            █ Include Same files.
+            $ParamXO = "" #                               █ eXclude Older files.
+            $ParamIM = "" #                               █ Include Modified files (differing change times).
+            $ParamIT = "" #                               █ Include Tweaked files.
+            $ParamIS = "/IS" #                            █ Include Same files.
         }
 
         ##########################################################################################
 
-        # -SkipFilesWithoutArchiveAttribute ➜ Copies only files that have the archive attribute set
+        # -SkipFilesWithoutArchiveAttribute ➜ Copies only files that have the archive attribute set
         if ($SkipFilesWithoutArchiveAttribute -eq $true) {
 
-            $ParamArchive = "/A" #                        █ copy only files with the Archive attribute set.
+            $ParamArchive = "/A" #                        █ copy only files with the Archive attribute set.
         }
 
-        # -ResetArchiveAttributeAfterSelection ➜ In addition of copying only files that have the archive attribute set, will then reset this attribute on the source
+        # -ResetArchiveAttributeAfterSelection ➜ In addition of copying only files that have the archive attribute set, will then reset this attribute on the source
         if ($ResetArchiveAttributeAfterSelection -eq $true) {
 
-            $ParamArchive = "/M" #                        █ copy only files with the Archive attribute and reset it
+            $ParamArchive = "/M" #                        █ copy only files with the Archive attribute and reset it
         }
 
         ##########################################################################################
-        # -FileExcludeFilter ➜ Exclude any files that matches any of these names/paths/wildcards
+        # -FileExcludeFilter ➜ Exclude any files that matches any of these names/paths/wildcards
         if ($FileExcludeFilter.Length -gt 0) {
 
             $Filter = "$((ConstructFileFilterSet $FileExcludeFilter "FileExcludeFilter"))";
-            $ParamXF = "/XF $Filter" #                    █ eXclude Files matching given names/paths/wildcards.
+            $ParamXF = "/XF $Filter" #                    █ eXclude Files matching given names/paths/wildcards.
         }
 
-        # -DirectoryExcludeFilter ➜ Exclude any directories that matches any of these names/paths/wildcards
+        # -DirectoryExcludeFilter ➜ Exclude any directories that matches any of these names/paths/wildcards
         if ($DirectoryExcludeFilter.Length -gt 0) {
 
             $Filter = "$((ConstructFileFilterSet $DirectoryExcludeFilter "DirectoryExcludeFilter"))";
-            $ParamXD = "/XD $Filter" #                    █ eXclude Directories matching given names/paths/wildcards.
+            $ParamXD = "/XD $Filter" #                    █ eXclude Directories matching given names/paths/wildcards.
         }
 
-        # -AttributeIncludeFilter ➜ Copy only files that have all these attributes set [RASHCNETO]
+        # -AttributeIncludeFilter ➜ Copy only files that have all these attributes set [RASHCNETO]
         if ([string]::IsNullOrWhiteSpace($AttributeIncludeFilter) -eq $false) {
 
             $Filter = "$((SanitizeAttributeSet $AttributeIncludeFilter "AttributeIncludeFilter"))";
-            $ParamIA = "/IA:$Filter" #                    █ Include only files with any of the given Attributes set.
+            $ParamIA = "/IA:$Filter" #                    █ Include only files with any of the given Attributes set.
         }
 
-        # -AttributeExcludeFilter ➜ Exclude files that have any of these attributes set [RASHCNETO]
+        # -AttributeExcludeFilter ➜ Exclude files that have any of these attributes set [RASHCNETO]
         if ([string]::IsNullOrWhiteSpace($AttributeExcludeFilter) -eq $false) {
 
             $Filter = "$((SanitizeAttributeSet $AttributeExcludeFilter "AttributeExcludeFilter"))";
-            $ParamXA = "/XA:$Filter" #                    █ eXclude files with any of the given Attributes set.
+            $ParamXA = "/XA:$Filter" #                    █ eXclude files with any of the given Attributes set.
         }
 
-        # -SetAttributesAfterCopy ➜ Will set the given attributes to copied files [RASHCNETO]
+        # -SetAttributesAfterCopy ➜ Will set the given attributes to copied files [RASHCNETO]
         if ([string]::IsNullOrWhiteSpace($SetAttributesAfterCopy) -eq $false) {
 
             $Filter = "$((SanitizeAttributeSet $SetAttributesAfterCopy "SetAttributesAfterCopy"))";
-            $ParamAttrSet = "/A+:$Filter" #               █ add the given Attributes to copied files
+            $ParamAttrSet = "/A+:$Filter" #               █ add the given Attributes to copied files
         }
 
-        # -RemoveAttributesAfterCopy ➜ Will remove the given attributes from copied files [RASHCNETO]
+        # -RemoveAttributesAfterCopy ➜ Will remove the given attributes from copied files [RASHCNETO]
         if ([string]::IsNullOrWhiteSpace($RemoveAttributesAfterCopy) -eq $false) {
 
             $Filter = "$((SanitizeAttributeSet $RemoveAttributesAfterCopy "RemoveAttributesAfterCopy"))";
-            $ParamAttrRemove = "/A+:$Filter" #            █ remove the given Attributes from copied files.
+            $ParamAttrRemove = "/A+:$Filter" #            █ remove the given Attributes from copied files.
         }
 
-        # -MaxSubDirTreeLevelDepth ➜ Only copy the top n levels of the source directory tree
+        # -MaxSubDirTreeLevelDepth ➜ Only copy the top n levels of the source directory tree
         if ($MaxSubDirTreeLevelDepth -ge 0) {
 
-            $ParamLEV = "/LEV:$MaxSubDirTreeLevelDepth" # █ only copy the top n LEVels of the source directory tree.
+            $ParamLEV = "/LEV:$MaxSubDirTreeLevelDepth" # █ only copy the top n LEVels of the source directory tree.
         }
 
-        # -MinFileSize ➜ Skip files that are not at least n bytes in size
+        # -MinFileSize ➜ Skip files that are not at least n bytes in size
         if ($MinFileSize -ge 0) {
 
-            $ParamMIN = "/MIN:$MinFileSize" #             █ MINimum file size - exclude files smaller than n bytes.
+            $ParamMIN = "/MIN:$MinFileSize" #             █ MINimum file size - exclude files smaller than n bytes.
         }
 
-        # -MaxFileSize ➜ Skip files that are larger then n bytes
+        # -MaxFileSize ➜ Skip files that are larger then n bytes
         if ($MaxFileSize -ge 0) {
 
-            $ParamMAX = "/MAX:$MinFileSize" #             █ MAXimum file size - exclude files bigger than n bytes.
+            $ParamMAX = "/MAX:$MinFileSize" #             █ MAXimum file size - exclude files bigger than n bytes.
         }
 
-        # -MinFileAge ➜ Skip files that are not at least: n days old OR created before n date (if n < 1900 then n = n days, else n = YYYYMMDD date)
+        # -MinFileAge ➜ Skip files that are not at least: n days old OR created before n date (if n < 1900 then n = n days, else n = YYYYMMDD date)
         if ($MinFileAge -ge 0) {
 
             CheckAgeInteger $MinFileAge "MinFileAge"
 
-            $ParamMINAGE = "/MINAGE:$MinFileAge" #        █ MINimum file AGE - exclude files newer than n days/date.
+            $ParamMINAGE = "/MINAGE:$MinFileAge" #        █ MINimum file AGE - exclude files newer than n days/date.
         }
 
-        # -MaxFileAge ➜ Skip files that are older then: n days OR created after n date (if n < 1900 then n = n days, else n = YYYYMMDD date)
+        # -MaxFileAge ➜ Skip files that are older then: n days OR created after n date (if n < 1900 then n = n days, else n = YYYYMMDD date)
         if ($MaxFileAge -ge 0) {
 
             CheckAgeInteger $MaxFileAge "MaxFileAge"
 
-            $ParamMaxAGE = "/MAXAGE:$MaxFileAge" #        █ MAXimum file AGE - exclude files older than n days/date.
+            $ParamMaxAGE = "/MAXAGE:$MaxFileAge" #        █ MAXimum file AGE - exclude files older than n days/date.
         }
 
-        # -MinLastAccessAge ➜ Skip files that are accessed within the last: n days OR before n date (if n < 1900 then n = n days, else n = YYYYMMDD date)
+        # -MinLastAccessAge ➜ Skip files that are accessed within the last: n days OR before n date (if n < 1900 then n = n days, else n = YYYYMMDD date)
         if ($MinLastAccessAge -ge 0) {
 
             CheckAgeInteger $MinLastAccessAge "MinLastAccessAge"
 
-            $ParamMINLAD = "/MINLAD:$MinLastAccessAge" #  █ MINimum Last Access Date - exclude files used since n.
+            $ParamMINLAD = "/MINLAD:$MinLastAccessAge" #  █ MINimum Last Access Date - exclude files used since n.
         }
 
-        # -MaxLastAccessAge ➜ Skip files that have not been accessed in: n days OR after n date (if n < 1900 then n = n days, else n = YYYYMMDD date)
+        # -MaxLastAccessAge ➜ Skip files that have not been accessed in: n days OR after n date (if n < 1900 then n = n days, else n = YYYYMMDD date)
         if ($MaxLastAccessAge -ge 0) {
 
             CheckAgeInteger $MaxLastAccessAge "MaxLastAccessAge"
 
-            $ParamMAXLAD = "/MAXLAD:$MaxLastAccessAge" #  █ MAXimum Last Access Date - exclude files unused since n.
+            $ParamMAXLAD = "/MAXLAD:$MaxLastAccessAge" #  █ MAXimum Last Access Date - exclude files unused since n.
         }
 
         ##########################################################################################
 
-        # -RecoveryMode ➜ Will shortly pause and retry when I/O errors occur during copying
+        # -RecoveryMode ➜ Will shortly pause and retry when I/O errors occur during copying
         if ($RecoveryMode -eq $true) {
 
-            $ParamNOOFFLOAD = "/NOOFFLOAD" #              █ copy files without using the Windows Copy Offload mechanism.
-            $ParamR = "/R:25" #                           █ number of Retries on failed copies: default 1 million.
-            $ParamW = "/W:1" #                            █ Wait time between retries: default is 30 seconds.
+            $ParamNOOFFLOAD = "/NOOFFLOAD" #              █ copy files without using the Windows Copy Offload mechanism.
+            $ParamR = "/R:25" #                           █ number of Retries on failed copies: default 1 million.
+            $ParamW = "/W:1" #                            █ Wait time between retries: default is 30 seconds.
         }
 
         ##########################################################################################
 
-        # -MonitorMode ➜ Will stay active after copying, and copy additional changes after a a default threshold of 10 minutes
+        # -MonitorMode ➜ Will stay active after copying, and copy additional changes after a a default threshold of 10 minutes
         if ($MonitorMode -eq $true) {
 
-            $ParamMON = "/MOT:10" #                       █ MOnitor source; run again in m minutes Time, if changed.
+            $ParamMON = "/MOT:10" #                       █ MOnitor source; run again in m minutes Time, if changed.
         }
 
-        # -MonitorModeThresholdMinutes ➜ Run again in n minutes Time, if changed
+        # -MonitorModeThresholdMinutes ➜ Run again in n minutes Time, if changed
         if ($MonitorModeThresholdMinutes -ge 0) {
 
             $MotArgs = $MonitorModeThresholdMinutes;
-            $ParamMON = "/MOT:$MotArgs" #                 █ MOnitor source; run again in m minutes Time, if changed.
+            $ParamMON = "/MOT:$MotArgs" #                 █ MOnitor source; run again in m minutes Time, if changed.
         }
 
-        # -MonitorModeThresholdNrOfChanges ➜ Run again when more then n changes seen
+        # -MonitorModeThresholdNrOfChanges ➜ Run again when more then n changes seen
         if ($MonitorModeThresholdNrOfChanges -ge 0) {
 
             $MonArgs = $MonitorModeThresholdNrOfChanges
-            $ParamMON = "/MON:$MonArgs" #                 █ MONitor source; run again when more than n changes seen.
+            $ParamMON = "/MON:$MonArgs" #                 █ MONitor source; run again when more than n changes seen.
         }
 
         if (($MonitorModeRunHoursFrom -ge 0) -or ($MonitorModeRunHoursUntil -ge 0)) {
 
-            # -MonitorModeRunHoursFrom ➜ Run hours - times when new copies may be started, start-time, range 0000:2359
+            # -MonitorModeRunHoursFrom ➜ Run hours - times when new copies may be started, start-time, range 0000:2359
             if ($MonitorModeRunHoursFrom -ge 0) {
 
                 $MonitorModeRunHoursFromStr = "$MonitorModeRunHoursFrom".PadLeft("0", 4);
@@ -1173,7 +1292,7 @@ function Start-RoboCopy {
                 $MonitorModeRunHoursFromStr = "0000";
             }
 
-            # -MonitorModeRunHoursUntil ➜ Run hours - times when new copies may be started, end-time, range 0000:2359
+            # -MonitorModeRunHoursUntil ➜ Run hours - times when new copies may be started, end-time, range 0000:2359
             if ($MonitorModeRunHoursUntil -ge 0) {
 
                 $MonitorModeRunHoursUntilStr = "$MonitorModeRunHoursUntil".PadLeft("0", 4);
@@ -1189,75 +1308,71 @@ function Start-RoboCopy {
             }
 
             $RHArgs = "$MonitorModeRunHoursFromStr-$MonitorModeRunHoursUntilStr"
-            $ParamRH = "/RH:$RHArgs" #                    █ Run Hours - times when new copies may be started.
+            $ParamRH = "/RH:$RHArgs" #                    █ Run Hours - times when new copies may be started.
         }
 
         ##########################################################################################
 
-        # -LogFilePath ➜ If specified, logging will also be done to specified file
+        # -LogFilePath ➜ If specified, logging will also be done to specified file
         if ([string]::IsNullOrWhiteSpace($LogFilePath) -eq $false) {
 
             $LogArgs = "'$((ExpandPath $LogFilePath $true))'"
 
-            # -LogfileOverwrite ➜ Don't append to the specified logfile, but overwrite instead
+            # -LogfileOverwrite ➜ Don't append to the specified logfile, but overwrite instead
             if ($LogfileOverwrite -eq $true) {
 
-                $ParamLOG = "/LOG:$LogArgs" #             █ output status to LOG file (overwrite existing log).
+                $ParamLOG = "/LOG:$LogArgs" #             █ output status to LOG file (overwrite existing log).
             }
             else {
 
-                $ParamLOG = "/LOG+:$LogArgs" #            █ output status to LOG file (append to existing log).
+                $ParamLOG = "/LOG+:$LogArgs" #            █ output status to LOG file (append to existing log).
             }
         }
 
-        # -LogDirectoryNames ➜ Include all scanned directory names in output
+        # -LogDirectoryNames ➜ Include all scanned directory names in output
         if ($LogDirectoryNames -eq $true) {
 
-            $ParamNDL = "" #                              █ No Directory List - don't log directory names.
+            $ParamNDL = "" #                              █ No Directory List - don't log directory names.
         }
 
-        # -LogAllFileNames ➜ Include all scanned file names in output, even skipped onces
+        # -LogAllFileNames ➜ Include all scanned file names in output, even skipped onces
         if ($LogAllFileNames -eq $true) {
 
-            $ParamX = "/X" #                              █ report all eXtra files, not just those selected.
-            $ParamV = "/V" #                              █ produce Verbose output, showing skipped files.
+            $ParamX = "/X" #                              █ report all eXtra files, not just those selected.
+            $ParamV = "/V" #                              █ produce Verbose output, showing skipped files.
         }
 
-        # -LargeFiles ➜ Enables optimization for copying large files
+        # -LargeFiles ➜ Enables optimization for copying large files
         if ($LargeFiles -eq $true) {
 
-            $paramJ = "/J" #                              █ copy using unbuffered I/O (recommended for large files).
+            $paramJ = "/J" #                              █ copy using unbuffered I/O (recommended for large files).
         }
 
-        # -LargeFiles ➜ Optimize performance by doing multithreaded copying
+        # -LargeFiles ➜ Optimize performance by doing multithreaded copying
         if ($MultiThreaded -eq $true) {
 
-            $paramMT = "/MT:16" #                         █ Do multi-threaded copies with n threads (default 8).
+            $paramMT = "/MT:16" #                         █ Do multi-threaded copies with n threads (default 8).
         }
 
-        # -CompressibleContent ➜ If applicable use compression when copying files between servers to safe bandwidth and time
+        # -CompressibleContent ➜ If applicable use compression when copying files between servers to safe bandwidth and time
         if ($CompressibleContent -eq $true) {
 
-            $ParamCOMPRESS = "/COMPRESS" #                █ Request network compression during file transfer, if applicable.
+            $ParamCOMPRESS = "/COMPRESS" #                █ Request network compression during file transfer, if applicable.
         }
 
         ##########################################################################################
 
         $switches = "$ParamDirs /TS /FP /ZB /DCOPY:DAT /NP $ParamMT $ParamMOV $ParamMIR $ParamSECFIX $ParamCOPY $ParamXO $ParamIM $ParamIT $ParamIS $ParamEFSRAW $ParamNOOFFLOAD $ParamR $ParamW $paramJ $ParamNDL $ParamX $ParamV $ParamCREATE $ParamXJ $ParamXJD $ParamXJF $ParamSJ $ParamSL $ParamArchive $ParamIA $ParamXA $ParamAttrSet $ParamAttrRemove $ParamLEV $ParamMIN $ParamMAX $ParamMINAGE $ParamMaxAGE $ParamLOG $ParamRH $ParamMON $ParamMON $ParamMAXLAD $ParamMINLAD $ParamCOMPRESS $ParamXF $ParamXD".Replace("  ", " ").Trim();
-        $switchesCleaned = $switches;
-        while ($switchesCleaned.IndexOf("  /") -ge 0) {
-
-            $switchesCleaned = $switchesCleaned.Replace("  /", " /");
-        }
+        $switchesCleaned = overrideAndCleanSwitches($switches)
         $FilesArgs = ConstructFileFilterSet $Files "FileMask"
         $cmdLine = "& '$RobocopyPath' '$Source' '$DestinationDirectory' $FilesArgs $switchesCleaned"
     }
     Process {
 
-        # WHAT IF?
+        # WHAT IF?
         if ($WhatIf -eq $true) {
 
-            # collect param help information
+            # collect param help information
             $paramList = @{};
             (& $RobocopyPath -?) | ForEach-Object {
                 if ($PSItem.Contains(" :: ")) {
@@ -1269,12 +1384,12 @@ function Start-RoboCopy {
             $first = $true;
             $paramsExplained = @(
 
-                $switches.Split(" ", [System.StringSplitOptions]::RemoveEmptyEntries) |
+                " $switchesCleaned ".Split(" /", [System.StringSplitOptions]::RemoveEmptyEntries) |
                 ForEach-Object {
 
-                    $description = $paramList."$($PSItem.ToLowerInvariant().split(":")[0].Split("[")[0].Trim().split(" ")[0])"
+                    $description = $paramList."/$($PSItem.ToLowerInvariant().split(":")[0].Split("[")[0].Trim().split(" ")[0])"
                     $Space = "                         "; if ($first) { $Space = ""; $first = $false; }
-                    "$Space$($PSItem.PadRight(15)) --> $description`r`n"
+                    "$Space/$($PSItem.ToUpperInvariant().split(":")[0].Split("[")[0].Trim().split(" ")[0].PadRight(15)) --> $description`r`n"
                 }
             );
 
@@ -1375,24 +1490,24 @@ function Rename-InProject {
 
     Begin {
 
-        # normalize to current directory
+        # normalize to current directory
         $Source = ExpandPath($Source)
         $Files = "*"
 
-        # source is not an existing directory?
+        # source is not an existing directory?
         if ([IO.Directory]::Exists($Source) -eq $false) {
 
-            # split directory and filename
+            # split directory and filename
             $SourceSearchMask = [IO.Path]::GetFileName($Source);
             $SourceDirOnly = [IO.Path]::GetDirectoryName($Source);
 
-            # does parent directory exist?
+            # does parent directory exist?
             if ([IO.Directory]::Exists($SourceDirOnly)) {
 
-                # ..but the supplied source parameter is not an existing file?
+                # ..but the supplied source parameter is not an existing file?
                 if ([IO.File]::Exists($Source) -eq $false) {
 
-                    # ..and the supplied filename is not searchMask?
+                    # ..and the supplied filename is not searchMask?
                     if ($Files -notcontains "*" -and $Files -notcontains "?") {
 
                         throw "Could not find source: $Source"
@@ -1405,10 +1520,10 @@ function Rename-InProject {
             $Files = $SourceSearchMask;
         }
 
-        # not actually making any changes?
+        # not actually making any changes?
         if ($WhatIfPreference -or $WhatIf) {
 
-            # Turn on verbose
+            # Turn on verbose
             $VerbosePreference = "Continue"
         }
     }
@@ -1425,43 +1540,43 @@ function Rename-InProject {
             return;
         }
 
-        # gets all files by directory and searchmask recursively, but skips repositories
+        # gets all files by directory and searchmask recursively, but skips repositories
         function GetAllFilesFromAllDirectories([string] $parentDirectory, [string] $searchMask) {
 
-            # create new list
+            # create new list
             [System.Collections.Generic.List[string]] $result = New-Object "System.Collections.Generic.List[string]"
 
-            # is a repository?
+            # is a repository?
             if ([System.IO.Path]::GetFileName($parentDirectory) -eq ".svn" -or [System.IO.Path]::GetFileName($parentDirectory) -eq ".git") {
 
                 # skip
                 return $result.ToArray();
             }
 
-            # add all files by searchmask
+            # add all files by searchmask
             foreach ($file in [IO.Directory]::GetFiles($parentDirectory, $searchMask)) {
 
                 $result.Add($file);
             }
 
-            # enumerate all sub-directories
+            # enumerate all sub-directories
             foreach ($directory in [IO.Directory]::GetDirectories($parentDirectory, "*", [System.IO.SearchOption]::AllDirectories)) {
 
                 # no match?
                 if ([System.IO.Path]::GetFileName($directory) -notlike $searchMask) {
 
-                    # skip it
+                    # skip it
                     continue;
                 }
 
-                # is a repository?
+                # is a repository?
                 if ([System.IO.Path]::GetFileName($directory) -eq ".svn" -or [System.IO.Path]::GetFileName($directory) -eq ".git") {
 
                     # skip it
                     continue;
                 }
 
-                # add all files by searchmask
+                # add all files by searchmask
                 foreach ($file in [IO.Directory]::GetFiles($directory, $searchMask)) {
 
                     $result.Add($file);
@@ -1471,26 +1586,26 @@ function Rename-InProject {
             return $result.ToArray();
         }
 
-        # gets all sub-directory by searchmask recursively, but skips repositories
+        # gets all sub-directory by searchmask recursively, but skips repositories
         function GetAllDirectories([string] $parentDirectory, [string] $searchMask) {
 
-            # create new list
+            # create new list
             [System.Collections.Generic.List[string]] $result = New-Object "System.Collections.Generic.List[string]"
 
-            # is a repository?
+            # is a repository?
             if ([System.IO.Path]::GetFileName($parentDirectory) -eq ".svn" -or [System.IO.Path]::GetFileName($parentDirectory) -eq ".git") {
 
                 # skip
                 return $result.ToArray();
             }
 
-            # enumerate all sub-directories
+            # enumerate all sub-directories
             foreach ($directory in [IO.Directory]::GetDirectories($parentDirectory, "*", [System.IO.SearchOption]::AllDirectories)) {
 
-                # no match?
+                # no match?
                 if ([System.IO.Path]::GetFileName($directory) -notlike $searchMask) {
 
-                    # skip it
+                    # skip it
                     continue;
                 }
 
@@ -1501,7 +1616,7 @@ function Rename-InProject {
                     continue;
                 }
 
-                # add this directory
+                # add this directory
                 $result.Add($directory);
             }
 
@@ -1520,62 +1635,62 @@ function Rename-InProject {
                 # convert to lowercase
                 $fnl = $fn.ToLower();
 
-                # determine if it is candidate for content replacement/renaming
+                # determine if it is candidate for content replacement/renaming
                 $ok = !$fnl.EndsWith(".jpg") -and !$fnl.EndsWith(".jpeg") -and !$fnl.EndsWith(".gif") -and !$fnl.EndsWith(".bmp") -and !$fnl.EndsWith(".exe") -and !$fnl.EndsWith(".dll") -and !$fnl.EndsWith(".cer") -and !$fnl.EndsWith(".crt") -and !$fnl.EndsWith(".pkf") -and !$fnl.EndsWith(".pdb") -and !$fnl.EndsWith(".so") -and !$fnl.EndsWith(".png") -and !$fnl.EndsWith(".tiff") -and !$fnl.EndsWith(".wav") -and !$fnl.EndsWith(".mp3") -and !$fnl.EndsWith(".avi") -and !$fnl.EndsWith(".mkv") -and !$fnl.EndsWith(".wmv") -and !$fnl.EndsWith(".dll") -and !$fnl.EndsWith(".exe") -and !$fnl.EndsWith(".pdb") -and !$fnl.EndsWith(".tar") -and !$fnl.EndsWith(".7z") -and !$fnl.EndsWith(".png") -and !$fnl.EndsWith(".db") -and !$fnl.EndsWith(".zip") -and !$fnl.EndsWith(".7z") -and !$fnl.EndsWith(".rar") -and !$fnl.EndsWith(".apk") -and !$fnl.EndsWith(".ipa");
 
-                # all good? if not, you should have used -WhatIf ;)
+                # all good? if not, you should have used -WhatIf ;)
                 if ($ok) {
 
-                    # read content as text
+                    # read content as text
                     $oldtxt = [IO.File]::ReadAllText($fn, [System.Text.Encoding]::UTF8);
 
-                    # make replacements
+                    # make replacements
                     $newtxt = $oldtxt.Replace($findText, $replacementText);
 
-                    # has it changed?
+                    # has it changed?
                     if (!$oldtxt.Equals($newtxt)) {
 
-                        # not actually making any changes?
+                        # not actually making any changes?
                         if ($WhatIfPreference -or $WhatIf) {
 
-                            # output the action we would have performed
+                            # output the action we would have performed
                             Write-Verbose "What-If: Would replace in file: '$($fn.Substring($Source.Length+1))'"
                         }
                         else {
 
-                            # store changed content to disk
+                            # store changed content to disk
                             [IO.File]::WriteAllText($fn, $newtxt, [System.Text.Encoding]::UTF8);
 
-                            # output the action we have performed
+                            # output the action we have performed
                             Write-Verbose "Replaced in file: '$($fn.Substring($Source.Length+1))'"
                         }
                     }
                 }
 
-                # get the name of this file
+                # get the name of this file
                 $fnOld = [System.IO.Path]::GetFileName($fn);
 
-                # perform renaming inside of this filename
+                # perform renaming inside of this filename
                 $fnNew = $fnOld.Replace($findText, $replacementText);
 
-                # has it changed?
+                # has it changed?
                 if (!$fnNew.Equals($fnOld)) {
 
-                    # construct new full path
+                    # construct new full path
                     $newPath = [System.IO.Path]::Combine([System.IO.Path]::GetDirectoryName($fn), $fnNew);
 
-                    # not actually making any changes?
+                    # not actually making any changes?
                     if ($WhatIfPreference -or $WhatIf) {
 
-                        # output the action we would have performed
+                        # output the action we would have performed
                         Write-Verbose "What-If: Would rename file: '$($fn.Substring($Source.Length+1))' --> '$($newPath.Substring($Source.Length+1))'"
                     }
                     else {
 
-                        # rename this file
+                        # rename this file
                         [IO.File]::Move($fn, $newPath);
 
-                        # output the action we have performed
+                        # output the action we have performed
                         Write-Verbose "Renamed file: '$($fn.Substring($Source.Length+1))' --> '$($newPath.Substring($Source.Length+1))'"
                     }
                 }
@@ -1591,58 +1706,58 @@ function Rename-InProject {
                 # reference next directory
                 $fn = $PSItem
 
-                # not current directory?
+                # not current directory?
                 if (!$fn -ne ".") {
 
-                    # get the name of this directory
+                    # get the name of this directory
                     $fnOld = [System.IO.Path]::GetFileName($fn);
 
-                    # perform renaming inside of this directoryname
+                    # perform renaming inside of this directoryname
                     $fnNew = $fnOld.Replace($findText, $replacementText);
 
-                    # has the directoryname changed?
+                    # has the directoryname changed?
                     if (!$fnNew.Equals($fnOld)) {
 
-                        # contruct new full path
+                        # contruct new full path
                         $pathNew = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine([System.IO.Path]::GetDirectoryName($fn), $fnNew));
 
-                        # not actually making any changes?
+                        # not actually making any changes?
                         if ($WhatIfPreference -or $WhatIf) {
 
                             $additional = "";
 
-                            # is there a file, with the exact same name, as this renamed directory?
+                            # is there a file, with the exact same name, as this renamed directory?
                             if ([IO.File]::Exists($pathNew)) {
 
                                 $additional = " First deleting file '$fnNew' and then"
                             }
 
-                            # has only the capitalization changed?
+                            # has only the capitalization changed?
                             if ([IO.Directory]::Exists($pathNew) -and $fnOld.ToLower().Equals($fnNew.ToLower())) {
 
                                 Write-Verbose "What-If:$additional Fixing capitalization in directoryname: '$($fn.Substring($Source.Length+1))' --> '$fnNew'"
                                 return;
                             }
 
-                            # does another directory already exist with the same name?
+                            # does another directory already exist with the same name?
                             if ([IO.Directory]::Exists($pathNew)) {
 
                                 Write-Verbose "What-If:$additional Merging files due to directory rename: '$($fn.Substring($Source.Length+1))' --> '$fnNew'"
 
-                                # move all files into existing directory
+                                # move all files into existing directory
                                 Start-RoboCopy -Source $fn -DestinationDirectory $pathNew -Move -WhatIf
 
                                 return;
                             }
 
-                            # just rename directory
+                            # just rename directory
                             Write-Verbose "What-If:$additional Renaming directoryname: '$($fn.Substring($Source.Length+1))' --> '$fnNew'"
                             return;
                         }
 
                         $additional = "";
 
-                        # is there a file, with the exact same name, as this renamed directory?
+                        # is there a file, with the exact same name, as this renamed directory?
                         if ([IO.File]::Exists($pathNew)) {
 
                             # delete it
@@ -1650,13 +1765,13 @@ function Rename-InProject {
                             $additional = " Deleted file '$fnNew' and then"
                         }
 
-                        # has only the capitalization changed?
+                        # has only the capitalization changed?
                         if ([IO.Directory]::Exists($pathNew) -and $fnOld.ToLower().Equals($fnNew.ToLower())) {
 
-                            # construct new temporary directoryname
+                            # construct new temporary directoryname
                             $tmpPath = $pathNew + "_" + [DateTime.UTCNow].Ticks.ToString();
 
-                            # rename back and forth
+                            # rename back and forth
                             [IO.Directory]::Move($fn, $tmpPath);
                             [IO.Directory]::Move($tmpPath, $pathNew);
 
@@ -1664,10 +1779,10 @@ function Rename-InProject {
                             return;
                         }
 
-                        # does another directory already exist with the same name?
+                        # does another directory already exist with the same name?
                         if ([IO.Directory]::Exists($pathNew)) {
 
-                            # move all files into existing directory
+                            # move all files into existing directory
                             Start-RoboCopy -Source $fn -DestinationDirectory $pathNew -Move
 
                             # now remove old directory
