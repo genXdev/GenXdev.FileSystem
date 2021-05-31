@@ -1370,7 +1370,7 @@ Multiple overrides:
     Process {
 
         # WHAT IF?
-        if ($WhatIf -eq $true) {
+        if ($WhatIf -or $WhatIfPreference) {
 
             # collect param help information
             $paramList = @{};
