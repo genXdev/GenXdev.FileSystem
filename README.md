@@ -62,7 +62,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
     <Int32>] [-MaxLastAccessAge <Int32>] [-RecoveryMode] [-MonitorMode]
     [-MonitorModeThresholdMinutes <Int32>] [-MonitorModeThresholdNrOfChanges <Int32>]
     [-MonitorModeRunHoursFrom <Int32>] [-MonitorModeRunHoursUntil <Int32>] [-LogFilePath <String>]
-    [-LogfileOverwrite] [-LogDirectoryNames] [-LogAllFileNames] [-LargeFiles] [-MultiThreaded]
+    [-LogfileOverwrite] [-LogDirectoryNames] [-LogAllFileNames] [-Unicode] [-LargeFiles] [-MultiThreaded]
     [-CompressibleContent] [[-Override] <String>] [-WhatIf] [<CommonParameters>]
 
 Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>]
@@ -78,7 +78,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
     <Int32>] [-MaxLastAccessAge <Int32>] [-RecoveryMode] [-MonitorMode]
     [-MonitorModeThresholdMinutes <Int32>] [-MonitorModeThresholdNrOfChanges <Int32>]
     [-MonitorModeRunHoursFrom <Int32>] [-MonitorModeRunHoursUntil <Int32>] [-LogFilePath <String>]
-    [-LogfileOverwrite] [-LogDirectoryNames] [-LogAllFileNames] [-LargeFiles] [-MultiThreaded]
+    [-LogfileOverwrite] [-LogDirectoryNames] [-LogAllFileNames] [-Unicode] [-LargeFiles] [-MultiThreaded]
     [-CompressibleContent] [[-Override] <String>] [-WhatIf] [<CommonParameters>]
 ````
 
@@ -276,6 +276,9 @@ PARAMETERS
 
     -LogAllFileNames [<SwitchParameter>]
         Include all scanned file names in output, even skipped onces
+
+    -Unicode [<SwitchParameter>]
+        Output status as UNICODE
 
     -LargeFiles [<SwitchParameter>]
         Enables optimization for copying large files
