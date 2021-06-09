@@ -426,5 +426,5 @@
 ````Powershell
     -------------------------- EXAMPLE 1 --------------------------
 
-    GetFullPath .\
+    Expand-Path .\
 ````
