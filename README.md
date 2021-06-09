@@ -14,29 +14,7 @@
 # INSTALLATION
 ````Powershell
 
-    # construct file path to modules directory
-    $CurrentUserModulesPath = "$([IO.Path]::GetDirectoryName($Profile))\Modules"
-
-    # create it, if necessary
-    if (![IO.Directory]::Exists($CurrentUserModulesPath)) { [IO.Directory]::CreateDirectory($CurrentUserModulesPath)};
-
-    # change current directory to modules directory
-    Set-Location $CurrentUserModulesPath;
-
-    # clone the repo
-    git clone https://github.com/renevaessen/GenXdev.FileSystem.git GenXdev.FileSystem
-
-    # soon this becomes the default, according to Microsoft
-    Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-
-    # until it becomes a NuGet package, this should do it
-    Import-Module ".\GenXdev.FileSystem\GenXdev.FileSystem.psm1" -Force
-
-    # show manual pages for the new CmdLets
-    Get-Module "GenXdev.*" | % ExportedCommands | % Values | Where-Object -Property CommandType -NotLike "Alias" | % Name | % {
-
-        man $PSItem
-    }
+    Install-Module "GenXdev.FileSystem" -Force
 
 ````
 
@@ -402,7 +380,7 @@
 <br/><hr/><hr/><hr/><hr/><br/>
 
 ## NAME
-    ExpandPath
+    Expand-Path
 
 ## SYNOPSIS
     Expands any given file reference to a full pathname
@@ -410,7 +388,7 @@
 
 ## SYNTAX
 ````Powershell
-    ExpandPath [[-FilePath] <String>] [[-CreateDirectory] <Boolean>] [<CommonParameters>]
+    Expand-Path [[-FilePath] <String>] [[-CreateDirectory] <Boolean>] [<CommonParameters>]
 ````
 
 ## DESCRIPTION
