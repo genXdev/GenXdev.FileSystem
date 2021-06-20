@@ -15,6 +15,7 @@
 ````Powershell
 
     Install-Module "GenXdev.FileSystem" -Force
+    Import-Module "GenXdev.FileSystem"
 
 ````
 
