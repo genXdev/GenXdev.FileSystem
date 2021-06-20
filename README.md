@@ -82,7 +82,7 @@
     * Advanced file attribute features
     * Advanced symbolic link and junction support
     * Monitor mode (restart copying after change threshold)
-    * Optimization features for LargeFiles, multithreaded copying and network copression
+    * Optimization features for LargeFiles, multithreaded copying and network compression
     * Recovery mode (copy from failing disks)
 
 
@@ -338,7 +338,7 @@
     Find-Item
 
 ## SYNOPSIS
-    Finds files by seachmask
+    Finds files by searchmask
 
 
 ## SYNTAX
@@ -347,7 +347,7 @@
 ````
 
 ## DESCRIPTION
-    Finds files by seachmask on every disk available in the current session
+    Finds files by searchmask on every disk available in the current session
 
 ## PARAMETERS
 ````Powershell

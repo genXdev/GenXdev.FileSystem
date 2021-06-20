@@ -8,7 +8,7 @@
     RootModule = 'GenXdev.FileSystem.psm1'
 
     # Version number of this module.
-    ModuleVersion     = '1.0.3'
+    ModuleVersion     = '1.0.4'
 
     # Supported PSEditions
     # CompatiblePSEditions = @()
@@ -91,7 +91,7 @@
         PSData = @{
 
             # Tags applied to this module. These help with module discovery in online galleries.
-            Tags                     = 'Markdown', 'Tools', 'RoboCopy'
+            Tags                     = 'Markdown', 'Tools', 'RoboCopy', 'GenXdev'
 
             # A URL to the license for this module.
             LicenseUri               = 'https://raw.githubusercontent.com/renevaessen/GenXdev.FileSystem/main/LICENSE'
@@ -119,7 +119,7 @@
     } # End of PrivateData hashtable
 
     # HelpInfo URI of this module
-    HelpInfoURI       = 'https://github.com/renevaessen/GenXdev.FileSystem'
+    HelpInfoURI       = 'https://github.com/renevaessen/GenXdev.FileSystem/blob/main/README.md#syntax'
 
     # Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
     # DefaultCommandPrefix = ''
