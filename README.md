@@ -88,7 +88,7 @@
 
 
 ## PARAMETERS
-````Powershell
+````
     -Source <String>
         The directory, filepath, or directory+searchmask
 
@@ -300,7 +300,7 @@
 
 
 ## PARAMETERS
-````Powershell
+````
     -Source <String>
         The directory, filepath, or directory+searchmask
 
@@ -351,7 +351,7 @@
     Finds files by searchmask on every disk available in the current session
 
 ## PARAMETERS
-````Powershell
+````
     -SearchMask <String>
         Partial or full filename to look for
 
@@ -397,7 +397,7 @@
     directory
 
 ## PARAMETERS
-````Powershell
+````
     -FilePath <String>
         Path to expand
 
