@@ -1,63 +1,82 @@
 <hr/>
 
-![](powershell.jpg)
+<img src="powershell.jpg" alt="drawing" width="50%"/>
 
 <hr/>
 
-# NAME
-
+### NAME
     GenXdev.FileSystem
+### SYNOPSIS
+    A Windows PowerShell module for basic and advanced file management tasks
+[![GenXdev.FileSystem](https://img.shields.io/powershellgallery/v/GenXdev.Filesystem.svg?style=flat-square&label=GenXdev.FileSystem)](https://www.powershellgallery.com/packages/GenXdev.FileSystem/) [![License](https://img.shields.io/github/license/renevaessen/GenXdev.Filesystem?style=flat-square)](./LICENSE)
 
-# TYPE
-    PowerShell Module
 
-# INSTALLATION
-````Powershell
+### FEATURES
 
-    Install-Module "GenXdev.FileSystem" -Force
-    Import-Module "GenXdev.FileSystem"
+    * ✅ Simple but agile utility for renaming text throughout a project directory,
+          including file- and directory- names
 
+    * ✅ Pretty good wrapper for robocopy, Microsoft's robuust file copy utility
+        * ✅ Folder synchronization
+        * ✅ Support for extra long pathnames > 256 characters
+        * ✅ Restartable mode backups
+        * ✅ Support for copying and fixing security settings
+        * ✅ Advanced file attribute features
+        * ✅ Advanced symbolic link and junction support
+        * ✅ Monitor mode (restart copying after change threshold)
+        * ✅ Optimization features for LargeFiles, multithreaded copying and network compression
+        * ✅ Recovery mode (copy from failing disks)
+
+
+### SYNTAX
+
+````PowerShell
+Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>]
+    [-Mirror] [-Move]
+    [-IncludeSecurity] [-SkipDirectories]
+    [-CopyOnlyDirectoryTreeStructureAndEmptyFiles]
+    [-FileExcludeFilter <String[]>]
+    [-SkipAllSymbolicLinks] [-SkipSymbolicFileLinks] [-CopySymbolicLinksAsLinks]
+    [-SkipFilesWithoutArchiveAttribute] [-ResetArchiveAttributeAfterSelection]
+    [-AttributeIncludeFilter <String>] [-AttributeExcludeFilter <String>]
+    [-SetAttributesAfterCopy <String>] [-RemoveAttributesAfterCopy <String>]
+    [-MinFileSize <Int32>] [-MaxFileSize <Int32>]
+    [-MinFileAge <Int32>] [-MaxFileAge <Int32>]
+    [-MinLastAccessAge <Int32>] [-MaxLastAccessAge <Int32>] [-RecoveryMode] [-MonitorMode]
+    [-MonitorModeThresholdMinutes <Int32>] [-MonitorModeThresholdNrOfChanges <Int32>]
+    [-MonitorModeRunHoursFrom <Int32>] [-MonitorModeRunHoursUntil <Int32>] [-LogFilePath <String>]
+    [-LogfileOverwrite] [-LogDirectoryNames] [-LogAllFileNames] [-Unicode] [-LargeFiles]
+    [-MultiThreaded] [-CompressibleContent] [[-Override] <String>]
+    [-Force]
+    [-WhatIf] [<CommonParameters>]
 ````
-
-
-![Build SpotifyAPI-NET](https://github.com/JohnnyCrazy/SpotifyAPI-NET/workflows/Build/Test/Release%20SpotifyAPI-NET/badge.svg)
-[![License](https://img.shields.io/github/license/JohnnyCrazy/SpotifyAPI-NET?style=flat-square)](./LICENSE)
-[![SpotifyAPI.Web NuGET](https://img.shields.io/nuget/vpre/SpotifyAPI.Web?label=SpotifyAPI.Web&style=flat-square)](https://www.nuget.org/packages/SpotifyAPI.Web/)
-[![SpotifyAPI.Web.Auth NuGET](https://img.shields.io/nuget/vpre/SpotifyAPI.Web.Auth?label=SpotifyAPI.Web.Auth&style=flat-square)](https://www.nuget.org/packages/SpotifyAPI.Web.Auth/)
-
-This open source library for the Spotify Web API provides an easy to use interface for .NET based languages, like C# and VisualBasic .NET. By using it you can query general spotify catalog information (tracks, albums and playlists), manage user-related content ("My Library", create and edit playlists) and control the users music players (play, stop, transfer playback, play specific track).
-
-### Features
-
-
-* ✅ Typed responses and requests to over 74 endpoints. Complete and always up to date.
-* ✅ Supports `.NET Standard 2.X`, which includes all major platforms, including mobile:
-  * `.NET Framework`
-  * `UWP`
-  * `.NET Core`
-  * `Xamarin.Forms`
-* ✅ Included `HTTPClient`, but feel free to bring your own!
-* ✅ Logging supported
-* ✅ Retry Handlers supported
-* ✅ Proxy support
-* ✅ Pagination support
-* ✅ All OAuth2 Authentications supported for use in `ASP .NET` **and** `CLI` apps
-* ✅ Modular structure, for easy unit testing
-
-### Example
-
+````PowerShell
+Rename-InProject [[-Source] <String>]
+                 [-FindText] <String>
+                 [-ReplacementText] <String>
+                 [-WhatIf] [<CommonParameters>]
+````
+### INSTALLATION
+````PowerShell
+Install-Module "GenXdev.FileSystem" -Force
+Import-Module "GenXdev.FileSystem"
+````
+### UPDATE
+````PowerShell
+Update-Module
+````
 <br/><hr/><hr/><hr/><hr/><br/>
-
-## NAME
+# Cmdlets
+### NAME
     Start-RoboCopy
 
-## SYNOPSIS
+### SYNOPSIS
     Wrapper for Microsoft`s Robust Copy Utility
     Copies file data from one location to another.
 
 
-## SYNTAX
-````Powershell
+### SYNTAX
+````PowerShell
     Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>]
     [-Mirror] [-Move] [-IncludeSecurity] [-SkipDirectories]
     [-CopyOnlyDirectoryTreeStructureAndEmptyFiles] [-SkipAllSymbolicLinks]
@@ -90,7 +109,7 @@ This open source library for the Spotify Web API provides an easy to use interfa
 ````
 
 
-## DESCRIPTION
+### DESCRIPTION
     Wrapper for Microsoft`s Robust Copy Utility
     Copies file data from one location to another.
 
@@ -101,20 +120,20 @@ This open source library for the Spotify Web API provides an easy to use interfa
     Windows NT 4.0 Resource Kit, it has been a standard feature of Windows since Windows Vista and
     Windows Server 2008.
 
-## Key features
+### FEATURES
 
-    * Folder synchronization
-    * Support for extra long pathnames > 256 characters
-    * Restartable mode backups
-    * Support for copying and fixing security settings
-    * Advanced file attribute features
-    * Advanced symbolic link and junction support
-    * Monitor mode (restart copying after change threshold)
-    * Optimization features for LargeFiles, multithreaded copying and network compression
-    * Recovery mode (copy from failing disks)
+* ✅ Folder synchronization
+* ✅ Support for extra long pathnames > 256 characters
+* ✅ Restartable mode backups
+* ✅ Support for copying and fixing security settings
+* ✅ Advanced file attribute features
+* ✅ Advanced symbolic link and junction support
+* ✅ Monitor mode (restart copying after change threshold)
+* ✅ Optimization features for LargeFiles, multithreaded copying and network compression
+* ✅ Recovery mode (copy from failing disks)
 
 
-## PARAMETERS
+### PARAMETERS
 ````
     -Source <String>
         The directory, filepath, or directory+searchmask
@@ -298,27 +317,27 @@ This open source library for the Spotify Web API provides an easy to use interfa
     Start-RoboCopy c:\users\user\onedrive e:\backups\onedrive -Mirror
 ````
 
-## REMARKS
-````Powershell
+### REMARKS
+````PowerShell
     To see the examples, type: "Get-Help Start-RoboCopy -Examples"
     For more information, type: "Get-Help Start-RoboCopy -Detailed"
     For technical information, type: "Get-Help Start-RoboCopy -Full"
     For online help, type: "Get-Help Start-RoboCopy -Online"
 ````
 
-## NAME
+### NAME
     Rename-InProject
 
-## SYNOPSIS
+### SYNOPSIS
     Performs a case sensitive text replacement throughout a project
 
-## SYNTAX
-````Powershell
+### SYNTAX
+````PowerShell
     Rename-InProject [[-Source] <String>] [-FindText] <String> [-ReplacementText] <String>
     [-WhatIf] [<CommonParameters>]
 ````
 
-## DESCRIPTION
+### DESCRIPTION
     Performs a rename action throughout a project folder. It will skip .git and .svn folders,
     images, archives and other common known binaries.
     But will rename within other files, like sourcecode, json, html, etc, AND folders and
@@ -326,7 +345,7 @@ This open source library for the Spotify Web API provides an easy to use interfa
     Always perform a -WhatIf operation first, to validate the actions it will take.
 
 
-## PARAMETERS
+### PARAMETERS
 ````
     -Source <String>
         The directory, filepath, or directory+searchmask
@@ -354,30 +373,30 @@ This open source library for the Spotify Web API provides an easy to use interfa
 
     Rename-InProject .\src\ "MyCustomClass"  "MyNewRenamedClass" -WhatIf
 ````
-## REMARKS
-````Powershell
+### REMARKS
+````PowerShell
     To see the examples, type: "Get-Help Rename-InProject -Examples"
     For more information, type: "Get-Help Rename-InProject -Detailed"
     For technical information, type: "Get-Help Rename-InProject -Full"
 ````
 <br/><hr/><hr/><hr/><hr/><br/>
 
-## NAME
+### NAME
     Find-Item
 
-## SYNOPSIS
+### SYNOPSIS
     Finds files by searchmask
 
 
-## SYNTAX
-````Powershell
+### SYNTAX
+````PowerShell
     Find-Item [-SearchMask] <String> [-File] [-Directory] [<CommonParameters>]
 ````
 
-## DESCRIPTION
+### DESCRIPTION
     Finds files by searchmask on every disk available in the current session
 
-## PARAMETERS
+### PARAMETERS
 ````
     -SearchMask <String>
         Partial or full filename to look for
@@ -400,30 +419,30 @@ This open source library for the Spotify Web API provides an easy to use interfa
 
     Find-Item node_modules -Directory
 
-## REMARKS
+### REMARKS
     To see the examples, type: "Get-Help Find-Item -Examples"
     For more information, type: "Get-Help Find-Item -Detailed"
     For technical information, type: "Get-Help Find-Item -Full"
 ````
 <br/><hr/><hr/><hr/><hr/><br/>
 
-## NAME
+### NAME
     Expand-Path
 
-## SYNOPSIS
+### SYNOPSIS
     Expands any given file reference to a full pathname
 
 
-## SYNTAX
-````Powershell
+### SYNTAX
+````PowerShell
     Expand-Path [[-FilePath] <String>] [[-CreateDirectory] <Boolean>] [<CommonParameters>]
 ````
 
-## DESCRIPTION
+### DESCRIPTION
     Expands any given file reference to a full pathname, with respect to the users current
     directory
 
-## PARAMETERS
+### PARAMETERS
 ````
     -FilePath <String>
         Path to expand
@@ -450,8 +469,8 @@ This open source library for the Spotify Web API provides an easy to use interfa
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).
 
 ````
-## OUTPUTS
-````Powershell
+### OUTPUTS
+````PowerShell
     -------------------------- EXAMPLE 1 --------------------------
 
     Expand-Path .\
