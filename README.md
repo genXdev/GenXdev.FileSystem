@@ -1,11 +1,3 @@
-## Features
-
-## Ideas
-
-## Issues
-
-## Todoos
-
 <hr/>
 
 <img src="powershell.jpg" alt="drawing" width="50%"/>
@@ -85,7 +77,7 @@ Update-Module
 
 ### SYNTAX
 ````PowerShell
-    Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>]
+Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>]
     [-Mirror] [-Move] [-IncludeSecurity] [-SkipDirectories]
     [-CopyOnlyDirectoryTreeStructureAndEmptyFiles] [-SkipAllSymbolicLinks]
     [-SkipSymbolicFileLinks] [-CopySymbolicLinksAsLinks] [-Force]
@@ -327,7 +319,7 @@ Update-Module
 
 ### REMARKS
 ````PowerShell
-    To see the examples, type: "Get-Help Start-RoboCopy -Examples"
+To see the examples, type: "Get-Help Start-RoboCopy -Examples"
     For more information, type: "Get-Help Start-RoboCopy -Detailed"
     For technical information, type: "Get-Help Start-RoboCopy -Full"
     For online help, type: "Get-Help Start-RoboCopy -Online"
@@ -341,7 +333,7 @@ Update-Module
 
 ### SYNTAX
 ````PowerShell
-    Rename-InProject [[-Source] <String>] [-FindText] <String> [-ReplacementText] <String>
+Rename-InProject [[-Source] <String>] [-FindText] <String> [-ReplacementText] <String>
     [-WhatIf] [<CommonParameters>]
 ````
 
@@ -383,7 +375,7 @@ Update-Module
 ````
 ### REMARKS
 ````PowerShell
-    To see the examples, type: "Get-Help Rename-InProject -Examples"
+To see the examples, type: "Get-Help Rename-InProject -Examples"
     For more information, type: "Get-Help Rename-InProject -Detailed"
     For technical information, type: "Get-Help Rename-InProject -Full"
 ````
@@ -398,7 +390,7 @@ Update-Module
 
 ### SYNTAX
 ````PowerShell
-    Find-Item [-SearchMask] <String> [-File] [-Directory] [<CommonParameters>]
+Find-Item [-SearchMask] <String> [-File] [-Directory] [<CommonParameters>]
 ````
 
 ### DESCRIPTION
@@ -443,7 +435,7 @@ Update-Module
 
 ### SYNTAX
 ````PowerShell
-    Expand-Path [[-FilePath] <String>] [[-CreateDirectory] <Boolean>] [<CommonParameters>]
+Expand-Path [[-FilePath] <String>] [[-CreateDirectory] <Boolean>] [<CommonParameters>]
 ````
 
 ### DESCRIPTION
@@ -479,7 +471,7 @@ Update-Module
 ````
 ### OUTPUTS
 ````PowerShell
-    -------------------------- EXAMPLE 1 --------------------------
+-------------------------- EXAMPLE 1 --------------------------
 
     Expand-Path .\
 ````
