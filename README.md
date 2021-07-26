@@ -79,7 +79,7 @@ Update-Module
 
 # Cmdlets
 
-## Expand-Path
+##	Expand-Path
 ````PowerShell
 Expand-Path
 ````
@@ -120,7 +120,7 @@ Expand-Path [-FilePath] <String> [[-CreateDirectory]] [<CommonParameters>]
 
 <br/><hr/><hr/><br/>
 
-## Find-Item
+##	Find-Item
 ````PowerShell
 Find-Item
 ````
@@ -167,7 +167,7 @@ Find-Item [-SearchMask] <String> [-File] [-Directory] [<CommonParameters>]
 
 <br/><hr/><hr/><br/>
 
-## Rename-InProject
+##	Rename-InProject
 ````PowerShell
 Rename-InProject
 ````
@@ -237,7 +237,7 @@ Rename-InProject .\src\ "MyCustomClass"  "MyNewRenamedClass" -WhatIf
 
 <br/><hr/><hr/><br/>
 
-## Start-RoboCopy
+##	Start-RoboCopy
 ````PowerShell
 Start-RoboCopy                       --> xc
 ````
