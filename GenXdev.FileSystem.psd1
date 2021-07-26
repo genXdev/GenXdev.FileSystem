@@ -1,14 +1,13 @@
 #
 # Module manifest for module 'GenXdev.FileSystem'
 
-
 @{
 
     # Script module or binary module file associated with this manifest.
     RootModule        = 'GenXdev.FileSystem.psm1'
 
     # Version number of this module.
-    ModuleVersion          = '1.13.0'
+    ModuleVersion          = '1.14.0'
     # Supported PSEditions
     # CompatiblePSEditions = @()
 
