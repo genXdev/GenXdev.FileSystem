@@ -54,9 +54,10 @@ Rename-InProject [[-Source] <String>]
                  [-ReplacementText] <String>
                  [-WhatIf] [<CommonParameters>]
 ````
+
 ### INSTALLATION
 ````PowerShell
-Install-Module "GenXdev.FileSystem" -Force
+Install-Module "GenXdev.FileSystem"
 Import-Module "GenXdev.FileSystem"
 ````
 ### UPDATE
@@ -67,175 +68,21 @@ Update-Module
 <br/><hr/><hr/><br/>
 
 # Cmdlet Index
+### GenXdev.FileSystem<hr/>
 | Command&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | aliases&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Description |
 | --- | --- | --- |
-| [Expand-Path](#Expand-Path) |  | Expands any given file reference to a full pathname, with respect to the users current directory |
-| [Find-Item](#Find-Item) |  | Finds files by searchmask on every disk available in the current session |
-| [Rename-InProject](#Rename-InProject) |  | Performs a rename action throughout a project folder. It will skip .git and .svn folders, images, archives and other common known binaries.But will rename within other files, like sourcecode, json, html, etc, AND folders and filenames!Always perform a -WhatIf operation first, to validate the actions it will take. |
 | [Start-RoboCopy](#Start-RoboCopy) | xc | Wrapper for Microsoft's Robust Copy UtilityCopies file data from one location to another.Robocopy, for "Robust File Copy", is a command-line directory and/or file replication command for Microsoft Windows.Robocopy functionally replaces Xcopy, with more options. Created by Kevin Allen and first released as part of theWindows NT 4.0 Resource Kit, it has been a standard feature of Windows since Windows Vista and Windows Server 2008.Key features- Folder synchronization- Support for extra long pathnames > 256 characters- Restartable mode backups- Support for copying and fixing security settings- Advanced file attribute features- Advanced symbolic link and junction support- Monitor mode (restart copying after change threshold)- Optimization features for LargeFiles, multithreaded copying and network compression- Recovery mode (copy from failing disks) |
+| [Find-Item](#Find-Item) |  | Finds files by searchmask on every disk available in the current session |
+| [Expand-Path](#Expand-Path) |  | Expands any given file reference to a full pathname, with respect to the users current directory |
+| [Rename-InProject](#Rename-InProject) |  | Performs a rename action throughout a project folder. It will skip .git and .svn folders, images, archives and other common known binaries.But will rename within other files, like sourcecode, json, html, etc, AND folders and filenames!Always perform a -WhatIf operation first, to validate the actions it will take. |
 
 <br/><hr/><hr/><br/>
 
 
 # Cmdlets
 
-##	Expand-Path
-````PowerShell
-Expand-Path
-````
-
-### SYNOPSIS
-    Expands any given file reference to a full pathname
-
-### SYNTAX
-````PowerShell
-Expand-Path [-FilePath] <String> [[-CreateDirectory]] [<CommonParameters>]
-````
-
-### DESCRIPTION
-    Expands any given file reference to a full pathname, with respect to the 
-    users current directory
-
-### PARAMETERS
-    -FilePath <String>
-        Path to expand
-        Required?                    true
-        Position?                    1
-        Default value                
-        Accept pipeline input?       false
-        Accept wildcard characters?  false
-    -CreateDirectory [<SwitchParameter>]
-        Will create directory if it does not exist
-        Required?                    false
-        Position?                    2
-        Default value                False
-        Accept pipeline input?       false
-        Accept wildcard characters?  false
-    <CommonParameters>
-        This cmdlet supports the common parameters: Verbose, Debug,
-        ErrorAction, ErrorVariable, WarningAction, WarningVariable,
-        OutBuffer, PipelineVariable, and OutVariable. For more information, see
-        about_CommonParameters 
-        (https://go.microsoft.com/fwlink/?LinkID=113216). 
-
-<br/><hr/><hr/><br/>
-
-##	Find-Item
-````PowerShell
-Find-Item
-````
-
-### SYNOPSIS
-    Finds files by searchmask
-
-### SYNTAX
-````PowerShell
-Find-Item [-SearchMask] <String> [-File] [-Directory] [<CommonParameters>]
-````
-
-### DESCRIPTION
-    Finds files by searchmask on every disk available in the current session
-
-### PARAMETERS
-    -SearchMask <String>
-        Partial or full filename to look for
-        Required?                    true
-        Position?                    1
-        Default value                
-        Accept pipeline input?       false
-        Accept wildcard characters?  false
-    -File [<SwitchParameter>]
-        Only find files
-        Required?                    false
-        Position?                    named
-        Default value                False
-        Accept pipeline input?       false
-        Accept wildcard characters?  false
-    -Directory [<SwitchParameter>]
-        Only find directories
-        Required?                    false
-        Position?                    named
-        Default value                False
-        Accept pipeline input?       false
-        Accept wildcard characters?  false
-    <CommonParameters>
-        This cmdlet supports the common parameters: Verbose, Debug,
-        ErrorAction, ErrorVariable, WarningAction, WarningVariable,
-        OutBuffer, PipelineVariable, and OutVariable. For more information, see
-        about_CommonParameters 
-        (https://go.microsoft.com/fwlink/?LinkID=113216). 
-
-<br/><hr/><hr/><br/>
-
-##	Rename-InProject
-````PowerShell
-Rename-InProject
-````
-
-### SYNOPSIS
-    Performs a case sensitive text replacement throughout a project
-
-### SYNTAX
-````PowerShell
-Rename-InProject [[-Source] <String>] [-FindText] <String> 
-[-ReplacementText] <String> [-WhatIf] [<CommonParameters>]
-````
-
-### DESCRIPTION
-    Performs a rename action throughout a project folder. It will skip .git 
-    and .svn folders, images, archives and other common known binaries.
-    But will rename within other files, like sourcecode, json, html, etc, AND 
-    folders and filenames!
-    Always perform a -WhatIf operation first, to validate the actions it will 
-    take.
-
-### PARAMETERS
-    -Source <String>
-        The directory, filepath, or directory+searchmask
-        Required?                    false
-        Position?                    1
-        Default value                .\\
-        Accept pipeline input?       false
-        Accept wildcard characters?  false
-    -FindText <String>
-        The case sensitive phrase to search for, when making replacements
-        Required?                    true
-        Position?                    2
-        Default value                
-        Accept pipeline input?       false
-        Accept wildcard characters?  false
-    -ReplacementText <String>
-        The text that will replace the found occurance
-        Required?                    true
-        Position?                    3
-        Default value                
-        Accept pipeline input?       false
-        Accept wildcard characters?  false
-    -WhatIf [<SwitchParameter>]
-        Displays a message that describes the effect of the command, instead 
-        of executing the command.
-        Required?                    false
-        Position?                    named
-        Default value                False
-        Accept pipeline input?       false
-        Accept wildcard characters?  false
-    <CommonParameters>
-        This cmdlet supports the common parameters: Verbose, Debug,
-        ErrorAction, ErrorVariable, WarningAction, WarningVariable,
-        OutBuffer, PipelineVariable, and OutVariable. For more information, see
-        about_CommonParameters 
-        (https://go.microsoft.com/fwlink/?LinkID=113216). 
-
-### NOTES
-````PowerShell
-    Be carefull, use -WhatIf
--------------------------- EXAMPLE 1 --------------------------
-PS C:\> Rename-InProject -Source .\src\*.js -FindText "tsconfig.json" - 
-ReplacementText "typescript.configuration.json"
-Rename-InProject .\src\ "MyCustomClass"  "MyNewRenamedClass" -WhatIf
-````
-
-<br/><hr/><hr/><br/>
+&nbsp;<hr/>
+###	GenXdev.FileSystem<hr/>
 
 ##	Start-RoboCopy
 ````PowerShell
@@ -248,52 +95,52 @@ Start-RoboCopy                       --> xc
 
 ### SYNTAX
 ````PowerShell
-Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] 
-[[-Files] <String[]>] [-Mirror] [-Move] [-IncludeSecurity] 
-[-SkipDirectories] [-CopyOnlyDirectoryTreeStructureAndEmptyFiles] 
-[-SkipAllSymbolicLinks] [-SkipSymbolicFileLinks] 
-[-CopySymbolicLinksAsLinks] [-Force] [-SkipFilesWithoutArchiveAttribute] 
-[-ResetArchiveAttributeAfterSelection] [-FileExcludeFilter <String[]>] 
-[-AttributeIncludeFilter <String>] [-AttributeExcludeFilter <String>] 
-[-SetAttributesAfterCopy <String>] [-RemoveAttributesAfterCopy <String>] 
-[-MinFileSize <Int32>] [-MaxFileSize <Int32>] [-MinFileAge <Int32>] 
-[-MaxFileAge <Int32>] [-MinLastAccessAge <Int32>] [-MaxLastAccessAge 
-<Int32>] [-RecoveryMode] [-MonitorMode] [-MonitorModeThresholdMinutes 
-<Int32>] [-MonitorModeThresholdNrOfChanges <Int32>] 
-[-MonitorModeRunHoursFrom <Int32>] [-MonitorModeRunHoursUntil <Int32>] 
-[-LogFilePath <String>] [-LogfileOverwrite] [-LogDirectoryNames] 
-[-LogAllFileNames] [-Unicode] [-LargeFiles] [-MultiThreaded] 
-[-CompressibleContent] [[-Override] <String>] [-WhatIf] 
+Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
+[[-Files] <String[]>] [-Mirror] [-Move] [-IncludeSecurity]
+[-SkipDirectories] [-CopyOnlyDirectoryTreeStructureAndEmptyFiles]
+[-SkipAllSymbolicLinks] [-SkipSymbolicFileLinks]
+[-CopySymbolicLinksAsLinks] [-Force] [-SkipFilesWithoutArchiveAttribute]
+[-ResetArchiveAttributeAfterSelection] [-FileExcludeFilter <String[]>]
+[-AttributeIncludeFilter <String>] [-AttributeExcludeFilter <String>]
+[-SetAttributesAfterCopy <String>] [-RemoveAttributesAfterCopy <String>]
+[-MinFileSize <Int32>] [-MaxFileSize <Int32>] [-MinFileAge <Int32>]
+[-MaxFileAge <Int32>] [-MinLastAccessAge <Int32>] [-MaxLastAccessAge
+<Int32>] [-RecoveryMode] [-MonitorMode] [-MonitorModeThresholdMinutes
+<Int32>] [-MonitorModeThresholdNrOfChanges <Int32>]
+[-MonitorModeRunHoursFrom <Int32>] [-MonitorModeRunHoursUntil <Int32>]
+[-LogFilePath <String>] [-LogfileOverwrite] [-LogDirectoryNames]
+[-LogAllFileNames] [-Unicode] [-LargeFiles] [-MultiThreaded]
+[-CompressibleContent] [[-Override] <String>] [-WhatIf]
 [<CommonParameters>]
-Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] 
-[[-Files] <String[]>] [-Mirror] [-Move] [-IncludeSecurity] 
-[-SkipEmptyDirectories] [-CopyOnlyDirectoryTreeStructure] 
-[-CopyOnlyDirectoryTreeStructureAndEmptyFiles] [-SkipAllSymbolicLinks] 
-[-SkipSymbolicFileLinks] [-CopySymbolicLinksAsLinks] [-SkipJunctions] 
-[-CopyJunctionsAsJunctons] [-Force] [-SkipFilesWithoutArchiveAttribute] 
-[-ResetArchiveAttributeAfterSelection] [-FileExcludeFilter <String[]>] 
-[-DirectoryExcludeFilter <String[]>] [-AttributeIncludeFilter <String>] 
-[-AttributeExcludeFilter <String>] [-SetAttributesAfterCopy <String>] 
-[-RemoveAttributesAfterCopy <String>] [-MaxSubDirTreeLevelDepth <Int32>] 
-[-MinFileSize <Int32>] [-MaxFileSize <Int32>] [-MinFileAge <Int32>] 
-[-MaxFileAge <Int32>] [-MinLastAccessAge <Int32>] [-MaxLastAccessAge 
-<Int32>] [-RecoveryMode] [-MonitorMode] [-MonitorModeThresholdMinutes 
-<Int32>] [-MonitorModeThresholdNrOfChanges <Int32>] 
-[-MonitorModeRunHoursFrom <Int32>] [-MonitorModeRunHoursUntil <Int32>] 
-[-LogFilePath <String>] [-LogfileOverwrite] [-LogDirectoryNames] 
-[-LogAllFileNames] [-Unicode] [-LargeFiles] [-MultiThreaded] 
-[-CompressibleContent] [[-Override] <String>] [-WhatIf] 
+Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
+[[-Files] <String[]>] [-Mirror] [-Move] [-IncludeSecurity]
+[-SkipEmptyDirectories] [-CopyOnlyDirectoryTreeStructure]
+[-CopyOnlyDirectoryTreeStructureAndEmptyFiles] [-SkipAllSymbolicLinks]
+[-SkipSymbolicFileLinks] [-CopySymbolicLinksAsLinks] [-SkipJunctions]
+[-CopyJunctionsAsJunctons] [-Force] [-SkipFilesWithoutArchiveAttribute]
+[-ResetArchiveAttributeAfterSelection] [-FileExcludeFilter <String[]>]
+[-DirectoryExcludeFilter <String[]>] [-AttributeIncludeFilter <String>]
+[-AttributeExcludeFilter <String>] [-SetAttributesAfterCopy <String>]
+[-RemoveAttributesAfterCopy <String>] [-MaxSubDirTreeLevelDepth <Int32>]
+[-MinFileSize <Int32>] [-MaxFileSize <Int32>] [-MinFileAge <Int32>]
+[-MaxFileAge <Int32>] [-MinLastAccessAge <Int32>] [-MaxLastAccessAge
+<Int32>] [-RecoveryMode] [-MonitorMode] [-MonitorModeThresholdMinutes
+<Int32>] [-MonitorModeThresholdNrOfChanges <Int32>]
+[-MonitorModeRunHoursFrom <Int32>] [-MonitorModeRunHoursUntil <Int32>]
+[-LogFilePath <String>] [-LogfileOverwrite] [-LogDirectoryNames]
+[-LogAllFileNames] [-Unicode] [-LargeFiles] [-MultiThreaded]
+[-CompressibleContent] [[-Override] <String>] [-WhatIf]
 [<CommonParameters>]
 ````
 
 ### DESCRIPTION
     Wrapper for Microsoft's Robust Copy Utility
     Copies file data from one location to another.
-    Robocopy, for "Robust File Copy", is a command-line directory and/or file 
+    Robocopy, for "Robust File Copy", is a command-line directory and/or file
     replication command for Microsoft Windows.
-    Robocopy functionally replaces Xcopy, with more options. Created by Kevin 
+    Robocopy functionally replaces Xcopy, with more options. Created by Kevin
     Allen and first released as part of the
-    Windows NT 4.0 Resource Kit, it has been a standard feature of Windows 
+    Windows NT 4.0 Resource Kit, it has been a standard feature of Windows
     since Windows Vista and Windows Server 2008.
     Key features
     - Folder synchronization
@@ -303,7 +150,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
     - Advanced file attribute features
     - Advanced symbolic link and junction support
     - Monitor mode (restart copying after change threshold)
-    - Optimization features for LargeFiles, multithreaded copying and network 
+    - Optimization features for LargeFiles, multithreaded copying and network
     compression
     - Recovery mode (copy from failing disks)
 
@@ -312,13 +159,13 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         The directory, filepath, or directory+searchmask
         Required?                    true
         Position?                    1
-        Default value                
+        Default value
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -DestinationDirectory <String>
-        The destination directory to place the copied files and directories 
+        The destination directory to place the copied files and directories
         into.
-        If this directory does not exist yet, all missing directories will be 
+        If this directory does not exist yet, all missing directories will be
         created.
         Default value = `.\`
         Required?                    false
@@ -333,8 +180,8 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -Mirror [<SwitchParameter>]
-        Synchronizes the content of specified directories, will also delete 
-        any files and directories in the destination that do not exist in the 
+        Synchronizes the content of specified directories, will also delete
+        any files and directories in the destination that do not exist in the
         source
         Required?                    false
         Position?                    named
@@ -349,7 +196,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -IncludeSecurity [<SwitchParameter>]
-        Will also copy ownership, security descriptors and auditing 
+        Will also copy ownership, security descriptors and auditing
         information of files and directories
         Required?                    false
         Position?                    named
@@ -399,7 +246,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -CopySymbolicLinksAsLinks [<SwitchParameter>]
-        Instead of copying the content where symbolic links point to, copy the 
+        Instead of copying the content where symbolic links point to, copy the
         links themselves
         Required?                    false
         Position?                    named
@@ -407,7 +254,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -SkipJunctions [<SwitchParameter>]
-        Do not copy directory junctions (symbolic link for a folder) or the 
+        Do not copy directory junctions (symbolic link for a folder) or the
         content they point to
         Required?                    false
         Position?                    named
@@ -415,7 +262,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -CopyJunctionsAsJunctons [<SwitchParameter>]
-        Instead of copying the content where junctions point to, copy the 
+        Instead of copying the content where junctions point to, copy the
         junctions themselves
         Required?                    false
         Position?                    named
@@ -423,7 +270,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -Force [<SwitchParameter>]
-        Will copy all files even if they are older then the ones in the 
+        Will copy all files even if they are older then the ones in the
         destination
         Required?                    false
         Position?                    named
@@ -438,7 +285,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -ResetArchiveAttributeAfterSelection [<SwitchParameter>]
-        In addition of copying only files that have the archive attribute set, 
+        In addition of copying only files that have the archive attribute set,
         will then reset this attribute on the source
         Required?                    false
         Position?                    named
@@ -463,28 +310,28 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         Copy only files that have all these attributes set [RASHCNETO]
         Required?                    false
         Position?                    named
-        Default value                
+        Default value
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -AttributeExcludeFilter <String>
         Exclude files that have any of these attributes set [RASHCNETO]
         Required?                    false
         Position?                    named
-        Default value                
+        Default value
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -SetAttributesAfterCopy <String>
         Will set the given attributes to copied files [RASHCNETO]
         Required?                    false
         Position?                    named
-        Default value                
+        Default value
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -RemoveAttributesAfterCopy <String>
         Will remove the given attributes from copied files [RASHCNETO]
         Required?                    false
         Position?                    named
-        Default value                
+        Default value
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -MaxSubDirTreeLevelDepth <Int32>
@@ -509,7 +356,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -MinFileAge <Int32>
-        Skip files that are not at least: n days old OR created before n date 
+        Skip files that are not at least: n days old OR created before n date
         (if n < 1900 then n = n days, else n = YYYYMMDD date)
         Required?                    false
         Position?                    named
@@ -517,7 +364,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -MaxFileAge <Int32>
-        Skip files that are older then: n days OR created after n date (if n < 
+        Skip files that are older then: n days OR created after n date (if n <
         1900 then n = n days, else n = YYYYMMDD date)
         Required?                    false
         Position?                    named
@@ -525,7 +372,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -MinLastAccessAge <Int32>
-        Skip files that are accessed within the last: n days OR before n date 
+        Skip files that are accessed within the last: n days OR before n date
         (if n < 1900 then n = n days, else n = YYYYMMDD date)
         Required?                    false
         Position?                    named
@@ -533,7 +380,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -MaxLastAccessAge <Int32>
-        Skip files that have not been accessed in: n days OR after n date (if 
+        Skip files that have not been accessed in: n days OR after n date (if
         n < 1900 then n = n days, else n = YYYYMMDD date)
         Required?                    false
         Position?                    named
@@ -548,7 +395,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -MonitorMode [<SwitchParameter>]
-        Will stay active after copying, and copy additional changes after a a 
+        Will stay active after copying, and copy additional changes after a a
         default threshold of 10 minutes
         Required?                    false
         Position?                    named
@@ -570,7 +417,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -MonitorModeRunHoursFrom <Int32>
-        Run hours - times when new copies may be started, start-time, range 
+        Run hours - times when new copies may be started, start-time, range
         0000:2359
         Required?                    false
         Position?                    named
@@ -578,7 +425,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -MonitorModeRunHoursUntil <Int32>
-        Run hours - times when new copies may be started, end-time, range 
+        Run hours - times when new copies may be started, end-time, range
         0000:2359
         Required?                    false
         Position?                    named
@@ -589,7 +436,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         If specified, logging will also be done to specified file
         Required?                    false
         Position?                    named
-        Default value                
+        Default value
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -LogfileOverwrite [<SwitchParameter>]
@@ -635,7 +482,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -CompressibleContent [<SwitchParameter>]
-        If applicable use compression when copying files between servers to 
+        If applicable use compression when copying files between servers to
         safe bandwidth and time
         Required?                    false
         Position?                    named
@@ -651,15 +498,15 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         Remove parameter:
             -Override -/Switch
         Multiple overrides:
-            -Override "/ReplaceThisSwitchWithValue:'SomeValue' 
+            -Override "/ReplaceThisSwitchWithValue:'SomeValue'
         -/RemoveThisSwitch /AddThisSwitch"
         Required?                    false
         Position?                    4
-        Default value                
+        Default value
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -WhatIf [<SwitchParameter>]
-        Displays a message that describes the effect of the command, instead 
+        Displays a message that describes the effect of the command, instead
         of executing the command.
         Required?                    false
         Position?                    named
@@ -670,7 +517,165 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
-        about_CommonParameters 
-        (https://go.microsoft.com/fwlink/?LinkID=113216). 
+        about_CommonParameters
+        (https://go.microsoft.com/fwlink/?LinkID=113216).
+
+<br/><hr/><hr/><br/>
+
+##	Find-Item
+````PowerShell
+Find-Item
+````
+
+### SYNOPSIS
+    Finds files by searchmask
+
+### SYNTAX
+````PowerShell
+Find-Item [-SearchMask] <String> [-File] [-Directory] [<CommonParameters>]
+````
+
+### DESCRIPTION
+    Finds files by searchmask on every disk available in the current session
+
+### PARAMETERS
+    -SearchMask <String>
+        Partial or full filename to look for
+        Required?                    true
+        Position?                    1
+        Default value
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+    -File [<SwitchParameter>]
+        Only find files
+        Required?                    false
+        Position?                    named
+        Default value                False
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+    -Directory [<SwitchParameter>]
+        Only find directories
+        Required?                    false
+        Position?                    named
+        Default value                False
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+    <CommonParameters>
+        This cmdlet supports the common parameters: Verbose, Debug,
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see
+        about_CommonParameters
+        (https://go.microsoft.com/fwlink/?LinkID=113216).
+
+<br/><hr/><hr/><br/>
+
+##	Expand-Path
+````PowerShell
+Expand-Path
+````
+
+### SYNOPSIS
+    Expands any given file reference to a full pathname
+
+### SYNTAX
+````PowerShell
+Expand-Path [-FilePath] <String> [[-CreateDirectory]] [<CommonParameters>]
+````
+
+### DESCRIPTION
+    Expands any given file reference to a full pathname, with respect to the
+    users current directory
+
+### PARAMETERS
+    -FilePath <String>
+        Path to expand
+        Required?                    true
+        Position?                    1
+        Default value
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+    -CreateDirectory [<SwitchParameter>]
+        Will create directory if it does not exist
+        Required?                    false
+        Position?                    2
+        Default value                False
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+    <CommonParameters>
+        This cmdlet supports the common parameters: Verbose, Debug,
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see
+        about_CommonParameters
+        (https://go.microsoft.com/fwlink/?LinkID=113216).
+
+<br/><hr/><hr/><br/>
+
+##	Rename-InProject
+````PowerShell
+Rename-InProject
+````
+
+### SYNOPSIS
+    Performs a case sensitive text replacement throughout a project
+
+### SYNTAX
+````PowerShell
+Rename-InProject [[-Source] <String>] [-FindText] <String>
+[-ReplacementText] <String> [-WhatIf] [<CommonParameters>]
+````
+
+### DESCRIPTION
+    Performs a rename action throughout a project folder. It will skip .git
+    and .svn folders, images, archives and other common known binaries.
+    But will rename within other files, like sourcecode, json, html, etc, AND
+    folders and filenames!
+    Always perform a -WhatIf operation first, to validate the actions it will
+    take.
+
+### PARAMETERS
+    -Source <String>
+        The directory, filepath, or directory+searchmask
+        Required?                    false
+        Position?                    1
+        Default value                .\\
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+    -FindText <String>
+        The case sensitive phrase to search for, when making replacements
+        Required?                    true
+        Position?                    2
+        Default value
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+    -ReplacementText <String>
+        The text that will replace the found occurance
+        Required?                    true
+        Position?                    3
+        Default value
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+    -WhatIf [<SwitchParameter>]
+        Displays a message that describes the effect of the command, instead
+        of executing the command.
+        Required?                    false
+        Position?                    named
+        Default value                False
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+    <CommonParameters>
+        This cmdlet supports the common parameters: Verbose, Debug,
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see
+        about_CommonParameters
+        (https://go.microsoft.com/fwlink/?LinkID=113216).
+
+### NOTES
+````PowerShell
+    Be carefull, use -WhatIf
+-------------------------- EXAMPLE 1 --------------------------
+PS C:\> Rename-InProject -Source .\src\*.js -FindText "tsconfig.json" -
+ReplacementText "typescript.configuration.json"
+Rename-InProject .\src\ "MyCustomClass"  "MyNewRenamedClass" -WhatIf
+````
 
 <br/><hr/><hr/><br/>
