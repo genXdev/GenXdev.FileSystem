@@ -41,7 +41,7 @@ Find-Item node_modules -Directory
 #>
 function Find-Item {
 
-    [Alias()]
+    [Alias("fi")]
 
     param (
         [parameter(
@@ -98,6 +98,7 @@ GetFullPath .\
 function Expand-Path {
 
     [CmdletBinding()]
+    [Alias("ep")]
 
     param(
         [parameter(Mandatory, Position = 0)]
@@ -354,7 +355,7 @@ function Start-RoboCopy {
         DefaultParameterSetName = "Default",
         ConfirmImpact = "Medium"
     )]
-    [Alias("xc")]
+    [Alias("xc", "rc")]
     Param
     (
         ###############################################################################
@@ -1561,7 +1562,7 @@ Be carefull, use -WhatIf
 #>
 function Rename-InProject {
 
-    [Alias()]
+    [Alias("rip")]
 
     Param
     (

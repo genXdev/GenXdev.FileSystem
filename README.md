@@ -71,10 +71,10 @@ Update-Module
 ### GenXdev.FileSystem<hr/>
 | Command&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | aliases&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Description |
 | --- | --- | --- |
-| [Find-Item](#Find-Item) |  | Finds files by searchmask on every disk available in the current session |
-| [Expand-Path](#Expand-Path) |  | Expands any given file reference to a full pathname, with respect to the users current directory |
-| [Start-RoboCopy](#Start-RoboCopy) | xc | Wrapper for Microsoft's Robust Copy UtilityCopies file data from one location to another.Robocopy, for "Robust File Copy", is a command-line directory and/or file replication command for Microsoft Windows.Robocopy functionally replaces Xcopy, with more options. Created by Kevin Allen and first released as part of theWindows NT 4.0 Resource Kit, it has been a standard feature of Windows since Windows Vista and Windows Server 2008.Key features- Folder synchronization- Support for extra long pathnames > 256 characters- Restartable mode backups- Support for copying and fixing security settings- Advanced file attribute features- Advanced symbolic link and junction support- Monitor mode (restart copying after change threshold)- Optimization features for LargeFiles, multithreaded copying and network compression- Recovery mode (copy from failing disks) |
-| [Rename-InProject](#Rename-InProject) |  | Performs a rename action throughout a project folder. It will skip .git and .svn folders, images, archives and other common known binaries.But will rename within other files, like sourcecode, json, html, etc, AND folders and filenames!Always perform a -WhatIf operation first, to validate the actions it will take. |
+| [Find-Item](#Find-Item) | fi | Finds files by searchmask on every disk available in the current session |
+| [Expand-Path](#Expand-Path) | ep | Expands any given file reference to a full pathname, with respect to the users current directory |
+| [Start-RoboCopy](#Start-RoboCopy) | rc, xc | Wrapper for Microsoft's Robust Copy UtilityCopies file data from one location to another.Robocopy, for "Robust File Copy", is a command-line directory and/or file replication command for Microsoft Windows.Robocopy functionally replaces Xcopy, with more options. Created by Kevin Allen and first released as part of theWindows NT 4.0 Resource Kit, it has been a standard feature of Windows since Windows Vista and Windows Server 2008.Key features- Folder synchronization- Support for extra long pathnames > 256 characters- Restartable mode backups- Support for copying and fixing security settings- Advanced file attribute features- Advanced symbolic link and junction support- Monitor mode (restart copying after change threshold)- Optimization features for LargeFiles, multithreaded copying and network compression- Recovery mode (copy from failing disks) |
+| [Rename-InProject](#Rename-InProject) | rip | Performs a rename action throughout a project folder. It will skip .git and .svn folders, images, archives and other common known binaries.But will rename within other files, like sourcecode, json, html, etc, AND folders and filenames!Always perform a -WhatIf operation first, to validate the actions it will take. |
 
 <br/><hr/><hr/><br/>
 
@@ -86,7 +86,7 @@ Update-Module
 
 ##	Find-Item
 ````PowerShell
-Find-Item
+Find-Item                            --> fi
 ````
 
 ### SYNOPSIS
@@ -133,7 +133,7 @@ Find-Item [-SearchMask] <String> [-File] [-Directory] [<CommonParameters>]
 
 ##	Expand-Path
 ````PowerShell
-Expand-Path
+Expand-Path                          --> ep
 ````
 
 ### SYNOPSIS
@@ -174,7 +174,7 @@ Expand-Path [-FilePath] <String> [[-CreateDirectory]] [<CommonParameters>]
 
 ##	Start-RoboCopy
 ````PowerShell
-Start-RoboCopy                       --> xc
+Start-RoboCopy                       --> rc, xc
 ````
 
 ### SYNOPSIS
@@ -612,7 +612,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>]
 
 ##	Rename-InProject
 ````PowerShell
-Rename-InProject
+Rename-InProject                     --> rip
 ````
 
 ### SYNOPSIS
