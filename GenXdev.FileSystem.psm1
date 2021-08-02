@@ -67,11 +67,30 @@ function Find-Item {
         [switch] $Directory
     )
 
-    Get-PSDrive -ErrorAction SilentlyContinue | ForEach-Object -ErrorAction SilentlyContinue -ThrottleLimit -Parallel {
+    Get-PSDrive -ErrorAction SilentlyContinue | ForEach-Object -ThrottleLimit 8 -Parallel {
 
-        if ($_.Provider.Name -eq "FileSystem") {
+        try {
+            if ($_.Provider.Name -eq "FileSystem") {
 
-            Get-ChildItem -Path "$($_.Root)*$SearchMask*" -Recurse -File:$File -Directory:$Directory -ErrorAction SilentlyContinue
+                Get-ChildItem -Path "$($_.Root)*$SearchMask*" -File:$File -Directory:$Directory -ErrorAction SilentlyContinue
+
+                Get-ChildItem -Path "$($_.Root)" -Directory -ErrorAction SilentlyContinue  |
+                ForEach-Object -ThrottleLimit 16 -Parallel {
+
+                    try {
+
+                        Get-ChildItem -Path "$($_.FullName)\*$SearchMask*" -File:$File -Directory:$Directory -Recurse -ErrorAction SilentlyContinue
+
+                    }
+                    catch {
+
+                    }
+
+                }
+            }
+        }
+        catch {
+
         }
     }
 }
