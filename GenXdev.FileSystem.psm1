@@ -142,8 +142,15 @@ function Expand-Path {
     }
     else {
 
-        # combine with users current directory
-        $FilePath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($pwd, $FilePath));
+        try {
+            # combine with users current directory
+            $FilePath = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($pwd, $FilePath));
+        }
+        catch {
+
+            # allow powershell to try to convert it
+            $FilePath = Convert-Path $FilePath;
+        }
     }
 
     # create directory?
@@ -156,7 +163,7 @@ function Expand-Path {
         if (![IO.Directory]::Exists($directory)) {
 
             # create it
-            [IO.Directory]::CreateDirectory($directory)
+            New-Item -ItemType Directory -Path $directory -Force
         }
     }
 
