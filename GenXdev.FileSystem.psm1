@@ -914,7 +914,7 @@ Multiple overrides:
                 }
                 else {
 
-                    throw "Could not parse parameter -$CommandName $AttributeSet - '$PSIem' is not valid
+                    throw "Could not parse parameter -$CommandName $AttributeSet - '$PSItem' is not valid
     possible attributes to combine: [RASHCNETO]
 
     R - Read only
@@ -968,13 +968,13 @@ Multiple overrides:
             }
 
             # split up
-            $allSwitches = $switchesCleaned.Replace(" -/", " /-").Split(" /", [System.StringSplitOptions]::RemoveEmptyEntries);
+            $allSwitches = $switchesCleaned.Replace(" -/", " /-").Split([string[]]@(" /"), [System.StringSplitOptions]::RemoveEmptyEntries);
 
             # enumerate switches
             $allSwitches | ForEach-Object -ErrorAction SilentlyContinue {
 
                 # add to Dictionary
-                $switchesDictionary["$($PSItem.Trim().Split(" ")[0].Split(":" )[0].Trim().ToUpperInvariant())"] = $PSItem.Trim()
+                $switchesDictionary["$($PSItem.Trim().Split(" ")[0].Split(":")[0].Trim().ToUpperInvariant())"] = $PSItem.Trim()
             }
 
             return $switchesDictionary;
@@ -1513,7 +1513,7 @@ Multiple overrides:
             $paramList = @{};
             (& $RobocopyPath -?) | ForEach-Object {
                 if ($PSItem.Contains(" :: ")) {
-                    $s = $PSItem.Split(" :: ", [StringSplitOptions]::RemoveEmptyEntries);
+                    $s = $PSItem.Split([string[]]@(" :: "), [StringSplitOptions]::RemoveEmptyEntries);
                     $paramList."$($s[0].ToLowerInvariant().split(":")[0].Split("[")[0].Trim().split(" ")[0])" = $s[1];
                 }
             };
@@ -1521,7 +1521,7 @@ Multiple overrides:
             $first = $true;
             $paramsExplained = @(
 
-                " $switchesCleaned ".Split(" /", [System.StringSplitOptions]::RemoveEmptyEntries) |
+                " $switchesCleaned ".Split([string[]]@(" /"), [System.StringSplitOptions]::RemoveEmptyEntries) |
                 ForEach-Object {
 
                     $description = $paramList."/$($PSItem.ToLowerInvariant().split(":")[0].Split("[")[0].Trim().split(" ")[0])"
