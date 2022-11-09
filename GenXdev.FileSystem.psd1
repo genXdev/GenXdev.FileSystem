@@ -7,7 +7,7 @@
     RootModule        = 'GenXdev.FileSystem.psm1'
 
     # Version number of this module.
-    ModuleVersion          = '1.34.2022'
+    ModuleVersion          = '1.35.2022'
     # Supported PSEditions
     # CompatiblePSEditions = @()
 

@@ -1905,7 +1905,7 @@ function Rename-InProject {
                         if ([IO.Directory]::Exists($pathNew) -and $fnOld.ToLower().Equals($fnNew.ToLower())) {
 
                             # construct new temporary directoryname
-                            $tmpPath = $pathNew + "_" + [DateTime.UTCNow].Ticks.ToString();
+                            $tmpPath = $pathNew + "_" + [DateTime]::UtcNow.Ticks.ToString();
 
                             # rename back and forth
                             [IO.Directory]::Move($fn, $tmpPath);
