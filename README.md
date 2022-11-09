@@ -8,7 +8,7 @@
     GenXdev.FileSystem
 ### SYNOPSIS
     A Windows PowerShell module for basic and advanced file management tasks
-[![GenXdev.FileSystem](https://img.shields.io/powershellgallery/v/GenXdev.Filesystem.svg?style=flat-square&label=GenXdev.FileSystem)](https://www.powershellgallery.com/packages/GenXdev.FileSystem/) [![License](https://img.shields.io/github/license/renevaessen/GenXdev.Filesystem?style=flat-square)](./LICENSE)
+[![GenXdev.FileSystem](https://img.shields.io/powershellgallery/v/GenXdev.Filesystem.svg?style=flat-square&label=GenXdev.FileSystem)](https://www.powershellgallery.com/packages/GenXdev.FileSystem/) [![License](https://img.shields.io/github/license/genXdev/GenXdev.Filesystem?style=flat-square)](./LICENSE)
 
 ### FEATURES
 
@@ -105,7 +105,7 @@ Find-Item [-SearchMask] <String> [-File] [-Directory] [<CommonParameters>]
         Partial or full filename to look for
         Required?                    true
         Position?                    1
-        Default value                
+        Default value
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -File [<SwitchParameter>]
@@ -126,7 +126,7 @@ Find-Item [-SearchMask] <String> [-File] [-Directory] [<CommonParameters>]
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
-        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216). 
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).
 
 <br/><hr/><hr/><br/>
 
@@ -151,7 +151,7 @@ Expand-Path [-FilePath] <String> [[-CreateDirectory]] [<CommonParameters>]
         Path to expand
         Required?                    true
         Position?                    1
-        Default value                
+        Default value
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -CreateDirectory [<SwitchParameter>]
@@ -165,7 +165,7 @@ Expand-Path [-FilePath] <String> [[-CreateDirectory]] [<CommonParameters>]
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
-        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216). 
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).
 
 <br/><hr/><hr/><br/>
 
@@ -180,38 +180,38 @@ Start-RoboCopy                       --> rc, xc
 
 ### SYNTAX
 ````PowerShell
-Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>] [-Mirror] [-Move] 
-[-IncludeSecurity] [-SkipDirectories] [-CopyOnlyDirectoryTreeStructureAndEmptyFiles] [-SkipAllSymbolicLinks] 
-[-SkipSymbolicFileLinks] [-CopySymbolicLinksAsLinks] [-Force] [-SkipFilesWithoutArchiveAttribute] 
-[-ResetArchiveAttributeAfterSelection] [-FileExcludeFilter <String[]>] [-AttributeIncludeFilter <String>] 
-[-AttributeExcludeFilter <String>] [-SetAttributesAfterCopy <String>] [-RemoveAttributesAfterCopy <String>] 
-[-MinFileSize <Int32>] [-MaxFileSize <Int32>] [-MinFileAge <Int32>] [-MaxFileAge <Int32>] [-MinLastAccessAge 
-<Int32>] [-MaxLastAccessAge <Int32>] [-RecoveryMode] [-MonitorMode] [-MonitorModeThresholdMinutes <Int32>] 
-[-MonitorModeThresholdNrOfChanges <Int32>] [-MonitorModeRunHoursFrom <Int32>] [-MonitorModeRunHoursUntil 
-<Int32>] [-LogFilePath <String>] [-LogfileOverwrite] [-LogDirectoryNames] [-LogAllFileNames] [-Unicode] 
+Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>] [-Mirror] [-Move]
+[-IncludeSecurity] [-SkipDirectories] [-CopyOnlyDirectoryTreeStructureAndEmptyFiles] [-SkipAllSymbolicLinks]
+[-SkipSymbolicFileLinks] [-CopySymbolicLinksAsLinks] [-Force] [-SkipFilesWithoutArchiveAttribute]
+[-ResetArchiveAttributeAfterSelection] [-FileExcludeFilter <String[]>] [-AttributeIncludeFilter <String>]
+[-AttributeExcludeFilter <String>] [-SetAttributesAfterCopy <String>] [-RemoveAttributesAfterCopy <String>]
+[-MinFileSize <Int32>] [-MaxFileSize <Int32>] [-MinFileAge <Int32>] [-MaxFileAge <Int32>] [-MinLastAccessAge
+<Int32>] [-MaxLastAccessAge <Int32>] [-RecoveryMode] [-MonitorMode] [-MonitorModeThresholdMinutes <Int32>]
+[-MonitorModeThresholdNrOfChanges <Int32>] [-MonitorModeRunHoursFrom <Int32>] [-MonitorModeRunHoursUntil
+<Int32>] [-LogFilePath <String>] [-LogfileOverwrite] [-LogDirectoryNames] [-LogAllFileNames] [-Unicode]
 [-LargeFiles] [-MultiThreaded] [-CompressibleContent] [[-Override] <String>] [-WhatIf] [<CommonParameters>]
-Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>] [-Mirror] [-Move] 
-[-IncludeSecurity] [-SkipEmptyDirectories] [-CopyOnlyDirectoryTreeStructure] 
-[-CopyOnlyDirectoryTreeStructureAndEmptyFiles] [-SkipAllSymbolicLinks] [-SkipSymbolicFileLinks] 
-[-CopySymbolicLinksAsLinks] [-SkipJunctions] [-CopyJunctionsAsJunctons] [-Force] 
-[-SkipFilesWithoutArchiveAttribute] [-ResetArchiveAttributeAfterSelection] [-FileExcludeFilter <String[]>] 
-[-DirectoryExcludeFilter <String[]>] [-AttributeIncludeFilter <String>] [-AttributeExcludeFilter <String>] 
-[-SetAttributesAfterCopy <String>] [-RemoveAttributesAfterCopy <String>] [-MaxSubDirTreeLevelDepth <Int32>] 
-[-MinFileSize <Int32>] [-MaxFileSize <Int32>] [-MinFileAge <Int32>] [-MaxFileAge <Int32>] [-MinLastAccessAge 
-<Int32>] [-MaxLastAccessAge <Int32>] [-RecoveryMode] [-MonitorMode] [-MonitorModeThresholdMinutes <Int32>] 
-[-MonitorModeThresholdNrOfChanges <Int32>] [-MonitorModeRunHoursFrom <Int32>] [-MonitorModeRunHoursUntil 
-<Int32>] [-LogFilePath <String>] [-LogfileOverwrite] [-LogDirectoryNames] [-LogAllFileNames] [-Unicode] 
+Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>] [-Mirror] [-Move]
+[-IncludeSecurity] [-SkipEmptyDirectories] [-CopyOnlyDirectoryTreeStructure]
+[-CopyOnlyDirectoryTreeStructureAndEmptyFiles] [-SkipAllSymbolicLinks] [-SkipSymbolicFileLinks]
+[-CopySymbolicLinksAsLinks] [-SkipJunctions] [-CopyJunctionsAsJunctons] [-Force]
+[-SkipFilesWithoutArchiveAttribute] [-ResetArchiveAttributeAfterSelection] [-FileExcludeFilter <String[]>]
+[-DirectoryExcludeFilter <String[]>] [-AttributeIncludeFilter <String>] [-AttributeExcludeFilter <String>]
+[-SetAttributesAfterCopy <String>] [-RemoveAttributesAfterCopy <String>] [-MaxSubDirTreeLevelDepth <Int32>]
+[-MinFileSize <Int32>] [-MaxFileSize <Int32>] [-MinFileAge <Int32>] [-MaxFileAge <Int32>] [-MinLastAccessAge
+<Int32>] [-MaxLastAccessAge <Int32>] [-RecoveryMode] [-MonitorMode] [-MonitorModeThresholdMinutes <Int32>]
+[-MonitorModeThresholdNrOfChanges <Int32>] [-MonitorModeRunHoursFrom <Int32>] [-MonitorModeRunHoursUntil
+<Int32>] [-LogFilePath <String>] [-LogfileOverwrite] [-LogDirectoryNames] [-LogAllFileNames] [-Unicode]
 [-LargeFiles] [-MultiThreaded] [-CompressibleContent] [[-Override] <String>] [-WhatIf] [<CommonParameters>]
 ````
 
 ### DESCRIPTION
     Wrapper for Microsoft's Robust Copy Utility
     Copies file data from one location to another.
-    Robocopy, for "Robust File Copy", is a command-line directory and/or file replication command for Microsoft 
+    Robocopy, for "Robust File Copy", is a command-line directory and/or file replication command for Microsoft
     Windows.
-    Robocopy functionally replaces Xcopy, with more options. Created by Kevin Allen and first released as part 
+    Robocopy functionally replaces Xcopy, with more options. Created by Kevin Allen and first released as part
     of the
-    Windows NT 4.0 Resource Kit, it has been a standard feature of Windows since Windows Vista and Windows 
+    Windows NT 4.0 Resource Kit, it has been a standard feature of Windows since Windows Vista and Windows
     Server 2008.
     Key features
     - Folder synchronization
@@ -229,7 +229,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         The directory, filepath, or directory+searchmask
         Required?                    true
         Position?                    1
-        Default value                
+        Default value
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -DestinationDirectory <String>
@@ -248,7 +248,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -Mirror [<SwitchParameter>]
-        Synchronizes the content of specified directories, will also delete any files and directories in the 
+        Synchronizes the content of specified directories, will also delete any files and directories in the
         destination that do not exist in the source
         Required?                    false
         Position?                    named
@@ -347,7 +347,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -ResetArchiveAttributeAfterSelection [<SwitchParameter>]
-        In addition of copying only files that have the archive attribute set, will then reset this attribute on 
+        In addition of copying only files that have the archive attribute set, will then reset this attribute on
         the source
         Required?                    false
         Position?                    named
@@ -372,28 +372,28 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Copy only files that have all these attributes set [RASHCNETO]
         Required?                    false
         Position?                    named
-        Default value                
+        Default value
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -AttributeExcludeFilter <String>
         Exclude files that have any of these attributes set [RASHCNETO]
         Required?                    false
         Position?                    named
-        Default value                
+        Default value
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -SetAttributesAfterCopy <String>
         Will set the given attributes to copied files [RASHCNETO]
         Required?                    false
         Position?                    named
-        Default value                
+        Default value
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -RemoveAttributesAfterCopy <String>
         Will remove the given attributes from copied files [RASHCNETO]
         Required?                    false
         Position?                    named
-        Default value                
+        Default value
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -MaxSubDirTreeLevelDepth <Int32>
@@ -418,7 +418,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -MinFileAge <Int32>
-        Skip files that are not at least: n days old OR created before n date (if n < 1900 then n = n days, else 
+        Skip files that are not at least: n days old OR created before n date (if n < 1900 then n = n days, else
         n = YYYYMMDD date)
         Required?                    false
         Position?                    named
@@ -426,7 +426,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -MaxFileAge <Int32>
-        Skip files that are older then: n days OR created after n date (if n < 1900 then n = n days, else n = 
+        Skip files that are older then: n days OR created after n date (if n < 1900 then n = n days, else n =
         YYYYMMDD date)
         Required?                    false
         Position?                    named
@@ -434,7 +434,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -MinLastAccessAge <Int32>
-        Skip files that are accessed within the last: n days OR before n date (if n < 1900 then n = n days, else 
+        Skip files that are accessed within the last: n days OR before n date (if n < 1900 then n = n days, else
         n = YYYYMMDD date)
         Required?                    false
         Position?                    named
@@ -442,7 +442,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -MaxLastAccessAge <Int32>
-        Skip files that have not been accessed in: n days OR after n date (if n < 1900 then n = n days, else n = 
+        Skip files that have not been accessed in: n days OR after n date (if n < 1900 then n = n days, else n =
         YYYYMMDD date)
         Required?                    false
         Position?                    named
@@ -495,7 +495,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         If specified, logging will also be done to specified file
         Required?                    false
         Position?                    named
-        Default value                
+        Default value
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -LogfileOverwrite [<SwitchParameter>]
@@ -559,7 +559,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
             -Override "/ReplaceThisSwitchWithValue:'SomeValue' -/RemoveThisSwitch /AddThisSwitch"
         Required?                    false
         Position?                    4
-        Default value                
+        Default value
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -WhatIf [<SwitchParameter>]
@@ -573,7 +573,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
-        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216). 
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).
 
 <br/><hr/><hr/><br/>
 

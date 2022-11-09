@@ -92,10 +92,10 @@
             Tags                     = 'Markdown', 'Tools', 'RoboCopy', 'GenXdev'
 
             # A URL to the license for this module.
-            LicenseUri               = 'https://raw.githubusercontent.com/renevaessen/GenXdev.FileSystem/main/LICENSE'
+            LicenseUri               = 'https://raw.githubusercontent.com/genXdev/GenXdev.FileSystem/main/LICENSE'
 
             # A URL to the main website for this project.
-            ProjectUri               = 'https://github.com/renevaessen/GenXdev.FileSystem'
+            ProjectUri               = 'https://github.com/genXdev/GenXdev.FileSystem'
 
             # A URL to an icon representing this module.
             IconUri                  = 'https://genxdev.net/favicon.ico'
@@ -117,7 +117,7 @@
     } # End of PrivateData hashtable
 
     # HelpInfo URI of this module
-    HelpInfoURI       = 'https://github.com/renevaessen/GenXdev.FileSystem/blob/main/README.md#cmdlet-index'
+    HelpInfoURI       = 'https://github.com/genXdev/GenXdev.FileSystem/blob/main/README.md#cmdlet-index'
 
     # Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
     # DefaultCommandPrefix = ''
