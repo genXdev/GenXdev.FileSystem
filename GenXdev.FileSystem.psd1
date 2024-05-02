@@ -1,4 +1,4 @@
-﻿#
+#
 # Module manifest for module 'GenXdev.FileSystem'
 
 @{
@@ -7,7 +7,7 @@
     RootModule        = 'GenXdev.FileSystem.psm1'
 
     # Version number of this module.
-    ModuleVersion          = '1.35.2022'
+    ModuleVersion          = '1.36.2024'
     # Supported PSEditions
     # CompatiblePSEditions = @()
 

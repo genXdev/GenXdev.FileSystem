@@ -124,7 +124,7 @@ function Expand-Path {
         [string] $FilePath,
 
         [parameter(Mandatory = $false, Position = 1)]
-        [switch] $CreateDirectory = $false
+        [switch] $CreateDirectory
     )
 
     # root folder included?
@@ -1795,7 +1795,8 @@ function Rename-InProject {
                         else {
 
                             # store changed content to disk
-                            [IO.File]::WriteAllText($fn, $newtxt, [System.Text.Encoding]::UTF8);
+                            $utf8 = New-Object "System.Text.UTF8Encoding" @($false)
+                            [IO.File]::WriteAllText($fn, $newtxt, $utf8);
 
                             # output the action we have performed
                             Write-Verbose "Replaced in file: '$($fn.Substring($Source.Length+1))'"
