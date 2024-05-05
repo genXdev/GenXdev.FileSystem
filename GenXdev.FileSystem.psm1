@@ -128,7 +128,7 @@ function Expand-Path {
     )
 
     # root folder included?
-    if ((($FilePath.Length -gt 1) -and ($FilePath.Substring(1,1) -eq ":")) -or $FilePath.StartsWith("\\")) {
+    if ((($FilePath.Length -gt 1) -and ($FilePath.Substring(1, 1) -eq ":")) -or $FilePath.StartsWith("\\")) {
 
         try {
 
@@ -1945,4 +1945,137 @@ function Rename-InProject {
     End {
 
     }
+}
+
+<#
+.SYNOPSIS
+This function removes all files and folders in the specified directory.
+
+.DESCRIPTION
+This function removes all files and folders in the specified directory. The directory path is first expanded using the Expand-Path function.
+
+.PARAMETER Path
+The path of the directory to clear.
+
+.PARAMETER DeleteFolder
+Also delete the root folder supplied with the Path parameter.
+
+.PARAMETER WhatIf
+Displays a message that describes the effect of the command, instead of executing the command.
+
+.EXAMPLE
+Remove-AllItems -Path ".\vms"
+#>
+function Remove-AllItems {
+
+    [Alias("sdel")]
+    [CmdletBinding()]
+
+    param(
+        ###############################################################################
+        [Parameter(
+            Mandatory = $true,
+            HelpMessage = "The path of the directory to clear.")
+        ]
+        [string] $Path,
+
+        ###############################################################################
+
+        [Parameter(
+            Mandatory = $false,
+            ValueFromPipeline = $false,
+            HelpMessage = "Also delete the root folder supplied with the Path parameter"
+        )]
+        [switch] $DeleteFolder,
+
+        ###############################################################################
+        [Parameter(
+            Mandatory = $false,
+            ValueFromPipeline = $false,
+            HelpMessage = "Displays a message that describes the effect of the command, instead of executing the command."
+        )]
+        [switch] $WhatIf
+    )
+
+    function subRoutine([string] $Path, [bool] $deleteFolder, [bool] $WhatIf, [bool] $Verbose, [bool] $suppressFilesWhatIf) {
+
+        # initialize
+        [bool] $suppressFilesWhatIf = $suppressFilesWhatIf -eq $true;
+        [bool] $WhatIfValue = $WhatIf -or $WhatIfPreference;
+        [bool] $VerboseValue = $Verbose -or $VerbosePreference -or $WhatIfValue;
+
+        # Expand the path
+        $Path = Expand-Path -FilePath $Path
+
+        # Check if the directory exists
+        if (Test-Path $Path) {
+
+            # If were not actually deleting we need this workarround to prevent double files being displayed
+            if (!$WhatIfValue -or ($suppressFilesWhatIf -eq $false)) {
+
+                # Get all the files and directories in the target directory
+                $items = Get-ChildItem -Path $Path -Recurse -File -Force
+
+                # Loop through each item and delete it
+                foreach ($item in $items) {
+
+                    if ($WhatIfValue) {
+
+                        Write-Verbose "What if: Performing the operation `"Remove File`" on target `"$($item.FullName)`"." -Verbose
+                    }
+                    else {
+
+                        # Remove the file
+                        if ($VerboseValue) {
+
+                            Remove-Item -Path $item.FullName -Force -Verbose
+                        }
+                        else {
+
+                            Remove-Item -Path $item.FullName -Force
+                        }
+                    }
+                }
+            }
+
+            # Get all the files and directories in the target directory
+            $items = Get-ChildItem -Path $Path -Directory -Recurse -Force
+
+            # Loop through each item and delete it
+            foreach ($item in $items) {
+
+                # recurse
+                subRoutine $item.FullName $DeleteFolder $WhatIfValue $VerboseValue $WhatIfValue
+            }
+
+            if ($DeleteFolder -eq $true) {
+
+                if ($WhatIfValue) {
+
+                    # write whatif action to host
+                    Write-Verbose "WhatIf: Deleting folder $Path" -Verbose
+                }
+                else {
+
+                    # delete folder
+                    [System.IO.Directory]::Delete($Path, $true);
+
+                    if ($VerboseValue) {
+
+                        # write whatif action to host
+                        Write-Verbose "Deleting folder $Path" -Verbose
+                    }
+                }
+            }
+        }
+        else {
+
+            if ($VerboseValue) {
+
+                Write-Verbose "The directory $Path does not exist."
+            }
+        }
+    }
+
+    subRoutine $Path $DeleteFolder ($WhatIf -or $WhatIfPreference) ($Verbose -or $VerbosePreference) $false
 }

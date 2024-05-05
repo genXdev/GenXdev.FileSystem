@@ -7,7 +7,7 @@
     RootModule        = 'GenXdev.FileSystem.psm1'
 
     # Version number of this module.
-    ModuleVersion          = '1.36.2024'
+    ModuleVersion          = '1.38.2024'
     # Supported PSEditions
     # CompatiblePSEditions = @()
 
@@ -63,10 +63,10 @@
     # NestedModules = @()
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-    FunctionsToExport = @("Start-RoboCopy", "Rename-InProject", "Expand-Path", "Find-Item")
+    FunctionsToExport = @("Start-RoboCopy", "Rename-InProject", "Expand-Path", "Find-Item", "Remove-AllItems")
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no Cmdlets to export.
-    CmdletsToExport   = @("Start-RoboCopy", "Rename-InProject", "Expand-Path", "Find-Item")
+    CmdletsToExport   = @("Start-RoboCopy", "Rename-InProject", "Expand-Path", "Find-Item", "Remove-AllItems")
 
     # Variables to export from this module
     VariablesToExport = '*'
