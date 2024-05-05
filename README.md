@@ -75,6 +75,7 @@ Update-Module
 | [Expand-Path](#Expand-Path) | ep | Expands any given file reference to a full pathname, with respect to the users current directory |
 | [Start-RoboCopy](#Start-RoboCopy) | rc, xc | Wrapper for Microsoft's Robust Copy UtilityCopies file data from one location to another.Robocopy, for "Robust File Copy", is a command-line directory and/or file replication command for Microsoft Windows.Robocopy functionally replaces Xcopy, with more options. Created by Kevin Allen and first released as part of theWindows NT 4.0 Resource Kit, it has been a standard feature of Windows since Windows Vista and Windows Server 2008.Key features- Folder synchronization- Support for extra long pathnames > 256 characters- Restartable mode backups- Support for copying and fixing security settings- Advanced file attribute features- Advanced symbolic link and junction support- Monitor mode (restart copying after change threshold)- Optimization features for LargeFiles, multithreaded copying and network compression- Recovery mode (copy from failing disks) |
 | [Rename-InProject](#Rename-InProject) | rip | Performs a rename action throughout a project folder. It will skip .git and .svn folders, images, archives and other common known binaries.But will rename within other files, like sourcecode, json, html, etc, AND folders and filenames!Always perform a -WhatIf operation first, to validate the actions it will take. |
+| [Remove-AllItems](#Remove-AllItems) | sdel | This function removes all files and folders in the specified directory. The directory path is first expanded using the Expand-Path function. |
 
 <br/><hr/><hr/><br/>
 
@@ -107,6 +108,7 @@ Find-Item [-SearchMask] <String> [-File] [-Directory] [<CommonParameters>]
         Position?                    1
         Default value                
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -File [<SwitchParameter>]
         Only find files
@@ -114,6 +116,7 @@ Find-Item [-SearchMask] <String> [-File] [-Directory] [<CommonParameters>]
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -Directory [<SwitchParameter>]
         Only find directories
@@ -121,6 +124,7 @@ Find-Item [-SearchMask] <String> [-File] [-Directory] [<CommonParameters>]
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
@@ -154,6 +158,7 @@ Expand-Path [-FilePath] <String> [[-CreateDirectory]] [<CommonParameters>]
         Position?                    1
         Default value                
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -CreateDirectory [<SwitchParameter>]
         Will create directory if it does not exist
@@ -161,6 +166,7 @@ Expand-Path [-FilePath] <String> [[-CreateDirectory]] [<CommonParameters>]
         Position?                    2
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
@@ -240,6 +246,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    1
         Default value                
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -DestinationDirectory <String>
         The destination directory to place the copied files and directories into.
@@ -249,12 +256,14 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    2
         Default value                .\
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -Files <String[]>
         Required?                    false
         Position?                    3
         Default value                @()
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -Mirror [<SwitchParameter>]
         Synchronizes the content of specified directories, will also delete any files and 
@@ -263,6 +272,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -Move [<SwitchParameter>]
         Will move instead of copy all files from source to destination
@@ -270,6 +280,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -IncludeSecurity [<SwitchParameter>]
         Will also copy ownership, security descriptors and auditing information of files and 
@@ -278,6 +289,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -SkipDirectories [<SwitchParameter>]
         Copies only files from source and skips sub-directories (no recurse)
@@ -285,6 +297,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -SkipEmptyDirectories [<SwitchParameter>]
         Does not copy directories if they would be empty
@@ -292,6 +305,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -CopyOnlyDirectoryTreeStructure [<SwitchParameter>]
         Create directory tree only
@@ -299,6 +313,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -CopyOnlyDirectoryTreeStructureAndEmptyFiles [<SwitchParameter>]
         Create directory tree and zero-length files only
@@ -306,6 +321,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -SkipAllSymbolicLinks [<SwitchParameter>]
         Do not copy symbolic links, junctions or the content they point to
@@ -313,6 +329,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -SkipSymbolicFileLinks [<SwitchParameter>]
         Do not copy file symbolic links but do follow directory junctions
@@ -320,6 +337,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -CopySymbolicLinksAsLinks [<SwitchParameter>]
         Instead of copying the content where symbolic links point to, copy the links themselves
@@ -327,6 +345,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -SkipJunctions [<SwitchParameter>]
         Do not copy directory junctions (symbolic link for a folder) or the content they point to
@@ -334,6 +353,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -CopyJunctionsAsJunctons [<SwitchParameter>]
         Instead of copying the content where junctions point to, copy the junctions themselves
@@ -341,6 +361,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -Force [<SwitchParameter>]
         Will copy all files even if they are older then the ones in the destination
@@ -348,6 +369,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -SkipFilesWithoutArchiveAttribute [<SwitchParameter>]
         Copies only files that have the archive attribute set
@@ -355,6 +377,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -ResetArchiveAttributeAfterSelection [<SwitchParameter>]
         In addition of copying only files that have the archive attribute set, will then reset 
@@ -363,6 +386,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -FileExcludeFilter <String[]>
         Exclude any files that matches any of these names/paths/wildcards
@@ -370,6 +394,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                @()
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -DirectoryExcludeFilter <String[]>
         Exclude any directories that matches any of these names/paths/wildcards
@@ -377,6 +402,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                @()
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -AttributeIncludeFilter <String>
         Copy only files that have all these attributes set [RASHCNETO]
@@ -384,6 +410,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -AttributeExcludeFilter <String>
         Exclude files that have any of these attributes set [RASHCNETO]
@@ -391,6 +418,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -SetAttributesAfterCopy <String>
         Will set the given attributes to copied files [RASHCNETO]
@@ -398,6 +426,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -RemoveAttributesAfterCopy <String>
         Will remove the given attributes from copied files [RASHCNETO]
@@ -405,6 +434,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -MaxSubDirTreeLevelDepth <Int32>
         Only copy the top n levels of the source directory tree
@@ -412,6 +442,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                -1
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -MinFileSize <Int32>
         Skip files that are not at least n bytes in size
@@ -419,6 +450,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                -1
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -MaxFileSize <Int32>
         Skip files that are larger then n bytes
@@ -426,6 +458,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                -1
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -MinFileAge <Int32>
         Skip files that are not at least: n days old OR created before n date (if n < 1900 then 
@@ -434,6 +467,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                -1
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -MaxFileAge <Int32>
         Skip files that are older then: n days OR created after n date (if n < 1900 then n = n 
@@ -442,6 +476,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                -1
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -MinLastAccessAge <Int32>
         Skip files that are accessed within the last: n days OR before n date (if n < 1900 then 
@@ -450,6 +485,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                -1
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -MaxLastAccessAge <Int32>
         Skip files that have not been accessed in: n days OR after n date (if n < 1900 then n = 
@@ -458,6 +494,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                -1
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -RecoveryMode [<SwitchParameter>]
         Will shortly pause and retry when I/O errors occur during copying
@@ -465,6 +502,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -MonitorMode [<SwitchParameter>]
         Will stay active after copying, and copy additional changes after a a default threshold 
@@ -473,6 +511,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -MonitorModeThresholdMinutes <Int32>
         Run again in n minutes Time, if changed
@@ -480,6 +519,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                -1
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -MonitorModeThresholdNrOfChanges <Int32>
         Run again when more then n changes seen
@@ -487,6 +527,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                -1
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -MonitorModeRunHoursFrom <Int32>
         Run hours - times when new copies may be started, start-time, range 0000:2359
@@ -494,6 +535,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                -1
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -MonitorModeRunHoursUntil <Int32>
         Run hours - times when new copies may be started, end-time, range 0000:2359
@@ -501,6 +543,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                -1
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -LogFilePath <String>
         If specified, logging will also be done to specified file
@@ -508,6 +551,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -LogfileOverwrite [<SwitchParameter>]
         Do not append to the specified logfile, but overwrite instead
@@ -515,6 +559,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -LogDirectoryNames [<SwitchParameter>]
         Include all scanned directory names in output
@@ -522,6 +567,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -LogAllFileNames [<SwitchParameter>]
         Include all scanned file names in output, even skipped onces
@@ -529,6 +575,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -Unicode [<SwitchParameter>]
         Output status as UNICODE
@@ -536,6 +583,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -LargeFiles [<SwitchParameter>]
         Enables optimization for copying large files
@@ -543,6 +591,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -MultiThreaded [<SwitchParameter>]
         Optimize performance by doing multithreaded copying
@@ -550,6 +599,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -CompressibleContent [<SwitchParameter>]
         If applicable use compression when copying files between servers to safe bandwidth and 
@@ -558,6 +608,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -Override <String>
         Overrides, Removes, or Adds any specified robocopy parameter.
@@ -574,6 +625,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    4
         Default value                
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -WhatIf [<SwitchParameter>]
         Displays a message that describes the effect of the command, instead of executing the 
@@ -582,6 +634,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
@@ -619,6 +672,7 @@ Rename-InProject [[-Source] <String>] [-FindText] <String> [-ReplacementText] <S
         Position?                    1
         Default value                .\\
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -FindText <String>
         The case sensitive phrase to search for, when making replacements
@@ -626,6 +680,7 @@ Rename-InProject [[-Source] <String>] [-FindText] <String> [-ReplacementText] <S
         Position?                    2
         Default value                
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -ReplacementText <String>
         The text that will replace the found occurance
@@ -633,6 +688,7 @@ Rename-InProject [[-Source] <String>] [-FindText] <String> [-ReplacementText] <S
         Position?                    3
         Default value                
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     -WhatIf [<SwitchParameter>]
         Displays a message that describes the effect of the command, instead of executing the 
@@ -641,6 +697,7 @@ Rename-InProject [[-Source] <String>] [-FindText] <String> [-ReplacementText] <S
         Position?                    named
         Default value                False
         Accept pipeline input?       false
+        Aliases                      
         Accept wildcard characters?  false
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
@@ -656,5 +713,56 @@ PS C:\> Rename-InProject -Source .\src\*.js -FindText "tsconfig.json" - Replacem
 "typescript.configuration.json"
 Rename-InProject .\src\ "MyCustomClass"  "MyNewRenamedClass" -WhatIf
 ````
+
+<br/><hr/><hr/><br/>
+
+##	Remove-AllItems
+````PowerShell
+Remove-AllItems                      --> sdel
+````
+
+### SYNOPSIS
+    This function removes all files and folders in the specified directory.
+
+### SYNTAX
+````PowerShell
+Remove-AllItems [-Path] <String> [-DeleteFolder] [-WhatIf] [<CommonParameters>]
+````
+
+### DESCRIPTION
+    This function removes all files and folders in the specified directory. The directory path 
+    is first expanded using the Expand-Path function.
+
+### PARAMETERS
+    -Path <String>
+        The path of the directory to clear.
+        Required?                    true
+        Position?                    1
+        Default value                
+        Accept pipeline input?       false
+        Aliases                      
+        Accept wildcard characters?  false
+    -DeleteFolder [<SwitchParameter>]
+        Also delete the root folder supplied with the Path parameter.
+        Required?                    false
+        Position?                    named
+        Default value                False
+        Accept pipeline input?       false
+        Aliases                      
+        Accept wildcard characters?  false
+    -WhatIf [<SwitchParameter>]
+        Displays a message that describes the effect of the command, instead of executing the 
+        command.
+        Required?                    false
+        Position?                    named
+        Default value                False
+        Accept pipeline input?       false
+        Aliases                      
+        Accept wildcard characters?  false
+    <CommonParameters>
+        This cmdlet supports the common parameters: Verbose, Debug,
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216). 
 
 <br/><hr/><hr/><br/>
