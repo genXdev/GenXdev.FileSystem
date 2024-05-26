@@ -128,6 +128,12 @@ function Expand-Path {
     )
 
     # root folder included?
+    if (($FilePath.Length -gt 1) -and ($FilePath.Substring(0, 1) -eq "~")) {
+
+        $FilePath = "$(Resolve-Path ~ | % Path)" + $FilePath.Substring(1);
+    }
+
+    # root folder included?
     if ((($FilePath.Length -gt 1) -and ($FilePath.Substring(1, 1) -eq ":")) -or $FilePath.StartsWith("\\")) {
 
         try {
@@ -1997,15 +2003,16 @@ function Remove-AllItems {
         [switch] $WhatIf
     )
 
+    [string] $Root = Expand-Path -FilePath $Path
+
     function subRoutine([string] $Path, [bool] $deleteFolder, [bool] $WhatIf, [bool] $Verbose, [bool] $suppressFilesWhatIf) {
 
         # initialize
+        $Path = Expand-Path -FilePath $Path
+        [bool] $isRoot = $Path -eq $Root;
         [bool] $suppressFilesWhatIf = $suppressFilesWhatIf -eq $true;
         [bool] $WhatIfValue = $WhatIf -or $WhatIfPreference;
         [bool] $VerboseValue = $Verbose -or $VerbosePreference -or $WhatIfValue;
-
-        # Expand the path
-        $Path = Expand-Path -FilePath $Path
 
         # Check if the directory exists
         if (Test-Path $Path) {
@@ -2048,7 +2055,7 @@ function Remove-AllItems {
                 subRoutine $item.FullName $DeleteFolder $WhatIfValue $VerboseValue $WhatIfValue
             }
 
-            if ($DeleteFolder -eq $true) {
+            if (($DeleteFolder -eq $true) -or ($isRoot -eq $false)) {
 
                 if ($WhatIfValue) {
 
@@ -2070,9 +2077,11 @@ function Remove-AllItems {
         }
         else {
 
-            if ($VerboseValue) {
+            if ($isRoot) {
+                if ($VerboseValue) {
 
-                Write-Verbose "The directory $Path does not exist."
+                    Write-Verbose "The directory $Path does not exist."
+                }
             }
         }
     }
@@ -2080,11 +2089,15 @@ function Remove-AllItems {
     subRoutine $Path $DeleteFolder ($WhatIf -or $WhatIfPreference) ($Verbose -or $VerbosePreference) $false
 }
 
+################################################################################
+################################################################################
+################################################################################
+
 # SIG # Begin signature block
 # MIIbzgYJKoZIhvcNAQcCoIIbvzCCG7sCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCCKSzNAFeuX561t
-# mFQ26QZpnrpquPK9RDE/jO2XXiEDbqCCFhswggMOMIIB9qADAgECAhBwxOfTiuon
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDYXxUqdiFDK4I5
+# VN/CWmEwxQTm8sYLGeKXsY5AUeCuw6CCFhswggMOMIIB9qADAgECAhBwxOfTiuon
 # hU3SZf3YwpWAMA0GCSqGSIb3DQEBCwUAMB8xHTAbBgNVBAMMFEdlblhkZXYgQXV0
 # aGVudGljb2RlMB4XDTI0MDUwNTIwMzEzOFoXDTM0MDUwNTE4NDEzOFowHzEdMBsG
 # A1UEAwwUR2VuWGRldiBBdXRoZW50aWNvZGUwggEiMA0GCSqGSIb3DQEBAQUAA4IB
@@ -2206,28 +2219,28 @@ function Remove-AllItems {
 # ZW5YZGV2IEF1dGhlbnRpY29kZQIQcMTn04rqJ4VN0mX92MKVgDANBglghkgBZQME
 # AgEFAKCBhDAYBgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJAzEM
 # BgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMC8GCSqG
-# SIb3DQEJBDEiBCBeQyiBf8ZaaPtqfYiLjjqOdlIIF1PJHQ9lnkG3s5BXHzANBgkq
-# hkiG9w0BAQEFAASCAQC8O1nZceqFK4WoKFFBL7B+r+NKf9/DwagRejXDNMKHjoTx
-# ayy70P2NdfFyUF/3mLCaamy35G6/+1JioWr34d/WHvmwdElX5eHe1dWyezLSLN8A
-# GYLDDAjwTVF72s3STmYi8iDe9/vNZLNASaADIb3XrvkDnwYVC7RREDI5Mr/m7MBa
-# ued3IH8U9KXVbHyaX4Dj0gSgItXUp7p0lORvjgfO7AoaSyc+z4wcim4Nh62j51Sk
-# G1ZYsGlRA1ChHfsx33+L5eyWnvwaeew15IHbWJ57u7dUsXeJFrcuO9MEnuJchGu4
-# knekF8rGhjpnvMihvETeN9n4HzhjOjVT3LTFNKYSoYIDIDCCAxwGCSqGSIb3DQEJ
+# SIb3DQEJBDEiBCCNM1tunlrreS8ptXyjGhfIXzGwAtNEX0pBytv4YanGnTANBgkq
+# hkiG9w0BAQEFAASCAQCnoauokWNtvBpftYqDRT1f8RjFVhzjpHX22IdYHbJNldeC
+# 9RED/lLyg7c94XkexKkwtPapQn8e5XsDmg9a508lb33KOr46IKX83udfvI03t9MD
+# 4bLFxzwUKKE5DsctwUfL70bA1WoOE3JARtYsW0uc+D0AcCbINJiqHrZRhW34vhOX
+# nbGMnbrPIOAWq3R5Z3La8TF1m0inlPOFHPKUSctjiNg29Al3QWwY3nJm54DzTWjv
+# Hmj1HM3WxzsLpFZKERhRwV7yAqESoqgdqchMoXZDYE06ZWazITsfu9FjJNAcd5u4
+# rarOqd7j+jB1lHvZ3Kbqsr1vmIeutBMsL9Xbbxd/oYIDIDCCAxwGCSqGSIb3DQEJ
 # BjGCAw0wggMJAgEBMHcwYzELMAkGA1UEBhMCVVMxFzAVBgNVBAoTDkRpZ2lDZXJ0
 # LCBJbmMuMTswOQYDVQQDEzJEaWdpQ2VydCBUcnVzdGVkIEc0IFJTQTQwOTYgU0hB
 # MjU2IFRpbWVTdGFtcGluZyBDQQIQBUSv85SdCDmmv9s/X+VhFjANBglghkgBZQME
 # AgEFAKBpMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8X
-# DTI0MDUwNTIxMjEyOFowLwYJKoZIhvcNAQkEMSIEIIniL5TvOS2nbx2fHHN6VeHg
-# ilTtELS+lDnBUMWYx4MiMA0GCSqGSIb3DQEBAQUABIICAF1K8fB835noXP4dpDWd
-# BP2oya8aKrEOeTZT1LNkLEXHutrgALyDtsG9IJiytbun5VkrpiPOwZUqAtg441oo
-# 9iww2Z3quN+3UoLCf2vvRz+hB4zdrMqWxMgMiGJNr137LNuTwJcoYtyF1rD2Ap0T
-# JL429cayhKEmq+XUEOSuskIGKGw+3QfTMsmfkwDMXCce0mbqoajC5AuvjT061Vkp
-# ep7d71cNDmRi/B41wzNUl+QklkR0SbNqXezGoKb/XHwU27UNEnwabZgYcETZSzmu
-# aECbokRtLkbYD37eblQsUR41BkmfkzGkCDSuMkqqd9fpdHF0MgNxk6QbcOJpr4ZZ
-# 1Axr27tOD5KhtyXXLKO+K+rUXta1P4pW5t1gV03AcNodIMFa2Yey4rmKRqW641nh
-# t1S1KPgFpEDdLYXA9fKBF0BWPw4u26CeILApmkGuiYRWMSE0axZgw8KI56oZ8q3b
-# 0P7HhH5CXhpMH/6TCc9GQeffo+3PYEmnZkkOOXnTogdo2t1HNNmTUmd78T6pP4WJ
-# RAVjBcWeaoVoG83nW/oCOtqPIyMOQX6yE8UsHdzwCWfl2l2+oeof5yANak2h08jZ
-# glnInMSgWXEmxvqcubyeBudhwiF8JrMKc30PkmhGQNYsrgnmHaAFwy3JbcrM1kPd
-# zS+/bbaODOTrK8yHLyOAr5oD
+# DTI0MDUyNjE2NTEyOFowLwYJKoZIhvcNAQkEMSIEIOnGfpnNhBG8c6WmYR2H8A3C
+# tjPMzIIt1903ITaJR3tlMA0GCSqGSIb3DQEBAQUABIICAJAUyVYKCuZJagtjHHWy
+# taWVS4UlA68QZLEN/6Qj6o5NNng4aLOuExH1/u5n3ZClZM/3I4mEvlTSeStqs/lT
+# YY6R8EVaIbtAUzJks0QIutfcPsLtitRjRsqw3YBHuROuCS2DGzAh3Gy5lYalbnZ1
+# IgrpFEXip+32mDVj2wvAx24K/FTgoUCEOxBSI6H+6iALoXmcjfFNUihbjkh1qFEp
+# jbqGm5UaXgbo09egsStuqFpqkcM6TFgqYuY+eTikigbAksRrPHgI3cch9VU0RCeJ
+# reKJUCGseUg4WBaIJyKUAi1+Tg31Cgu1FmyVBlGfCFtv5cDtf1CLdaAP4gFOQwky
+# X8JdbUgtE6jZgU5w7h6AyDDY2O8V8Xip2W1dAEIKmTDMvtXLGdo+ZFjoHv3bAxvh
+# EPgV+pvOYLHmE578NGtn7O4TrLgW/5MZ/lKIo5MOmo/o6pBJMbM7M6XJZbLdyJNY
+# VC1jkW2j1V6tkfgOq7ePX+e4bToF9XDdQpHUx2Xkm+2ZLd/Rxiqbofi7YANaQFKX
+# PwtDERi4EcIUi26efVGjuNCDi+YLDUIFlQ5PqAf9+5gzF3Mc+nrNf7ZxWLulO9sa
+# mXBcbhRKm88Q1m7FG4v4kmw8WWBeaU/pzTxRcXkGMZledRDQEUO0h/Tikl7/CIOd
+# 7cXr4jS6D5SsjOe38sMvcOlv
 # SIG # End signature block

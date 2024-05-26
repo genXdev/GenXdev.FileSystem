@@ -1,58 +1,73 @@
-#
+﻿#
 # Module manifest for module 'GenXdev.FileSystem'
 
 @{
 
     # Script module or binary module file associated with this manifest.
-    RootModule        = 'GenXdev.FileSystem.psm1'
+    RootModule           = 'GenXdev.FileSystem.psm1'
 
     # Version number of this module.
-    ModuleVersion          = '1.38.2024'
+    ModuleVersion        = '1.38.2024'
 
     # ID used to uniquely identify this module
-    GUID              = '2f62080f-0483-4421-8497-b3d433b65171'
+    GUID                 = '2f62080f-0483-4421-8497-b3d433b65171'
 
     # Author of this module
-    Author            = 'GenXdev'
+    Author               = 'GenXdev'
 
     # Company or vendor of this module
-    CompanyName       = 'GenXdev'
+    CompanyName          = 'GenXdev'
 
     # Copyright statement for this module
-    Copyright         = 'Copyright (c) 2021 GenXdev'
+    Copyright            = 'Copyright (c) 2024 GenXdev'
 
     # Description of the functionality provided by this module
-    Description       = 'A Windows PowerShell module for basic and advanced file management tasks'
+    Description          = 'A Windows PowerShell module for basic and advanced file management tasks'
 
     # Minimum version of the PowerShell engine required by this module
-    PowerShellVersion      = '7.5.0'
+    PowerShellVersion    = '7.5.0'
 
-    # # Minimum version of Microsoft .NET Framework required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
-    DotNetFrameworkVersion = '7.0.408'
+    # # Intended for PowerShell Core
+    CompatiblePSEditions = 'Core'
 
     # # Minimum version of the common language runtime (CLR) required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
-    ClrVersion             = '9.0.0'
+    ClrVersion           = '9.0.0'
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-    FunctionsToExport = @("Start-RoboCopy", "Rename-InProject", "Expand-Path", "Find-Item", "Remove-AllItems")
+    FunctionsToExport    = @("Start-RoboCopy", "Rename-InProject", "Expand-Path", "Find-Item", "Remove-AllItems")
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no Cmdlets to export.
-    CmdletsToExport   = @("Start-RoboCopy", "Rename-InProject", "Expand-Path", "Find-Item", "Remove-AllItems")
+    CmdletsToExport      = @("Start-RoboCopy", "Rename-InProject", "Expand-Path", "Find-Item", "Remove-AllItems")
+
+    # Assemblies that must be loaded prior to importing this module
+    RequiredAssemblies   = @(
+        "GenXdev.FileSystem.dll",
+        "System.Management.Automation.dll"
+    )
 
     # Variables to export from this module
-    VariablesToExport = '*'
+    VariablesToExport    = '*'
 
     # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-    AliasesToExport   = '*'
+    AliasesToExport      = '*'
 
     # List of all modules packaged with this module
-    ModuleList        = @("GenXdev.FileSystem")
+    ModuleList           = @("GenXdev.FileSystem")
 
     # List of all files packaged with this module
-    FileList          = @("GenXdev.FileSystem.psd1", "GenXdev.FileSystem.psm1", "LICENSE", "license.txt", "powershell.jpg", "README.md")
+    FileList             = @(
+        "GenXdev.FileSystem.dll",
+        "GenXdev.FileSystem.psd1",
+        "GenXdev.FileSystem.psm1",
+        "LICENSE",
+        "license.txt",
+        "powershell.jpg",
+        "README.md",
+        "System.Management.Automation.dll"
+    )
 
     # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
-    PrivateData       = @{
+    PrivateData          = @{
 
         PSData = @{
 
@@ -76,14 +91,14 @@
     } # End of PrivateData hashtable
 
     # HelpInfo URI of this module
-    HelpInfoURI       = 'https://github.com/genXdev/GenXdev.FileSystem/blob/main/README.md#cmdlet-index'
+    HelpInfoURI          = 'https://github.com/genXdev/GenXdev.FileSystem/blob/main/README.md#cmdlet-index'
 }
 
 # SIG # Begin signature block
 # MIIbzgYJKoZIhvcNAQcCoIIbvzCCG7sCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBMBiMw2CTd9uhg
-# zB/dEPk5cJgyIwOtTvuWRec87rH2BaCCFhswggMOMIIB9qADAgECAhBwxOfTiuon
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCAZDYJaE+uFnao3
+# oPEAXxG9E8I1i+jIAtaTdcsF27mG1qCCFhswggMOMIIB9qADAgECAhBwxOfTiuon
 # hU3SZf3YwpWAMA0GCSqGSIb3DQEBCwUAMB8xHTAbBgNVBAMMFEdlblhkZXYgQXV0
 # aGVudGljb2RlMB4XDTI0MDUwNTIwMzEzOFoXDTM0MDUwNTE4NDEzOFowHzEdMBsG
 # A1UEAwwUR2VuWGRldiBBdXRoZW50aWNvZGUwggEiMA0GCSqGSIb3DQEBAQUAA4IB
@@ -205,28 +220,28 @@
 # ZW5YZGV2IEF1dGhlbnRpY29kZQIQcMTn04rqJ4VN0mX92MKVgDANBglghkgBZQME
 # AgEFAKCBhDAYBgorBgEEAYI3AgEMMQowCKACgAChAoAAMBkGCSqGSIb3DQEJAzEM
 # BgorBgEEAYI3AgEEMBwGCisGAQQBgjcCAQsxDjAMBgorBgEEAYI3AgEVMC8GCSqG
-# SIb3DQEJBDEiBCAEYZwWuioP4jCwh+h382q3R2U0I849SWi/1Pm2ywwoDDANBgkq
-# hkiG9w0BAQEFAASCAQCzPmf5Y+/ozgQq4mnVouSSdnFO5Up8exhQ0f3BETn8s7rT
-# hiOwcEdCnl11UrJc3XS7cn8eZDOdh+36r2VnlzFncBrwO7UZeT5hFgOFHLPuz3WT
-# rwxwSWVFDs/BlxqoHy2UOtLgJUvfKGIHdg7sFL7sJm2n6kkcrmrnlU/p9Xxb97OQ
-# zVW8sX4XyK95H8X4wfH9sPf2JDJFIbC1OjLzm0NhUoiwwUHul4TilIVDE1WzLctu
-# ByC01FwzHtebeA5JJOSKOAaIMjfwJBZVGFjwrucAHq7lg0M4ZGEuuXexEe590bl/
-# pf4lx9T6CVlT33twk8jutcO4HABv8cWxMizyxJMeoYIDIDCCAxwGCSqGSIb3DQEJ
+# SIb3DQEJBDEiBCAT2Ux4x7afIPOGUrG6jbwB0nvuNxDcVSivwxdn+iBSYzANBgkq
+# hkiG9w0BAQEFAASCAQB5nZCnEEV62qwN/9SlN7AU/pAD8HT2yk/SykXEd2tKF0kZ
+# qdd8EL5Vzpg3LxLzl63F0htu9KauVILAirB41qh0jTMsBWHYD2eryRBouDwQvSfl
+# sqejSOS/8lbHn1+qkmMP0xTqHSd5AWEMa87Ndq5qOq7ptWPxJxS8c6IXi9rMt4DD
+# k/bIt2FVF2IGUpSQCGQoR9MWLOW7vpwnapzLY1VPbRxyW/WTKhCGcTh4VoXtRoT9
+# 5YV4nniPGYej+e5X8Ro++VL4k2mHKvY2FlWGdXp9YzdqcMcTGtcR94/DdCt5TN/o
+# CLCBzwW6FjkbHJEl6wQfXK2ZmW2kC7QdIXGqA8n7oYIDIDCCAxwGCSqGSIb3DQEJ
 # BjGCAw0wggMJAgEBMHcwYzELMAkGA1UEBhMCVVMxFzAVBgNVBAoTDkRpZ2lDZXJ0
 # LCBJbmMuMTswOQYDVQQDEzJEaWdpQ2VydCBUcnVzdGVkIEc0IFJTQTQwOTYgU0hB
 # MjU2IFRpbWVTdGFtcGluZyBDQQIQBUSv85SdCDmmv9s/X+VhFjANBglghkgBZQME
 # AgEFAKBpMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8X
-# DTI0MDUwNTIxMjEzM1owLwYJKoZIhvcNAQkEMSIEIPsC72rXxtPY+olZInSH1hLz
-# itcHjjDDrJ2zfmWOcoWXMA0GCSqGSIb3DQEBAQUABIICAJgEV+AGM1B3ujBnLOSQ
-# NIsdcZEYhjzvlU/SO2buuaqu3C6SCZwsFG+z4UffHrBt0BdLfRyS89L1JCqrba7a
-# Bl113XKgGNCXdc905TmSVY7RZGdV0/mi/kDlUuIeHQFz1Rcjjo462uPXhUrqFyt9
-# ZV4bjRi/iwhpaTKJPvEziLA47ZX5imfD4O02OD3VHZ3bEMG/lgi47PofI+MLvamA
-# gojlmTLgC2+g6PCisrgPkmTPTr15uKk3DVdH3nLh4xMTHfdtka2i/NNPJLlSm7vu
-# Cnk273gvV3eb7pheliUC+OYrhwYByRPJk7AC69RZpM8ILzfdbdxfbDc/7oQmjee3
-# mJFdhEbbVfsYmeDJ4XJE2ciNidgumAkAkKwKXoNQ5FpFKGUEgg/j1Fw229D7JqL6
-# 1WSvBrvu8ummlxKBaIQ8ZW5p/Hvk0gZfeFpQ2/yu0Z5AR4fh7oTVPKQlwx9IWEOD
-# QItkNLhyBZv2oCaa6iomtUP/K7eDkkfQAdAnUpgSSloMxHqi7oP1yaud7QGnxHmL
-# Ph0Hfs6eea7928EZBkcf0sosM2EzzTWnN32Bj+BqKb1IB60+tdy8T3WZ8dEY6hmT
-# L7rvEi0/jFsHVGClK/BimIlMCpVjb3Pm7TzHJGFOG1ocnagQFLw96xJR57rAD0jX
-# LVEVBKY/UOjoFA4ND8tpRreo
+# DTI0MDUyNjE2NDkxMVowLwYJKoZIhvcNAQkEMSIEIEE4io/tZPa6+taW7jQWKCcd
+# bY601R+q/1Eh6hXKiDuRMA0GCSqGSIb3DQEBAQUABIICAHHs0xbHJM3sXMBz08E0
+# Q8hcJGIikt4X9iPpIEGTlAil4FEQJL2KbM65Yz5FkMSG7byqtHrVS9Qkyi+AFdzV
+# IeyVeOJNbJBvDLnpBEyG0HFUk8ZBSldxtpa+8kgDqXBx9EcaSETYIPMixhuMoMI5
+# aXYZ0e3etxRZI/XivlL4t/dzT5IWKba6Z1/2kLBx3jy3aD4iEvYuop4dWt+hUwV8
+# gygzxvMJjWx4IbfwE19jEuIZocMEad/cflsRswoJ8hy0yzfRJoqhDNmKh23TKOQr
+# MotxCWjZYskwhqFmeEWaFLHX+/j+ynbdixXdATUQp0eFpUuEHxsx9RiYCFEuJhHI
+# iVV8b2MTt4eFIIjlgSSVVCInPjGp3VqLyR+O2kvJoePJffUPvDFh8gQaZxDuygWP
+# x/wXhSpvCxGTvgaM44370hfWlZx33CRyRo+917cfpJB/MG03YG1Frh7YU+5ut6Hj
+# rPRy755T340ImAwOE9h2bBZT/oinjBSxigie1P2SVdyyXxB5dbWNQwzUXWLrv5vU
+# 8xVCs8QBTJadUArXe9LtnRFCBqENYP0a3mM9udn9FIwodq51zE99CHDrXyBnW8iH
+# CimEgmc2Zgojjc2zm1rY/NZXPfaV3q3r/B1+QIDFaLj8JqQwk6wkycoRvakuiZxT
+# jkiXrknlFLQ4vTJsI2zk6Tq+
 # SIG # End signature block
