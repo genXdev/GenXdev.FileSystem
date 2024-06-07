@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net9.0-windows</TargetFramework>
+        <TargetFramework>net8.0-windows</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>disable</Nullable>
         <PackageLicenseFile>license.txt</PackageLicenseFile>
@@ -23,6 +23,6 @@
         <IntermediateOutputPath>./obj/</IntermediateOutputPath>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="System.Management.Automation" Version="7.5.0-preview.2" />
+        <PackageReference Include="System.Management.Automation" Version="7.4.2" />
     </ItemGroup>
 </Project>
