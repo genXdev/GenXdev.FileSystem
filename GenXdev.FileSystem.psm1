@@ -130,7 +130,7 @@ function Expand-Path {
     # root folder included?
     if (($FilePath.Length -gt 1) -and ($FilePath.Substring(0, 1) -eq "~")) {
 
-        $FilePath = "$(Resolve-Path ~ | % Path)" + $FilePath.Substring(1);
+        $FilePath = "$(Resolve-Path ~ | ForEach-Object Path)" + $FilePath.Substring(1);
     }
 
     # root folder included?
@@ -166,10 +166,10 @@ function Expand-Path {
         $directory = [System.IO.Path]::GetDirectoryName($FilePath);
 
         # does not exist?
-        if (![IO.Directory]::Exists($directory)) {
+        if (-not [IO.Directory]::Exists($directory)) {
 
             # create it
-            New-Item -ItemType Directory -Path $directory -Force
+            New-Item -ItemType Directory -Path $directory -Force -ErrorAction SilentlyContinue
         }
     }
 
@@ -1923,7 +1923,7 @@ function Rename-InProject {
                         }
 
                         # does another directory already exist with the same name?
-                        if ([IO.Directory]::Exists($pathNew)) {
+                        if ([IO.Directory]::Exists($pathNew) -and ([IO.Directory]::Exists($fn))) {
 
                             # move all files into existing directory
                             Start-RoboCopy -Source $fn -DestinationDirectory $pathNew -Move
@@ -1978,14 +1978,11 @@ function Remove-AllItems {
     [CmdletBinding()]
 
     param(
-        ###############################################################################
         [Parameter(
             Mandatory = $true,
             HelpMessage = "The path of the directory to clear.")
         ]
         [string] $Path,
-
-        ###############################################################################
 
         [Parameter(
             Mandatory = $false,
@@ -1994,7 +1991,6 @@ function Remove-AllItems {
         )]
         [switch] $DeleteFolder,
 
-        ###############################################################################
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
@@ -2005,88 +2001,111 @@ function Remove-AllItems {
 
     [string] $Root = Expand-Path -FilePath $Path
 
-    function subRoutine([string] $Path, [bool] $deleteFolder, [bool] $WhatIf, [bool] $Verbose, [bool] $suppressFilesWhatIf) {
+    # initialize
+    [bool] $WhatIfValue = $WhatIf -or $WhatIfPreference;
+    [bool] $VerboseValue = $Verbose -or $VerbosePreference -or $WhatIfValue;
 
-        # initialize
-        $Path = Expand-Path -FilePath $Path
-        [bool] $isRoot = $Path -eq $Root;
-        [bool] $suppressFilesWhatIf = $suppressFilesWhatIf -eq $true;
-        [bool] $WhatIfValue = $WhatIf -or $WhatIfPreference;
-        [bool] $VerboseValue = $Verbose -or $VerbosePreference -or $WhatIfValue;
+    # Check if the directory exists
+    if (Test-Path $Path) {
 
-        # Check if the directory exists
-        if (Test-Path $Path) {
+        # Get all the files and directories in the target directory
+        $items = Get-ChildItem -Path $Path -Recurse -File -Force | ForEach-Object FullName;
 
-            # If were not actually deleting we need this workarround to prevent double files being displayed
-            if (!$WhatIfValue -or ($suppressFilesWhatIf -eq $false)) {
+        # Loop through each item and delete it
+        foreach ($item in $items) {
 
-                # Get all the files and directories in the target directory
-                $items = Get-ChildItem -Path $Path -Recurse -File -Force
+            if ($WhatIfValue) {
 
-                # Loop through each item and delete it
-                foreach ($item in $items) {
-
-                    if ($WhatIfValue) {
-
-                        Write-Verbose "What if: Performing the operation `"Remove File`" on target `"$($item.FullName)`"." -Verbose
-                    }
-                    else {
-
-                        # Remove the file
-                        if ($VerboseValue) {
-
-                            Remove-Item -Path $item.FullName -Force -Verbose
-                        }
-                        else {
-
-                            Remove-Item -Path $item.FullName -Force
-                        }
-                    }
-                }
+                Write-Verbose "What if: Performing the operation `"Remove File`" on target: '$item'." -Verbose
             }
+            else {
 
-            # Get all the files and directories in the target directory
-            $items = Get-ChildItem -Path $Path -Directory -Recurse -Force
+                if ([IO.File]::Exists($item)) {
 
-            # Loop through each item and delete it
-            foreach ($item in $items) {
-
-                # recurse
-                subRoutine $item.FullName $DeleteFolder $WhatIfValue $VerboseValue $WhatIfValue
-            }
-
-            if (($DeleteFolder -eq $true) -or ($isRoot -eq $false)) {
-
-                if ($WhatIfValue) {
-
-                    # write whatif action to host
-                    Write-Verbose "WhatIf: Deleting folder $Path" -Verbose
-                }
-                else {
-
-                    # delete folder
-                    [System.IO.Directory]::Delete($Path, $true);
-
+                    # Remove the file
                     if ($VerboseValue) {
 
-                        # write whatif action to host
-                        Write-Verbose "Deleting folder $Path" -Verbose
+                        try {
+                            Remove-Item -Path $item -Force -Verbose
+                            Write-Verbose "Deleting file: '$item'" -Verbose
+                        }
+                        catch {
+                            Write-Warning "$_"
+                        }
+                    }
+                    else {
+                        try {
+                            Remove-Item -Path $item -Force
+                        }
+                        catch {
+                            Write-Warning "$_"
+                        }
                     }
                 }
             }
         }
-        else {
 
-            if ($isRoot) {
+        # Get all the files and directories in the target directory
+        $items = Get-ChildItem -Path $Path -Directory -Recurse -Force | ForEach-Object FullName;
+
+        # Loop through each item and delete it
+        foreach ($item in $items) {
+
+            if ($WhatIfValue) {
+
+                # write whatif action to host
+                Write-Verbose "WhatIf: Deleting folder: '$item'" -Verbose
+            }
+            else {
+
+                # delete folder
+                if ([IO.Directory]::Exists($item)) {
+                    try {
+                        [System.IO.Directory]::Delete($item, $true);
+                    }
+                    catch {
+                        Write-Warning "$_"
+                    }
+                }
+
                 if ($VerboseValue) {
 
-                    Write-Verbose "The directory $Path does not exist."
+                    # write whatif action to host
+                    Write-Verbose "Deleting folder: '$item'" -Verbose
+                }
+            }
+        }
+
+        if ($DeleteFolder -eq $true) {
+
+            if ($WhatIfValue) {
+
+                # write whatif action to host
+                Write-Verbose "WhatIf: Deleting folder: '$path'" -Verbose
+            }
+            else {
+                try {
+                    [System.IO.Directory]::Delete($Path, $true);
+                }
+                catch {
+                    Write-Warning "$_"
+                }
+
+                if ($VerboseValue) {
+
+                    # write whatif action to host
+                    Write-Verbose "Deleting folder: '$path'" -Verbose
                 }
             }
         }
     }
+    else {
 
-    subRoutine $Path $DeleteFolder ($WhatIf -or $WhatIfPreference) ($Verbose -or $VerbosePreference) $false
+        if ($VerboseValue) {
+
+            Write-Verbose "The directory $Path does not exist." -Verbose
+        }
+    }
 }
 
 ################################################################################
