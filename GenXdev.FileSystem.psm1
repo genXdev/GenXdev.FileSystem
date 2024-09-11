@@ -42,6 +42,7 @@ Find-Item node_modules -Directory
 function Find-Item {
 
     [Alias("fi")]
+    [Alias("ff")]
 
     param (
         [parameter(
@@ -52,12 +53,19 @@ function Find-Item {
         )]
         [string] $SearchMask,
 
-        [Parameter(
-            HelpMessage = "Files only",
+        [parameter(
             Mandatory = $false,
+            HelpMessage = "Search all drives",
             ValueFromPipeline = $false
         )]
-        [switch] $File,
+        [switch] $AllDrives,
+
+        [parameter(
+            Mandatory = $false,
+            HelpMessage = "Return Item instead of file path strings",
+            ValueFromPipeline = $false
+        )]
+        [switch] $PassThrough,
 
         [Parameter(
             HelpMessage = "Directory only",
@@ -67,31 +75,75 @@ function Find-Item {
         [switch] $Directory
     )
 
-    Get-PSDrive -ErrorAction SilentlyContinue | ForEach-Object -ThrottleLimit 8 -Parallel {
+    $SearchMask = Expand-Path $SearchMask
+    $SearchDirectory = [IO.Path]::GetDirectoryName($SearchMask);
+    $SearchFileName = [IO.Path]::GetFileName($SearchMask);
 
-        try {
-            if ($_.Provider.Name -eq "FileSystem") {
+    if ([string]::IsNullOrWhiteSpace($SearchDirectory)) { $SearchDirectory = "." };
+    if ([string]::IsNullOrWhiteSpace($SearchFileName)) { $SearchFileName = "*" };
+    if ([string]::IsNullOrWhiteSpace($SearchMask)) { $SearchMask = "*" };
 
-                Get-ChildItem -Path "$($_.Root)*$SearchMask*" -File:$File -Directory:$Directory -ErrorAction SilentlyContinue
+    if ($AllDrives) {
 
-                Get-ChildItem -Path "$($_.Root)" -Directory -ErrorAction SilentlyContinue  |
-                ForEach-Object -ThrottleLimit 16 -Parallel {
+        Get-PSDrive -ErrorAction SilentlyContinue | ForEach-Object -ThrottleLimit 8 -Parallel {
 
-                    try {
+            try {
 
-                        Get-ChildItem -Path "$($_.FullName)\*$SearchMask*" -File:$File -Directory:$Directory -Recurse -ErrorAction SilentlyContinue
+                if ($_.Provider.Name -eq "FileSystem") {
 
+                    Get-ChildItem -Path "$($_.Root)*$SearchMask*" -File:$File -Directory:$Directory -Recurse -ErrorAction SilentlyContinue |
+                    ForEach-Object {
+
+                        try {
+
+                            Get-ChildItem -Path "$($_.FullName)\*$SearchFileName*" -File:($Directory -eq $false) -Directory:$Directory -ErrorAction SilentlyContinue |
+                            ForEach-Object {
+
+                                if ($PassThrough) {
+
+                                    $PSItem;
+                                }
+                                else {
+
+                                    $PSItem.FullName;
+                                }
+                            }
+                        }
+                        catch {
+
+                        }
                     }
-                    catch {
-
-                    }
-
                 }
+            }
+            catch {
+
+            }
+        }
+
+        return;
+    }
+
+    try {
+
+        Get-ChildItem -Path "$SearchDirectory\$SearchFileName" -Directory:$Directory -File:$File -Recurse -ErrorAction SilentlyContinue |
+        ForEach-Object {
+
+            if ($PassThrough) {
+
+                $PSItem;
+            }
+            else {
+
+                $PSItem.FullName;
             }
         }
         catch {
 
         }
+
+    }
+    catch {
+
     }
 }
 
@@ -126,6 +178,8 @@ function Expand-Path {
         [parameter(Mandatory = $false, Position = 1)]
         [switch] $CreateDirectory
     )
+
+    $hasSlash = $FilePath.EndsWith("\") -or $FilePath.EndsWith("/");
 
     # root folder included?
     if (($FilePath.Length -gt 1) -and ($FilePath.Substring(0, 1) -eq "~")) {
@@ -163,7 +217,12 @@ function Expand-Path {
     if ($CreateDirectory -eq $true) {
 
         # get directory name
-        $directory = [System.IO.Path]::GetDirectoryName($FilePath);
+        $directory = [IO.Path]::TrimEndingDirectorySeparator([System.IO.Path]::GetDirectoryName($FilePath));
+
+        if ($hasSlash -eq $true) {
+
+            $directory = [IO.Path]::TrimEndingDirectorySeparator($FilePath);
+        }
 
         # does not exist?
         if (-not [IO.Directory]::Exists($directory)) {
@@ -174,9 +233,9 @@ function Expand-Path {
     }
 
     # remove trailing path delimiter
-    while ($FilePath.EndsWith("\") -and $FilePath.Length -gt 4) {
+    while ([IO.Path]::EndsInDirectorySeparator($FilePath) -and $FilePath.Length -gt 4) {
 
-        $FilePath = $FilePath.SubString(0, $FilePath.Length - 1)
+        $FilePath = [IO.Path]::TrimEndingDirectorySeparator($FilePath);
     }
 
     return $FilePath;
