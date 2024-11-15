@@ -1,5 +1,3 @@
-###############################################################################
-
 <#
 Copyright 2021 GenXdev - genXdev
 
@@ -16,96 +14,211 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRA
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #>
+
 ###############################################################################
 
 <#
 .SYNOPSIS
- Finds files by searchmask
+Searches for file- or directory- names with optionally filtering regex content matching
 
 .DESCRIPTION
-Finds files by searchmask on every disk available in the current session
+Searches for file- or directory- names, optionally performs a regular expression
+match within the content of each matched file.
 
 .PARAMETER SearchMask
-Partial or full filename to look for
+Specify the file name or pattern to search for. Default is "*".
 
-.PARAMETER File
-Only find files
+.PARAMETER Pattern
+Specify the pattern to search within the files. Default is ".*".
+
+.PARAMETER AllDrives
+Search all drives.
 
 .PARAMETER Directory
-Only find directories
+Search for directories only.
+
+.PARAMETER Passthru
+Pass through the objects to the pipeline.
 
 .EXAMPLE
-Find-Item settings.json -File
+# Find all files with the .txt extension in the current directory and its subdirectories
+Find-Item -SearchMask "*.txt"
 
-Find-Item node_modules -Directory
+# or in short
+l *.txt
+
+.EXAMPLE
+# Find all files with that have the word "translation" in their name
+Find-Item -SearchMask "*translation*"
+
+# or in short
+l *translation*
+
+.EXAMPLE
+# Find all files with that have the word "translation" in their content
+Find-Item -Pattern "translation"
+
+# or in short
+l -mc translation
+
+.EXAMPLE
+
+# Find any javascript file that tests a version string in it's code
+Find-Item -SearchMask *.js -Pattern "Version == `"\d\d?\.\d\d?\.\d\d?`""
+
+# or in short
+l *.js "Version == `"\d\d?\.\d\d?\.\d\d?`""
+
+.EXAMPLE
+# Find all directories in the current directory and its subdirectories
+Find-Item -Directory
+
+# or in short
+l -dir
+
+.EXAMPLE
+# Find all files with the .log extension in all drives
+Find-Item -SearchMask "*.log" -AllDrives
+
+# or in short
+l *.log -all
+
+.EXAMPLE
+# Find all files with the .config extension and search for the pattern "connectionString" within the files
+Find-Item -SearchMask "*.config" -Pattern "connectionString"
+
+# or in short
+l *.config connectionString
+
+.EXAMPLE
+# Find all files with the .xml extension and pass the objects through the pipeline
+Find-Item -SearchMask "*.xml" -Passthru
+
+# or in short
+l *.xml -passthru
+
 #>
 function Find-Item {
 
-    [Alias("fi")]
-    [Alias("ff")]
+    [CmdletBinding(
+        DefaultParameterSetName = "Default"
+    )]
+    [Alias("l")]
 
     param (
-        [parameter(
-            Mandatory = $true,
+        #######################################################################
+        [Parameter(Mandatory = $false,
             Position = 0,
-            HelpMessage = "Search phrase to look for",
-            ValueFromPipeline = $false
+            HelpMessage = "Specify the file name or pattern to search for.
+            Default value is '*'")]
+        [Alias("like")]
+        [Alias("l")]
+        [PSDefaultValue(Value = "*")]
+        [string] $SearchMask = "*",
+        #######################################################################
+        [Parameter(
+            Mandatory = $false,
+            Position = 1,
+            ParameterSetName = 'WithPattern',
+            HelpMessage = "Specify the pattern to search within the files.
+            Default value is '.*'"
         )]
-        [string] $SearchMask,
-
+        [Alias("mc")]
+        [Alias("matchcontent")]
+        [PSDefaultValue(Value = ".*")]
+        [string] $Pattern = ".*",
+        #######################################################################
         [parameter(
             Mandatory = $false,
             HelpMessage = "Search all drives",
             ValueFromPipeline = $false
         )]
+        [Alias("all")]
         [switch] $AllDrives,
-
-        [parameter(
-            Mandatory = $false,
-            HelpMessage = "Return Item instead of file path strings",
-            ValueFromPipeline = $false
-        )]
-        [switch] $PassThrough,
-
+        #######################################################################
         [Parameter(
             HelpMessage = "Directory only",
             Mandatory = $false,
-            ValueFromPipeline = $false
+            ValueFromPipeline = $false,
+            ParameterSetName = 'DirectoriesOnly'
         )]
-        [switch] $Directory
+        [Alias("dir")]
+        [switch] $Directory,
+        #######################################################################
+        [Parameter(
+            Mandatory = $false,
+            HelpMessage = "Pass through the objects to the pipeline."
+        )]
+        [switch] $Passthru
+        #######################################################################
     )
 
-    $SearchMask = Expand-Path $SearchMask
-    $SearchDirectory = [IO.Path]::GetDirectoryName($SearchMask);
-    $SearchFileName = [IO.Path]::GetFileName($SearchMask);
+    ###############################################################################
+    process {
 
-    if ([string]::IsNullOrWhiteSpace($SearchDirectory)) { $SearchDirectory = "." };
-    if ([string]::IsNullOrWhiteSpace($SearchFileName)) { $SearchFileName = "*" };
-    if ([string]::IsNullOrWhiteSpace($SearchMask)) { $SearchMask = "*" };
+        function Search-FileContent {
+            param (
+                [string] $FilePath,
+                [string] $Pattern
+            )
 
-    if ($AllDrives) {
+            return Select-String -Path $FilePath -Pattern $Pattern
+        }
 
-        Get-PSDrive -ErrorAction SilentlyContinue | ForEach-Object -ThrottleLimit 8 -Parallel {
+        ###############################################################################
+        if (-not $Passthru) {
 
-            try {
+            "" | Out-Host
+        }
 
-                if ($_.Provider.Name -eq "FileSystem") {
+        # get current directory location
+        $location = Get-Location | ForEach-Object Path
 
-                    Get-ChildItem -Path "$($_.Root)*$SearchMask*" -File:$File -Directory:$Directory -Recurse -ErrorAction SilentlyContinue |
-                    ForEach-Object {
+        # have a pattern to search for inside files?
+        if ((-not $Directory) -and ($Pattern -ne ".*") -and (-not [string]::IsNullOrWhiteSpace($Pattern))) {
+
+            # search from the root of each available system drive?
+            if ($AllDrives) {
+
+                # perform in parallel
+                Get-PSDrive -ErrorAction SilentlyContinue | ForEach-Object -ThrottleLimit 8 -Parallel {
+
+                    # find for searchmask from the root of this drive
+                    Get-ChildItem "$($_.Root)*$SearchMask" -File:($Directory -eq $false) -rec | ForEach-Object {
 
                         try {
 
-                            Get-ChildItem -Path "$($_.FullName)\*$SearchFileName*" -File:($Directory -eq $false) -Directory:$Directory -ErrorAction SilentlyContinue |
-                            ForEach-Object {
+                            if (Search-FileContent -FilePath $_.fullname -Pattern $Pattern) {
 
-                                if ($PassThrough) {
+                                # correct filesystem?
+                                if ($_.Provider.Name -ne "FileSystem") { return }
 
-                                    $PSItem;
-                                }
-                                else {
+                                # find for searchmask from the root of this drive
+                                Get-ChildItem "$($_.Root)*$SearchMask" -File -rec | ForEach-Object {
 
-                                    $PSItem.FullName;
+                                    # found the pattern inside the file?
+                                    if (Search-FileContent -FilePath $_.fullname -Pattern $Pattern) {
+
+                                        # return Item object?
+                                        if ($Passthru) {
+
+                                            $_
+
+                                            return;
+                                        }
+
+                                        # is file located under current directory?
+                                        if ($_.FullName.StartsWith($location + [System.IO.Path]::DirectorySeparatorChar)) {
+
+                                            # return relative path name
+                                            ".$($_.fullname.substring($location.length))"
+                                        }
+                                        else {
+
+                                            # return full path name
+                                            $_.FullName
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -114,36 +227,96 @@ function Find-Item {
                         }
                     }
                 }
-            }
-            catch {
 
+                # end of section that handles pattern search on ALL drives
+                return;
             }
+
+            # search from current location for $searchMask
+            Get-ChildItem ".$([System.IO.Path]::DirectorySeparatorChar)$SearchMask" -File -rec | ForEach-Object {
+
+                # no pattern, or pattern found inside the file?
+                if (($Pattern -eq ".*") -or (Search-FileContent -FilePath ($_.FullName) -Pattern $Pattern)) {
+
+                    # return Item object?
+                    if ($Passthru) {
+
+                        $_
+
+                        return;
+                    }
+
+                    # is file located under current directory?
+                    if ($_.FullName.StartsWith($location + [System.IO.Path]::DirectorySeparatorChar)) {
+
+                        # return relative path name
+                        ".$($_.fullname.substring($location.length))"
+                    }
+                    else {
+
+                        # return full path name
+                        $_.FullName
+                    }
+                }
+            }
+
+            # end of section that handles pattern search
+            return;
         }
 
-        return;
-    }
+        # search from the root of each available system drive WITHOUT pattern?
+        if ($AllDrives) {
 
-    try {
+            # perform in parallel
+            Get-PSDrive -ErrorAction SilentlyContinue | ForEach-Object -ThrottleLimit 8 -Parallel {
 
-        Get-ChildItem -Path "$SearchDirectory\$SearchFileName" -Directory:$Directory -File:$File -Recurse -ErrorAction SilentlyContinue |
-        ForEach-Object {
+                try {
 
-            if ($PassThrough) {
+                    # correct filesystem?
+                    if ($_.Provider.Name -ne "FileSystem") { return }
 
-                $PSItem;
+                    # find for searchmask from the root of this drive
+                    Get-ChildItem "$($_.Root)*$SearchMask" -File:($Directory -eq $false) -Directory:($Directory -eq $true) -rec | ForEach-Object {
+
+                        # return Item object?
+                        if ($Passthru) {
+
+                            $_
+
+                            return;
+                        }
+
+                        # return full path name
+                        $_.FullName
+                    }
+                }
+                catch {
+
+                }
             }
-            else {
 
-                $PSItem.FullName;
+            # end of section that handles search on ALL drives wihtout pattern
+            return;
+        }
+
+        # search without pattern, no '-alldrives'
+        Get-ChildItem ".\$SearchMask" -File:($Directory -eq $false) -Directory:($Directory -eq $true) -rec | ForEach-Object {
+
+            if ($Passthru) {
+
+                $_
+
+                return;
             }
+
+            # return relative path name
+            ".$($_.fullname.substring($location.length))"
         }
-        catch {
 
+        if (-not $Passthru) {
+
+            "" | Out-Host
         }
-
-    }
-    catch {
-
     }
 }
 
@@ -179,7 +352,7 @@ function Expand-Path {
         [switch] $CreateDirectory
     )
 
-    $hasSlash = $FilePath.EndsWith("\") -or $FilePath.EndsWith("/");
+    $hasSlash = $FilePath.EndsWith([System.IO.Path]::DirectorySeparatorChar) -or $FilePath.EndsWith([System.IO.Path]::DirectorySeparatorChar);
 
     # root folder included?
     if (($FilePath.Length -gt 1) -and ($FilePath.Substring(0, 1) -eq "~")) {
@@ -468,7 +641,7 @@ function Start-RoboCopy {
             If this directory does not exist yet, all missing directories will be created.
             Default value = `".\`""
         )]
-        [string]$DestinationDirectory = ".\",
+        [string]$DestinationDirectory = ".$([System.IO.Path]::DirectorySeparatorChar)",
         ###############################################################################
 
         [Parameter(
@@ -1733,7 +1906,7 @@ function Rename-InProject {
 
         if ([String]::IsNullOrWhiteSpace($Source)) {
 
-            $Source = ".\";
+            $Source = "$([System.IO.Path]::DirectorySeparatorChar)\";
         }
 
         if ([String]::IsNullOrWhiteSpace($findText)) {
@@ -2057,8 +2230,6 @@ function Remove-AllItems {
         )]
         [switch] $WhatIf
     )
-
-    [string] $Root = Expand-Path -FilePath $Path
 
     # initialize
     [bool] $WhatIfValue = $WhatIf -or $WhatIfPreference;
