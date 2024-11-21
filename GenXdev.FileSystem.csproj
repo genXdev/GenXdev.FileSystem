@@ -1,13 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <TargetFramework>net8.0-windows</TargetFramework>
+        <OutputType>Library</OutputType>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <SelfContained>true</SelfContained>
+
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>disable</Nullable>
         <PackageLicenseFile>license.txt</PackageLicenseFile>
         <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
         <NeutralLanguage>en</NeutralLanguage>
-        <AssemblyVersion>1.36.2024</AssemblyVersion>
-        <FileVersion>1.36.2024</FileVersion>
+        <AssemblyVersion>1.56.2024</AssemblyVersion>
+        <FileVersion>1.56.2024</FileVersion>
         <Description>A Windows PowerShell module for basic and advanced file management tasks</Description>
         <Copyright>Copyright (c) 2024 GenXdev</Copyright>
         <PackageProjectUrl>https://github.com/genXdev/GenXdev.FileSystem</PackageProjectUrl>
@@ -21,8 +25,10 @@
         <RootNamespace>GenXdev.FileSystem</RootNamespace>
         <OutputPath>./bin/</OutputPath>
         <IntermediateOutputPath>./obj/</IntermediateOutputPath>
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <BaseOutputPath>.\bin\</BaseOutputPath>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="System.Management.Automation" Version="7.4.2" />
+        <PackageReference Include="System.Management.Automation" Version="7.4.6" />
     </ItemGroup>
 </Project>

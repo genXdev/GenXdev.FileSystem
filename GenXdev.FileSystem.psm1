@@ -2232,6 +2232,7 @@ function Remove-AllItems {
     )
 
     # initialize
+    $Path = Expand-Path $Path
     [bool] $WhatIfValue = $WhatIf -or $WhatIfPreference;
     [bool] $VerboseValue = $Verbose -or $VerbosePreference -or $WhatIfValue;
 
