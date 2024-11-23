@@ -233,7 +233,7 @@ function Find-Item {
             }
 
             # search from current location for $searchMask
-            Get-ChildItem ".$([System.IO.Path]::DirectorySeparatorChar)$SearchMask" -File -rec | ForEach-Object {
+            Get-ChildItem "$(($SearchMask.Contains([System.IO.Path]::DirectorySeparatorChar) ? $SearchMask : ".$([System.IO.Path]::DirectorySeparatorChar)$SearchMask"))" -File -rec | ForEach-Object {
 
                 # no pattern, or pattern found inside the file?
                 if (($Pattern -eq ".*") -or (Search-FileContent -FilePath ($_.FullName) -Pattern $Pattern)) {
@@ -300,7 +300,7 @@ function Find-Item {
         }
 
         # search without pattern, no '-alldrives'
-        Get-ChildItem ".\$SearchMask" -File:($Directory -eq $false) -Directory:($Directory -eq $true) -rec | ForEach-Object {
+        Get-ChildItem "$(($SearchMask.Contains([System.IO.Path]::DirectorySeparatorChar) ? $SearchMask : ".$([System.IO.Path]::DirectorySeparatorChar)$SearchMask"))" -File:($Directory -eq $false) -Directory:($Directory -eq $true) -rec | ForEach-Object {
 
             if ($Passthru) {
 
@@ -309,8 +309,17 @@ function Find-Item {
                 return;
             }
 
-            # return relative path name
-            ".$($_.fullname.substring($location.length))"
+            # is file located under current directory?
+            if ($_.FullName.StartsWith($location + [System.IO.Path]::DirectorySeparatorChar)) {
+
+                # return relative path name
+                ".$($_.fullname.substring($location.length))"
+            }
+            else {
+
+                # return full path name
+                $_.FullName
+            }
         }
 
         if (-not $Passthru) {
