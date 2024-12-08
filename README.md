@@ -201,22 +201,22 @@ Start-RoboCopy                       --> rc, xc
 
 ### SYNTAX
 ````PowerShell
-Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] 
-<String[]>] [-Mirror] [-Move] [-IncludeSecurity] [-SkipDirectories] 
+Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>] 
+[-Mirror] [-Move] [-IncludeSecurity] [-SkipDirectories] 
 [-CopyOnlyDirectoryTreeStructureAndEmptyFiles] [-SkipAllSymbolicLinks] 
 [-SkipSymbolicFileLinks] [-CopySymbolicLinksAsLinks] [-Force] 
 [-SkipFilesWithoutArchiveAttribute] [-ResetArchiveAttributeAfterSelection] 
 [-FileExcludeFilter <String[]>] [-AttributeIncludeFilter <String>] 
 [-AttributeExcludeFilter <String>] [-SetAttributesAfterCopy <String>] 
 [-RemoveAttributesAfterCopy <String>] [-MinFileSize <Int32>] [-MaxFileSize <Int32>] 
-[-MinFileAge <Int32>] [-MaxFileAge <Int32>] [-MinLastAccessAge <Int32>] 
-[-MaxLastAccessAge <Int32>] [-RecoveryMode] [-MonitorMode] [-MonitorModeThresholdMinutes 
-<Int32>] [-MonitorModeThresholdNrOfChanges <Int32>] [-MonitorModeRunHoursFrom <Int32>] 
+[-MinFileAge <Int32>] [-MaxFileAge <Int32>] [-MinLastAccessAge <Int32>] [-MaxLastAccessAge 
+<Int32>] [-RecoveryMode] [-MonitorMode] [-MonitorModeThresholdMinutes <Int32>] 
+[-MonitorModeThresholdNrOfChanges <Int32>] [-MonitorModeRunHoursFrom <Int32>] 
 [-MonitorModeRunHoursUntil <Int32>] [-LogFilePath <String>] [-LogfileOverwrite] 
 [-LogDirectoryNames] [-LogAllFileNames] [-Unicode] [-LargeFiles] [-MultiThreaded] 
 [-CompressibleContent] [[-Override] <String>] [-WhatIf] [<CommonParameters>]
-Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] 
-<String[]>] [-Mirror] [-Move] [-IncludeSecurity] [-SkipEmptyDirectories] 
+Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>] 
+[-Mirror] [-Move] [-IncludeSecurity] [-SkipEmptyDirectories] 
 [-CopyOnlyDirectoryTreeStructure] [-CopyOnlyDirectoryTreeStructureAndEmptyFiles] 
 [-SkipAllSymbolicLinks] [-SkipSymbolicFileLinks] [-CopySymbolicLinksAsLinks] 
 [-SkipJunctions] [-CopyJunctionsAsJunctons] [-Force] [-SkipFilesWithoutArchiveAttribute] 
@@ -238,10 +238,10 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files]
     Copies file data from one location to another.
     Robocopy, for "Robust File Copy", is a command-line directory and/or file replication 
     command for Microsoft Windows.
-    Robocopy functionally replaces Xcopy, with more options. Created by Kevin Allen and 
-    first released as part of the
-    Windows NT 4.0 Resource Kit, it has been a standard feature of Windows since Windows 
-    Vista and Windows Server 2008.
+    Robocopy functionally replaces Xcopy, with more options. Created by Kevin Allen and first 
+    released as part of the
+    Windows NT 4.0 Resource Kit, it has been a standard feature of Windows since Windows Vista 
+    and Windows Server 2008.
     Key features
     - Folder synchronization
     - Support for extra long pathnames > 256 characters
@@ -342,24 +342,22 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -CopySymbolicLinksAsLinks [<SwitchParameter>]
-        Instead of copying the content where symbolic links point to, copy the links 
-        themselves
+        Instead of copying the content where symbolic links point to, copy the links themselves
         Required?                    false
         Position?                    named
         Default value                False
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -SkipJunctions [<SwitchParameter>]
-        Do not copy directory junctions (symbolic link for a folder) or the content they 
-        point to
+        Do not copy directory junctions (symbolic link for a folder) or the content they point 
+        to
         Required?                    false
         Position?                    named
         Default value                False
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -CopyJunctionsAsJunctons [<SwitchParameter>]
-        Instead of copying the content where junctions point to, copy the junctions 
-        themselves
+        Instead of copying the content where junctions point to, copy the junctions themselves
         Required?                    false
         Position?                    named
         Default value                False
@@ -380,8 +378,8 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -ResetArchiveAttributeAfterSelection [<SwitchParameter>]
-        In addition of copying only files that have the archive attribute set, will then 
-        reset this attribute on the source
+        In addition of copying only files that have the archive attribute set, will then reset 
+        this attribute on the source
         Required?                    false
         Position?                    named
         Default value                False
@@ -459,8 +457,8 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -MaxFileAge <Int32>
-        Skip files that are older then: n days OR created after n date (if n < 1900 then n = 
-        n days, else n = YYYYMMDD date)
+        Skip files that are older then: n days OR created after n date (if n < 1900 then n = n 
+        days, else n = YYYYMMDD date)
         Required?                    false
         Position?                    named
         Default value                -1
@@ -475,8 +473,8 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -MaxLastAccessAge <Int32>
-        Skip files that have not been accessed in: n days OR after n date (if n < 1900 then 
-        n = n days, else n = YYYYMMDD date)
+        Skip files that have not been accessed in: n days OR after n date (if n < 1900 then n 
+        = n days, else n = YYYYMMDD date)
         Required?                    false
         Position?                    named
         Default value                -1
@@ -575,8 +573,8 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -CompressibleContent [<SwitchParameter>]
-        If applicable use compression when copying files between servers to safe bandwidth 
-        and time
+        If applicable use compression when copying files between servers to safe bandwidth and 
+        time
         Required?                    false
         Position?                    named
         Default value                False
@@ -599,8 +597,8 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -WhatIf [<SwitchParameter>]
-        Displays a message that describes the effect of the command, instead of executing 
-        the command.
+        Displays a message that describes the effect of the command, instead of executing the 
+        command.
         Required?                    false
         Position?                    named
         Default value                False
@@ -629,8 +627,8 @@ Rename-InProject [[-Source] <String>] [-FindText] <String> [-ReplacementText] <S
 ````
 
 ### DESCRIPTION
-    Performs a rename action throughout a project folder. It will skip .git and .svn 
-    folders, images, archives and other common known binaries.
+    Performs a rename action throughout a project folder. It will skip .git and .svn folders, 
+    images, archives and other common known binaries.
     But will rename within other files, like sourcecode, json, html, etc, AND folders and 
     filenames!
     Always perform a -WhatIf operation first, to validate the actions it will take.
@@ -658,8 +656,8 @@ Rename-InProject [[-Source] <String>] [-FindText] <String> [-ReplacementText] <S
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -WhatIf [<SwitchParameter>]
-        Displays a message that describes the effect of the command, instead of executing 
-        the command.
+        Displays a message that describes the effect of the command, instead of executing the 
+        command.
         Required?                    false
         Position?                    named
         Default value                False
@@ -696,8 +694,8 @@ Remove-AllItems [-Path] <String> [-DeleteFolder] [-WhatIf] [<CommonParameters>]
 ````
 
 ### DESCRIPTION
-    This function removes all files and folders in the specified directory. The directory 
-    path is first expanded using the Expand-Path function.
+    This function removes all files and folders in the specified directory. The directory path 
+    is first expanded using the Expand-Path function.
 
 ### PARAMETERS
     -Path <String>
@@ -715,8 +713,8 @@ Remove-AllItems [-Path] <String> [-DeleteFolder] [-WhatIf] [<CommonParameters>]
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -WhatIf [<SwitchParameter>]
-        Displays a message that describes the effect of the command, instead of executing 
-        the command.
+        Displays a message that describes the effect of the command, instead of executing the 
+        command.
         Required?                    false
         Position?                    named
         Default value                False
