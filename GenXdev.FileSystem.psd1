@@ -7,7 +7,7 @@
   RootModule           = 'GenXdev.FileSystem.psm1'
 
   # Version number of this module.
-  ModuleVersion        = '1.76.2024'
+  ModuleVersion        = '1.78.2024'
 
   # ID used to uniquely identify this module
   GUID                 = '2f62080f-0483-4421-8497-b3d433b65171'
@@ -572,6 +572,6 @@
   } # End of PrivateData hashtable
 
   # HelpInfo URI of this module
-  HelpInfoURI          = 'https://github.com/genXdev/GenXdev.FileSystem/blob/main/README.md#cmdlet-index'
+  # HelpInfoUri          = 'https://github.com/genXdev/GenXdev.FileSystem/blob/main/README.md#cmdlet-index'
 }
 
