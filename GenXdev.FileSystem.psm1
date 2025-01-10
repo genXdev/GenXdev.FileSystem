@@ -37,7 +37,7 @@ Search all drives.
 .PARAMETER Directory
 Search for directories only.
 
-.PARAMETER Passthru
+.PARAMETER PassThru
 Pass through the objects to the pipeline.
 
 .EXAMPLE
@@ -92,10 +92,10 @@ l *.config connectionString
 
 .EXAMPLE
 # Find all files with the .xml extension and pass the objects through the pipeline
-Find-Item -SearchMask "*.xml" -Passthru
+Find-Item -SearchMask "*.xml" -PassThru
 
 # or in short
-l *.xml -passthru
+l *.xml -PassThru
 
 #>
 function Find-Item {
@@ -149,13 +149,12 @@ function Find-Item {
             Mandatory = $false,
             HelpMessage = "Pass through the objects to the pipeline."
         )]
-        [switch] $Passthru
+        [switch] $PassThru
         #######################################################################
     )
 
     ###############################################################################
     process {
-
         function Search-FileContent {
             param (
                 [string] $FilePath,
@@ -166,7 +165,7 @@ function Find-Item {
         }
 
         ###############################################################################
-        if (-not $Passthru) {
+        if (-not $PassThru) {
 
             "" | Out-Host
         }
@@ -183,40 +182,45 @@ function Find-Item {
                 # perform in parallel
                 Get-PSDrive -ErrorAction SilentlyContinue | ForEach-Object -ThrottleLimit 8 -Parallel {
 
+                    $file = [IO.Path]::GetFileName($SearchMask);
+                    $filter = [string]::IsNullOrEmpty($file) ? "*" : $file;
+
                     # find for searchmask from the root of this drive
-                    Get-ChildItem "$($_.Root)*$SearchMask" -File:($Directory -eq $false) -rec | ForEach-Object {
+                    Get-ChildItem "$($PSItem.Root)" -File:($Directory -eq $false) -Directory ($Directory -eq $true) -rec |
+                    Where-Object -Property Name -Like $filter |
+                    ForEach-Object {
 
                         try {
 
-                            if (Search-FileContent -FilePath $_.fullname -Pattern $Pattern) {
+                            if (Search-FileContent -FilePath $PSItem.fullname -Pattern $Pattern) {
 
                                 # correct filesystem?
-                                if ($_.Provider.Name -ne "FileSystem") { return }
+                                if ($PSItem.Provider.Name -ne "FileSystem") { return }
 
                                 # find for searchmask from the root of this drive
-                                Get-ChildItem "$($_.Root)*$SearchMask" -File -rec | ForEach-Object {
+                                Get-ChildItem "$($PSItem.Root)$SearchMask" -File -rec | ForEach-Object {
 
                                     # found the pattern inside the file?
-                                    if (Search-FileContent -FilePath $_.fullname -Pattern $Pattern) {
+                                    if (Search-FileContent -FilePath $PSItem.fullname -Pattern $Pattern) {
 
                                         # return Item object?
-                                        if ($Passthru) {
+                                        if ($PassThru) {
 
-                                            $_
+                                            $PSItem
 
                                             return;
                                         }
 
                                         # is file located under current directory?
-                                        if ($_.FullName.StartsWith($location + [System.IO.Path]::DirectorySeparatorChar)) {
+                                        if ($PSItem.FullName.StartsWith($location + [System.IO.Path]::DirectorySeparatorChar)) {
 
                                             # return relative path name
-                                            ".$($_.fullname.substring($location.length))"
+                                            ".$($PSItem.fullname.substring($location.length))"
                                         }
                                         else {
 
                                             # return full path name
-                                            $_.FullName
+                                            $PSItem.FullName
                                         }
                                     }
                                 }
@@ -236,26 +240,26 @@ function Find-Item {
             Get-ChildItem "$(($SearchMask.Contains([System.IO.Path]::DirectorySeparatorChar) ? $SearchMask : ".$([System.IO.Path]::DirectorySeparatorChar)$SearchMask"))" -File -rec | ForEach-Object {
 
                 # no pattern, or pattern found inside the file?
-                if (($Pattern -eq ".*") -or (Search-FileContent -FilePath ($_.FullName) -Pattern $Pattern)) {
+                if (($Pattern -eq ".*") -or (Search-FileContent -FilePath ($PSItem.FullName) -Pattern $Pattern)) {
 
                     # return Item object?
-                    if ($Passthru) {
+                    if ($PassThru) {
 
-                        $_
+                        $PSItem
 
                         return;
                     }
 
                     # is file located under current directory?
-                    if ($_.FullName.StartsWith($location + [System.IO.Path]::DirectorySeparatorChar)) {
+                    if ($PSItem.FullName.StartsWith($location + [System.IO.Path]::DirectorySeparatorChar)) {
 
                         # return relative path name
-                        ".$($_.fullname.substring($location.length))"
+                        ".$($PSItem.fullname.substring($location.length))"
                     }
                     else {
 
                         # return full path name
-                        $_.FullName
+                        $PSItem.FullName
                     }
                 }
             }
@@ -273,21 +277,25 @@ function Find-Item {
                 try {
 
                     # correct filesystem?
-                    if ($_.Provider.Name -ne "FileSystem") { return }
+                    if ($PSItem.Provider.Name -ne "FileSystem") { return }
+                    $file = [IO.Path]::GetFileName($SearchMask);
+                    $filter = [string]::IsNullOrEmpty($file) ? "*" : $file;
 
                     # find for searchmask from the root of this drive
-                    Get-ChildItem "$($_.Root)*$SearchMask" -File:($Directory -eq $false) -Directory:($Directory -eq $true) -rec | ForEach-Object {
+                    Get-ChildItem "$($PSItem.Root)" -File:($Directory -eq $false) -Directory ($Directory -eq $true) -rec |
+                    Where-Object -Property Name -Like $filter |
+                    ForEach-Object {
 
                         # return Item object?
-                        if ($Passthru) {
+                        if ($PassThru) {
 
-                            $_
+                            $PSItem
 
                             return;
                         }
 
                         # return full path name
-                        $_.FullName
+                        $PSItem.FullName
                     }
                 }
                 catch {
@@ -300,29 +308,39 @@ function Find-Item {
         }
 
         # search without pattern, no '-alldrives'
-        Get-ChildItem "$(($SearchMask.Contains([System.IO.Path]::DirectorySeparatorChar) ? $SearchMask : ".$([System.IO.Path]::DirectorySeparatorChar)$SearchMask"))" -File:($Directory -eq $false) -Directory:($Directory -eq $true) -rec | ForEach-Object {
+        $dir = [IO.Path]::GetDirectoryName($SearchMask);
+        if ([string]::IsNullOrEmpty($dir)) {
 
-            if ($Passthru) {
+            $dir = ".$([System.IO.Path]::DirectorySeparatorChar)";
+        }
+        $file = [IO.Path]::GetFileName($SearchMask);
+        $search = [string]::IsNullOrEmpty($dir) ? ([string]::IsNullOrEmpty($file) ? "*" : $file) : $dir;
+        $filter = [string]::IsNullOrEmpty($file) ? "*" : $file;
+        Get-ChildItem $search -File:($Directory -eq $false) -Directory:($Directory -eq $true) -rec |
+        Where-Object -Property Name -Like $filter |
+        ForEach-Object {
 
-                $_
+            if ($PassThru) {
+
+                $PSItem
 
                 return;
             }
 
             # is file located under current directory?
-            if ($_.FullName.StartsWith($location + [System.IO.Path]::DirectorySeparatorChar)) {
+            if ($PSItem.FullName.StartsWith($location + [System.IO.Path]::DirectorySeparatorChar)) {
 
                 # return relative path name
-                ".$($_.fullname.substring($location.length))"
+                ".$($PSItem.fullname.substring($location.length))"
             }
             else {
 
                 # return full path name
-                $_.FullName
+                $PSItem.FullName
             }
         }
 
-        if (-not $Passthru) {
+        if (-not $PassThru) {
 
             "" | Out-Host
         }
@@ -634,7 +652,7 @@ function Start-RoboCopy {
         ###############################################################################
 
         [Parameter(
-            Mandatory = $true,
+            Mandatory,
             Position = 0,
             ValueFromPipeline = $false,
             HelpMessage = "The directory, filepath, or directory+searchmask"
@@ -1031,7 +1049,7 @@ function Start-RoboCopy {
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
-            ValueFromRemainingArguments = $true,
+            ValueFromRemainingArguments,
             Position = 3,
             HelpMessage = "Overrides, Removes, or Adds any specified robocopy parameter.
 
@@ -1849,7 +1867,7 @@ function Rename-InProject {
         [string] $Source,
 
         [Parameter(
-            Mandatory = $true,
+            Mandatory,
             ValueFromPipeline = $false,
             Position = 1,
             HelpMessage = "string to match (case sensitive)")]
@@ -1857,7 +1875,7 @@ function Rename-InProject {
         [string] $FindText,
 
         [Parameter(
-            Mandatory = $true,
+            Mandatory,
             ValueFromPipeline = $false,
             Position = 2,
             HelpMessage = "The replacement text")]
@@ -2220,7 +2238,7 @@ function Remove-AllItems {
 
     param(
         [Parameter(
-            Mandatory = $true,
+            Mandatory,
             HelpMessage = "The path of the directory to clear.")
         ]
         [string] $Path,
@@ -2270,7 +2288,7 @@ function Remove-AllItems {
                             Write-Verbose "Deleting file: '$item'" -Verbose
                         }
                         catch {
-                            Write-Warning "$_"
+                            Write-Warning "$PSItem"
                         }
                     }
                     else {
@@ -2278,7 +2296,7 @@ function Remove-AllItems {
                             Remove-Item -Path $item -Force
                         }
                         catch {
-                            Write-Warning "$_"
+                            Write-Warning "$PSItem"
                         }
                     }
                 }
@@ -2304,7 +2322,7 @@ function Remove-AllItems {
                         [System.IO.Directory]::Delete($item, $true);
                     }
                     catch {
-                        Write-Warning "$_"
+                        Write-Warning "$PSItem"
                     }
                 }
 
@@ -2328,7 +2346,7 @@ function Remove-AllItems {
                     [System.IO.Directory]::Delete($Path, $true);
                 }
                 catch {
-                    Write-Warning "$_"
+                    Write-Warning "$PSItem"
                 }
 
                 if ($VerboseValue) {
@@ -2349,6 +2367,73 @@ function Remove-AllItems {
 }
 
 ################################################################################
+
+<#
+.SYNOPSIS
+Find duplicate files by name across the specified directories.
+
+.DESCRIPTION
+Takes an array of directory paths, searches each path recursively for files,
+then groups files by name. Any group with two or more files is returned as a
+custom object containing the file name and the duplicated file objects.
+
+.PARAMETER Paths
+One or more directory paths to search for duplicate files.
+
+.EXAMPLE
+Find-DuplicateFiles -Paths "C:\Folder1","D:\Folder2"
+#>
+
+function Find-DuplicateFiles {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, Position = 0, HelpMessage = "One or more directory paths to search for duplicate files.")]
+        [string[]] $Paths,
+
+        [Parameter(Mandatory = $false, HelpMessage = "Do not compare file sizes.")]
+        [switch] $DontCompareSize,
+
+        [Parameter(Mandatory = $false, HelpMessage = "Do not compare file modified dates.")]
+        [switch] $DontCompareModifiedDate
+    )
+
+
+    process {
+
+        function Build-Key($file, $dontCompareSize, $dontCompareModifiedDate) {
+
+            $key = $file.Name
+            if (-not $dontCompareSize) {
+                $key += "|$($file.Length)"
+            }
+            if (-not $dontCompareModifiedDate) {
+                $key += "|$($file.LastWriteTime.ToUniversalTime().ToString('o'))"
+            }
+
+            return $key
+        }
+
+        $allFiles = foreach ($path in $Paths) {
+            if (Test-Path $path) {
+                Get-ChildItem -Path $path -Recurse -File
+            }
+        }
+
+        $duplicates = $allFiles |
+        Group-Object -Property {
+            Build-Key $_ $DontCompareSize $DontCompareModifiedDate
+        } |
+        Where-Object { $_.Count -gt 1 }
+
+        foreach ($dup in $duplicates) {
+            [PSCustomObject]@{
+                FileName = $dup.Group[0].Name
+                Files    = $dup.Group
+            }
+        }
+    }
+}
+
 ################################################################################
 ################################################################################
 

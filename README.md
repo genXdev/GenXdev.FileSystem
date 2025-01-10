@@ -76,6 +76,7 @@ Update-Module
 | [Start-RoboCopy](#Start-RoboCopy) | rc, xc | Wrapper for Microsoft's Robust Copy UtilityCopies file data from one location to another.Robocopy, for "Robust File Copy", is a command-line directory and/or file replication command for Microsoft Windows.Robocopy functionally replaces Xcopy, with more options. Created by Kevin Allen and first released as part of theWindows NT 4.0 Resource Kit, it has been a standard feature of Windows since Windows Vista and Windows Server 2008.Key features- Folder synchronization- Support for extra long pathnames > 256 characters- Restartable mode backups- Support for copying and fixing security settings- Advanced file attribute features- Advanced symbolic link and junction support- Monitor mode (restart copying after change threshold)- Optimization features for LargeFiles, multithreaded copying and network compression- Recovery mode (copy from failing disks) |
 | [Rename-InProject](#Rename-InProject) | rip | Performs a rename action throughout a project folder. It will skip .git and .svn folders, images, archives and other common known binaries.But will rename within other files, like sourcecode, json, html, etc, AND folders and filenames!Always perform a -WhatIf operation first, to validate the actions it will take. |
 | [Remove-AllItems](#Remove-AllItems) | sdel | This function removes all files and folders in the specified directory. The directory path is first expanded using the Expand-Path function. |
+| [Find-DuplicateFiles](#Find-DuplicateFiles) |  | Takes an array of directory paths, searches each path recursively for files,then groups files by name. Any group with two or more files is returned as acustom object containing the file name and the duplicated file objects. |
 
 <br/><hr/><hr/><br/>
 
@@ -95,10 +96,10 @@ Find-Item                            --> l
 
 ### SYNTAX
 ````PowerShell
-Find-Item [[-SearchMask] <String>] [-AllDrives] [-Passthru] [<CommonParameters>]
-Find-Item [[-SearchMask] <String>] [[-Pattern] <String>] [-AllDrives] [-Passthru] 
+Find-Item [[-SearchMask] <String>] [-AllDrives] [-PassThru] [<CommonParameters>]
+Find-Item [[-SearchMask] <String>] [[-Pattern] <String>] [-AllDrives] [-PassThru] 
 [<CommonParameters>]
-Find-Item [[-SearchMask] <String>] [-AllDrives] [-Directory] [-Passthru] 
+Find-Item [[-SearchMask] <String>] [-AllDrives] [-Directory] [-PassThru] 
 [<CommonParameters>]
 ````
 
@@ -135,7 +136,7 @@ Find-Item [[-SearchMask] <String>] [-AllDrives] [-Directory] [-Passthru]
         Default value                False
         Accept pipeline input?       false
         Accept wildcard characters?  false
-    -Passthru [<SwitchParameter>]
+    -PassThru [<SwitchParameter>]
         Pass through the objects to the pipeline.
         Required?                    false
         Position?                    named
@@ -206,15 +207,15 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
 [-CopyOnlyDirectoryTreeStructureAndEmptyFiles] [-SkipAllSymbolicLinks] 
 [-SkipSymbolicFileLinks] [-CopySymbolicLinksAsLinks] [-Force] 
 [-SkipFilesWithoutArchiveAttribute] [-ResetArchiveAttributeAfterSelection] 
-[-FileExcludeFilter <String[]>] [-AttributeIncludeFilter <String>] 
-[-AttributeExcludeFilter <String>] [-SetAttributesAfterCopy <String>] 
-[-RemoveAttributesAfterCopy <String>] [-MinFileSize <Int32>] [-MaxFileSize <Int32>] 
-[-MinFileAge <Int32>] [-MaxFileAge <Int32>] [-MinLastAccessAge <Int32>] [-MaxLastAccessAge 
-<Int32>] [-RecoveryMode] [-MonitorMode] [-MonitorModeThresholdMinutes <Int32>] 
-[-MonitorModeThresholdNrOfChanges <Int32>] [-MonitorModeRunHoursFrom <Int32>] 
-[-MonitorModeRunHoursUntil <Int32>] [-LogFilePath <String>] [-LogfileOverwrite] 
-[-LogDirectoryNames] [-LogAllFileNames] [-Unicode] [-LargeFiles] [-MultiThreaded] 
-[-CompressibleContent] [[-Override] <String>] [-WhatIf] [<CommonParameters>]
+[-FileExcludeFilter <String[]>] [-AttributeIncludeFilter <String>] [-AttributeExcludeFilter 
+<String>] [-SetAttributesAfterCopy <String>] [-RemoveAttributesAfterCopy <String>] 
+[-MinFileSize <Int32>] [-MaxFileSize <Int32>] [-MinFileAge <Int32>] [-MaxFileAge <Int32>] 
+[-MinLastAccessAge <Int32>] [-MaxLastAccessAge <Int32>] [-RecoveryMode] [-MonitorMode] 
+[-MonitorModeThresholdMinutes <Int32>] [-MonitorModeThresholdNrOfChanges <Int32>] 
+[-MonitorModeRunHoursFrom <Int32>] [-MonitorModeRunHoursUntil <Int32>] [-LogFilePath 
+<String>] [-LogfileOverwrite] [-LogDirectoryNames] [-LogAllFileNames] [-Unicode] 
+[-LargeFiles] [-MultiThreaded] [-CompressibleContent] [[-Override] <String>] [-WhatIf] 
+[<CommonParameters>]
 Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>] 
 [-Mirror] [-Move] [-IncludeSecurity] [-SkipEmptyDirectories] 
 [-CopyOnlyDirectoryTreeStructure] [-CopyOnlyDirectoryTreeStructureAndEmptyFiles] 
@@ -349,8 +350,7 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -SkipJunctions [<SwitchParameter>]
-        Do not copy directory junctions (symbolic link for a folder) or the content they point 
-        to
+        Do not copy directory junctions (symbolic link for a folder) or the content they point to
         Required?                    false
         Position?                    named
         Default value                False
@@ -449,8 +449,8 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -MinFileAge <Int32>
-        Skip files that are not at least: n days old OR created before n date (if n < 1900 
-        then n = n days, else n = YYYYMMDD date)
+        Skip files that are not at least: n days old OR created before n date (if n < 1900 then 
+        n = n days, else n = YYYYMMDD date)
         Required?                    false
         Position?                    named
         Default value                -1
@@ -465,16 +465,16 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -MinLastAccessAge <Int32>
-        Skip files that are accessed within the last: n days OR before n date (if n < 1900 
-        then n = n days, else n = YYYYMMDD date)
+        Skip files that are accessed within the last: n days OR before n date (if n < 1900 then 
+        n = n days, else n = YYYYMMDD date)
         Required?                    false
         Position?                    named
         Default value                -1
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -MaxLastAccessAge <Int32>
-        Skip files that have not been accessed in: n days OR after n date (if n < 1900 then n 
-        = n days, else n = YYYYMMDD date)
+        Skip files that have not been accessed in: n days OR after n date (if n < 1900 then n = 
+        n days, else n = YYYYMMDD date)
         Required?                    false
         Position?                    named
         Default value                -1
@@ -488,8 +488,8 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         Accept pipeline input?       false
         Accept wildcard characters?  false
     -MonitorMode [<SwitchParameter>]
-        Will stay active after copying, and copy additional changes after a a default 
-        threshold of 10 minutes
+        Will stay active after copying, and copy additional changes after a a default threshold 
+        of 10 minutes
         Required?                    false
         Position?                    named
         Default value                False
@@ -715,6 +715,53 @@ Remove-AllItems [-Path] <String> [-DeleteFolder] [-WhatIf] [<CommonParameters>]
     -WhatIf [<SwitchParameter>]
         Displays a message that describes the effect of the command, instead of executing the 
         command.
+        Required?                    false
+        Position?                    named
+        Default value                False
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+    <CommonParameters>
+        This cmdlet supports the common parameters: Verbose, Debug,
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216). 
+
+<br/><hr/><hr/><br/>
+
+##	Find-DuplicateFiles
+````PowerShell
+Find-DuplicateFiles
+````
+
+### SYNOPSIS
+    Find duplicate files by name across the specified directories.
+
+### SYNTAX
+````PowerShell
+Find-DuplicateFiles [-Paths] <String[]> [-DontCompareSize] [-DontCompareModifiedDate] 
+[<CommonParameters>]
+````
+
+### DESCRIPTION
+    Takes an array of directory paths, searches each path recursively for files,
+    then groups files by name. Any group with two or more files is returned as a
+    custom object containing the file name and the duplicated file objects.
+
+### PARAMETERS
+    -Paths <String[]>
+        One or more directory paths to search for duplicate files.
+        Required?                    true
+        Position?                    1
+        Default value                
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+    -DontCompareSize [<SwitchParameter>]
+        Required?                    false
+        Position?                    named
+        Default value                False
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+    -DontCompareModifiedDate [<SwitchParameter>]
         Required?                    false
         Position?                    named
         Default value                False
