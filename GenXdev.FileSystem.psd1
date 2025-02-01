@@ -7,7 +7,7 @@
   RootModule           = 'GenXdev.FileSystem.psm1'
 
   # Version number of this module.
-  ModuleVersion        = '1.90.2025'
+  ModuleVersion        = '1.94.2025'
 
   # ID used to uniquely identify this module
   GUID                 = '2f62080f-0483-4421-8497-b3d433b65171'
@@ -25,19 +25,19 @@
   Description          = 'A Windows PowerShell module for basic and advanced file management tasks'
 
   # Minimum version of the PowerShell engine required by this module
-  PowerShellVersion    = '7.4.6'
+  PowerShellVersion    = '7.5.0'
 
   # # Intended for PowerShell Core
   CompatiblePSEditions = 'Core'
 
   # # Minimum version of the common language runtime (CLR) required by this module. This prerequisite is valid for the PowerShell Desktop edition only.
-  ClrVersion           = '8.0.10'
+  ClrVersion           = '9.0.1'
 
   # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-  FunctionsToExport    = @("Start-RoboCopy", "Rename-InProject", "Expand-Path", "Find-Item", "Remove-AllItems", "Find-DuplicateFiles")
+  FunctionsToExport    = @("Start-RoboCopy", "Rename-InProject", "Expand-Path", "Find-Item", "Remove-AllItems", "Find-DuplicateFiles", "Move-ToRecycleBin", "Remove-OnReboot", "Move-ItemWithTracking", "Remove-ItemWithFallback", "AssurePester")
 
   # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no Cmdlets to export.
-  CmdletsToExport      = @("Start-RoboCopy", "Rename-InProject", "Expand-Path", "Find-Item", "Remove-AllItems", "Find-DuplicateFiles")
+  CmdletsToExport      = @()
 
   # Assemblies that must be loaded prior to importing this module
   RequiredAssemblies   = @()
@@ -55,6 +55,27 @@
   FileList             = @(
 
 
+  ".\\Functions\\GenXdev.FileSystem\\AssurePester.ps1",
+  ".\\Functions\\GenXdev.FileSystem\\Expand-Path.ps1",
+  ".\\Functions\\GenXdev.FileSystem\\Find-DuplicateFiles.ps1",
+  ".\\Functions\\GenXdev.FileSystem\\Find-Item.ps1",
+  ".\\Functions\\GenXdev.FileSystem\\Move-ItemWithTracking.ps1",
+  ".\\Functions\\GenXdev.FileSystem\\Move-ToRecycleBin.ps1",
+  ".\\Functions\\GenXdev.FileSystem\\Remove-AllItems.ps1",
+  ".\\Functions\\GenXdev.FileSystem\\Remove-ItemWithFallback.ps1",
+  ".\\Functions\\GenXdev.FileSystem\\Remove-OnReboot.ps1",
+  ".\\Functions\\GenXdev.FileSystem\\Rename-InProject.ps1",
+  ".\\Functions\\GenXdev.FileSystem\\Start-RoboCopy.ps1",
+  ".\\Tests\\GenXdev.FileSystem\\Find-DuplicateFiles.Tests.ps1",
+  ".\\Tests\\GenXdev.FileSystem\\Find-Item.Tests.ps1",
+  ".\\Tests\\GenXdev.FileSystem\\Move-ItemWithTracking.Tests.ps1",
+  ".\\Tests\\GenXdev.FileSystem\\Move-ToRecycleBin.Tests.ps1",
+  ".\\Tests\\GenXdev.FileSystem\\Remove-AllItems.Tests.ps1",
+  ".\\Tests\\GenXdev.FileSystem\\Remove-ItemWithFallback.Tests.ps1",
+  ".\\Tests\\GenXdev.FileSystem\\Remove-OnReboot.Tests.ps1",
+  ".\\Tests\\GenXdev.FileSystem\\Rename-InProject.Tests.ps1",
+  ".\\Tests\\GenXdev.FileSystem\\Start-RoboCopy.Tests.ps1",
+  ".\\Tests\\TestResults.xml",
   ".\\GenXdev.FileSystem.psd1",
   ".\\GenXdev.FileSystem.psm1",
   ".\\LICENSE",

@@ -1,0 +1,109 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<test-results xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="nunit_schema_2.5.xsd" name="Pester" total="24" errors="0" failures="0" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2025-02-01" time="13:07:07">
+  <environment os-version="10.0.26100" clr-version="9.0.1" user="renev" nunit-version="2.5.8.0" platform="Microsoft Windows 11 Pro|C:\WINDOWS|\Device\Harddisk0\Partition3" user-domain="ATMOSMAIN" cwd="C:\Users\renev\AppData\Local\Temp\GenXdev.FileSystem.Tests" machine-name="ATMOSMAIN" />
+  <culture-info current-culture="en-150" current-uiculture="en-GB" />
+  <test-suite type="TestFixture" name="Pester" executed="True" result="Success" success="True" time="3.6081" asserts="0" description="Pester">
+    <results>
+      <test-suite type="TestFixture" name="C:\Users\renev\Documents\PowerShell\Modules\GenXdev.FileSystem\1.94.2025\Tests\GenXdev.FileSystem\Find-DuplicateFiles.Tests.ps1" executed="True" result="Success" success="True" time="0.2623" asserts="0" description="C:\Users\renev\Documents\PowerShell\Modules\GenXdev.FileSystem\1.94.2025\Tests\GenXdev.FileSystem\Find-DuplicateFiles.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="Find-DuplicateFiles" executed="True" result="Success" success="True" time="0.1702" asserts="0" description="Find-DuplicateFiles">
+            <results>
+              <test-case description="Ignores size comparison when specified" name="Find-DuplicateFiles.Ignores size comparison when specified" time="0.0285" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Doesn't ignore last modified date comparison when specified" name="Find-DuplicateFiles.Doesn't ignore last modified date comparison when specified" time="0.0084" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Finds no duplicates when files are unique" name="Find-DuplicateFiles.Finds no duplicates when files are unique" time="0.0152" asserts="0" success="True" result="Success" executed="True" />
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+      <test-suite type="TestFixture" name="C:\Users\renev\Documents\PowerShell\Modules\GenXdev.FileSystem\1.94.2025\Tests\GenXdev.FileSystem\Find-Item.Tests.ps1" executed="True" result="Success" success="True" time="0.4892" asserts="0" description="C:\Users\renev\Documents\PowerShell\Modules\GenXdev.FileSystem\1.94.2025\Tests\GenXdev.FileSystem\Find-Item.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="Find-Item" executed="True" result="Success" success="True" time="0.3195" asserts="0" description="Find-Item">
+            <results>
+              <test-case description="Finds files by extension" name="Find-Item.Finds files by extension" time="0.1091" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Finds files by content pattern" name="Find-Item.Finds files by content pattern" time="0.0988" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Finds only directories" name="Find-Item.Finds only directories" time="0.0816" asserts="0" success="True" result="Success" executed="True" />
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="Find-Item" executed="True" result="Success" success="True" time="0.4315" asserts="0" description="Find-Item">
+            <results>
+              <test-case description="Finds files by name pattern" name="Find-Item.Finds files by name pattern" time="0.0193" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Finds files by content pattern" name="Find-Item.Finds files by content pattern" time="0.0602" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Finds only directories when specified" name="Find-Item.Finds only directories when specified" time="0.0219" asserts="0" success="True" result="Success" executed="True" />
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+      <test-suite type="TestFixture" name="C:\Users\renev\Documents\PowerShell\Modules\GenXdev.FileSystem\1.94.2025\Tests\GenXdev.FileSystem\Move-ItemWithTracking.Tests.ps1" executed="True" result="Success" success="True" time="0.5527" asserts="0" description="C:\Users\renev\Documents\PowerShell\Modules\GenXdev.FileSystem\1.94.2025\Tests\GenXdev.FileSystem\Move-ItemWithTracking.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="Move-ItemWithTracking" executed="True" result="Success" success="True" time="0.4497" asserts="0" description="Move-ItemWithTracking">
+            <results>
+              <test-case description="Moves file with link tracking" name="Move-ItemWithTracking.Moves file with link tracking" time="0.4403" asserts="0" success="True" result="Success" executed="True" />
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+      <test-suite type="TestFixture" name="C:\Users\renev\Documents\PowerShell\Modules\GenXdev.FileSystem\1.94.2025\Tests\GenXdev.FileSystem\Move-ToRecycleBin.Tests.ps1" executed="True" result="Success" success="True" time="0.8537" asserts="0" description="C:\Users\renev\Documents\PowerShell\Modules\GenXdev.FileSystem\1.94.2025\Tests\GenXdev.FileSystem\Move-ToRecycleBin.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="Move-ToRecycleBin" executed="True" result="Success" success="True" time="0.7929" asserts="0" description="Move-ToRecycleBin">
+            <results>
+              <test-case description="Moves file to recycle bin" name="Move-ToRecycleBin.Moves file to recycle bin" time="0.6786" asserts="0" success="True" result="Success" executed="True" />
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+      <test-suite type="TestFixture" name="C:\Users\renev\Documents\PowerShell\Modules\GenXdev.FileSystem\1.94.2025\Tests\GenXdev.FileSystem\Remove-AllItems.Tests.ps1" executed="True" result="Success" success="True" time="0.1751" asserts="0" description="C:\Users\renev\Documents\PowerShell\Modules\GenXdev.FileSystem\1.94.2025\Tests\GenXdev.FileSystem\Remove-AllItems.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="Remove-AllItems" executed="True" result="Success" success="True" time="0.099" asserts="0" description="Remove-AllItems">
+            <results>
+              <test-case description="Removes all files and subdirectories" name="Remove-AllItems.Removes all files and subdirectories" time="0.0311" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Removes root folder when specified" name="Remove-AllItems.Removes root folder when specified" time="0.024" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Shows what-if output without deleting" name="Remove-AllItems.Shows what-if output without deleting" time="0.0371" asserts="0" success="True" result="Success" executed="True" />
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+      <test-suite type="TestFixture" name="C:\Users\renev\Documents\PowerShell\Modules\GenXdev.FileSystem\1.94.2025\Tests\GenXdev.FileSystem\Remove-ItemWithFallback.Tests.ps1" executed="True" result="Success" success="True" time="0.1024" asserts="0" description="C:\Users\renev\Documents\PowerShell\Modules\GenXdev.FileSystem\1.94.2025\Tests\GenXdev.FileSystem\Remove-ItemWithFallback.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="Remove-ItemWithFallback" executed="True" result="Success" success="True" time="0.0437" asserts="0" description="Remove-ItemWithFallback">
+            <results>
+              <test-case description="Removes file using direct deletion" name="Remove-ItemWithFallback.Removes file using direct deletion" time="0.0271" asserts="0" success="True" result="Success" executed="True" />
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+      <test-suite type="TestFixture" name="C:\Users\renev\Documents\PowerShell\Modules\GenXdev.FileSystem\1.94.2025\Tests\GenXdev.FileSystem\Remove-OnReboot.Tests.ps1" executed="True" result="Success" success="True" time="0.0949" asserts="0" description="C:\Users\renev\Documents\PowerShell\Modules\GenXdev.FileSystem\1.94.2025\Tests\GenXdev.FileSystem\Remove-OnReboot.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="Remove-OnReboot" executed="True" result="Success" success="True" time="0.0391" asserts="0" description="Remove-OnReboot">
+            <results>
+              <test-case description="Marks file for deletion on reboot" name="Remove-OnReboot.Marks file for deletion on reboot" time="0.0133" asserts="0" success="True" result="Success" executed="True" />
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+      <test-suite type="TestFixture" name="C:\Users\renev\Documents\PowerShell\Modules\GenXdev.FileSystem\1.94.2025\Tests\GenXdev.FileSystem\Rename-InProject.Tests.ps1" executed="True" result="Success" success="True" time="0.6462" asserts="0" description="C:\Users\renev\Documents\PowerShell\Modules\GenXdev.FileSystem\1.94.2025\Tests\GenXdev.FileSystem\Rename-InProject.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="Rename-InProject" executed="True" result="Success" success="True" time="0.5853" asserts="0" description="Rename-InProject">
+            <results>
+              <test-case description="Replaces text content in files" name="Rename-InProject.Replaces text content in files" time="0.1275" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Renames files containing search text" name="Rename-InProject.Renames files containing search text" time="0.1011" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Renames directories containing search text" name="Rename-InProject.Renames directories containing search text" time="0.1074" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Performs no changes in WhatIf mode" name="Rename-InProject.Performs no changes in WhatIf mode" time="0.1063" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Skips binary files" name="Rename-InProject.Skips binary files" time="0.1038" asserts="0" success="True" result="Success" executed="True" />
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+      <test-suite type="TestFixture" name="C:\Users\renev\Documents\PowerShell\Modules\GenXdev.FileSystem\1.94.2025\Tests\GenXdev.FileSystem\Start-RoboCopy.Tests.ps1" executed="True" result="Success" success="True" time="0.4317" asserts="0" description="C:\Users\renev\Documents\PowerShell\Modules\GenXdev.FileSystem\1.94.2025\Tests\GenXdev.FileSystem\Start-RoboCopy.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="Start-RoboCopy" executed="True" result="Success" success="True" time="0.3668" asserts="0" description="Start-RoboCopy">
+            <results>
+              <test-case description="Copies files between folders" name="Start-RoboCopy.Copies files between folders" time="0.1342" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Moves files when specified" name="Start-RoboCopy.Moves files when specified" time="0.1055" asserts="0" success="True" result="Success" executed="True" />
+              <test-case description="Mirrors directory structure" name="Start-RoboCopy.Mirrors directory structure" time="0.0869" asserts="0" success="True" result="Success" executed="True" />
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+    </results>
+  </test-suite>
+</test-results>
