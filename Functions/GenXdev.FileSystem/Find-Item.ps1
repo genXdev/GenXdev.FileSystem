@@ -11,7 +11,7 @@ match within the content of each matched file.
 Specify the file name or pattern to search for. Default is "*".
 
 .PARAMETER Pattern
-Specify the pattern to search within the files. Default is ".*".
+Regular expression pattern to search within the content of files to match against. Default is ".*".
 
 .PARAMETER AllDrives
 Search all drives.
@@ -113,7 +113,7 @@ function Find-Item {
             Mandatory = $false,
             Position = 1,
             ParameterSetName = 'WithPattern',
-            HelpMessage = "Regular expression pattern to search within matched files"
+            HelpMessage = "Regular expression pattern to search within the content of files to match against"
         )]
         [Alias("mc", "matchcontent")]
         [PSDefaultValue(Value = ".*")]

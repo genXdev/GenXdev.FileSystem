@@ -7,7 +7,7 @@
   RootModule           = 'GenXdev.FileSystem.psm1'
 
   # Version number of this module.
-  ModuleVersion        = '1.102.2025'
+  ModuleVersion        = '1.104.2025'
 
   # ID used to uniquely identify this module
   GUID                 = '2f62080f-0483-4421-8497-b3d433b65171'
@@ -34,7 +34,19 @@
   ClrVersion           = '9.0.1'
 
   # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-  FunctionsToExport    = @("Start-RoboCopy", "Rename-InProject", "Expand-Path", "Find-Item", "Remove-AllItems", "Find-DuplicateFiles", "Move-ToRecycleBin", "Remove-OnReboot", "Move-ItemWithTracking", "Remove-ItemWithFallback", "AssurePester")
+  FunctionsToExport    = @(
+    "AssurePester",
+    "Expand-Path",
+    "Find-DuplicateFiles",
+    "Find-Item",
+    "Move-ItemWithTracking",
+    "Move-ToRecycleBin",
+    "Remove-AllItems",
+    "Remove-ItemWithFallback",
+    "Remove-OnReboot",
+    "Rename-InProject",
+    "Start-RoboCopy"
+  )
 
   # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no Cmdlets to export.
   CmdletsToExport      = @()
@@ -66,6 +78,7 @@
   ".\\Functions\\GenXdev.FileSystem\\Remove-OnReboot.ps1",
   ".\\Functions\\GenXdev.FileSystem\\Rename-InProject.ps1",
   ".\\Functions\\GenXdev.FileSystem\\Start-RoboCopy.ps1",
+  ".\\Tests\\GenXdev.FileSystem\\Expand-Path.Tests.ps1",
   ".\\Tests\\GenXdev.FileSystem\\Find-DuplicateFiles.Tests.ps1",
   ".\\Tests\\GenXdev.FileSystem\\Find-Item.Tests.ps1",
   ".\\Tests\\GenXdev.FileSystem\\Move-ItemWithTracking.Tests.ps1",

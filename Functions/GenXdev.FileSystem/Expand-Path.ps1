@@ -63,9 +63,7 @@ function Expand-Path {
 
         # normalize path separators and remove double separators
         $normalizedPath = $FilePath.Trim().Replace("\", [IO.Path]::DirectorySeparatorChar).
-        Replace("/", [IO.Path]::DirectorySeparatorChar).
-        Replace([IO.Path]::DirectorySeparatorChar + [IO.Path]::DirectorySeparatorChar,
-            [IO.Path]::DirectorySeparatorChar)
+        Replace("/", [IO.Path]::DirectorySeparatorChar)
 
         # check if path ends with a directory separator
         $hasTrailingSeparator = $normalizedPath.EndsWith(

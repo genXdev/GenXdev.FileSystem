@@ -1,23 +1,57 @@
 ################################################################################
+<#
+.SYNOPSIS
+Ensures that Pester testing framework is installed and available.
 
+.DESCRIPTION
+This function checks if Pester module is installed. If not found, it attempts to
+install it from the PowerShell Gallery and imports it into the current session.
+
+.EXAMPLE
+AssurePester
+#>
 function AssurePester {
 
-    Import-Module -Name Pester -ErrorAction SilentlyContinue
+    [CmdletBinding()]
+    param()
 
-    # Check if Pester is installed
-    if (-not (Get-Module -Name Pester -ErrorAction SilentlyContinue)) {
+    begin {
 
-        Write-Host "Pester not found. Installing Pester..."
+        Write-Verbose "Checking for Pester module installation..."
+    }
 
-        # Install Pester from the PowerShell Gallery
-        try {
-            Install-Module -Name Pester -Force -SkipPublisherCheck | Out-Null
-            Import-Module -Name Pester -Force | Out-Null
-            Write-Host "Pester installed successfully."
+    process {
+
+        # attempt to import pester module without showing errors
+        Import-Module -Name Pester -ErrorAction SilentlyContinue
+
+        # check if pester module is available
+        if (-not (Get-Module -Name Pester -ErrorAction SilentlyContinue)) {
+
+            Write-Verbose "Pester module not found, attempting installation..."
+            Write-Host "Pester not found. Installing Pester..."
+
+            try {
+                # install pester from powershell gallery
+                $null = Install-Module -Name Pester -Force -SkipPublisherCheck
+
+                # import the newly installed module
+                $null = Import-Module -Name Pester -Force
+
+                Write-Host "Pester installed successfully."
+                Write-Verbose "Pester module installation and import completed."
+            }
+            catch {
+                Write-Error "Failed to install Pester. Error: $PSItem"
+                Write-Verbose "Pester installation failed with error."
+            }
         }
-        catch {
-
-            Write-Error "Failed to install Pester. Error: $PSItem"
+        else {
+            Write-Verbose "Pester module already installed and imported."
         }
     }
+
+    end {
+    }
 }
+################################################################################

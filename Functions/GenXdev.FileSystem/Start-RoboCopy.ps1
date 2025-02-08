@@ -693,9 +693,6 @@ Multiple overrides:
             [IO.Directory]::CreateDirectory($DestinationDirectory) | Out-Null
         }
 
-        # Turn on verbose
-        $VerbosePreference = "Continue"
-
         ###############################################################################
 
         function CurrentUserHasElivatedRights() {

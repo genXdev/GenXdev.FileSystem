@@ -71,7 +71,7 @@ Update-Module
 ### GenXdev.FileSystem<hr/>
 | Command&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | aliases&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Description |
 | --- | --- | --- |
-| [AssurePester](#AssurePester) |  |  |
+| [AssurePester](#AssurePester) |  | This function checks if Pester module is installed. If not found, it attempts toinstall it from the PowerShell Gallery and imports it into the current session. |
 | [Expand-Path](#Expand-Path) | ep | Expands any given file reference to a full pathname, with respect to the user'scurrent directory. Can optionally assure that directories or files exist. |
 | [Find-DuplicateFiles](#Find-DuplicateFiles) | fdf | Takes an array of directory paths, searches each path recursively for files,then groups files by name and optionally by size and modified date. Returnsgroups containing two or more duplicate files. |
 | [Find-Item](#Find-Item) | l | Searches for file- or directory- names, optionally performs a regular expressionmatch within the content of each matched file. |
@@ -96,13 +96,24 @@ Update-Module
 AssurePester
 ````
 
+### SYNOPSIS
+    Ensures that Pester testing framework is installed and available.
+
 ### SYNTAX
 ````PowerShell
-AssurePester 
+AssurePester [<CommonParameters>]
 ````
 
+### DESCRIPTION
+    This function checks if Pester module is installed. If not found, it attempts to
+    install it from the PowerShell Gallery and imports it into the current session.
+
 ### PARAMETERS
-    None
+    <CommonParameters>
+        This cmdlet supports the common parameters: Verbose, Debug,
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216). 
 
 <br/><hr/><hr/><br/>
 
@@ -247,7 +258,8 @@ Find-Item [[-SearchMask] <String>] [-AllDrives] [-Directory] [-PassThru]
         Aliases                      
         Accept wildcard characters?  false
     -Pattern <String>
-        Specify the pattern to search within the files. Default is ".*".
+        Regular expression pattern to search within the content of files to match against. 
+        Default is ".*".
         Required?                    false
         Position?                    2
         Default value                .*

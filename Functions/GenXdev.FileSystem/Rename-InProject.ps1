@@ -67,10 +67,6 @@ function Rename-InProject {
     )
 
     begin {
-        # store original preferences for restoration
-        $originalVerbosePreference = $VerbosePreference
-        $originalWhatIfPreference = $WhatIfPreference
-
         try {
             # normalize and validate source path
             $sourcePath = Expand-Path $Source
@@ -89,11 +85,6 @@ function Rename-InProject {
             Write-Verbose "Source path: $sourcePath"
             Write-Verbose "Search pattern: $searchPattern"
 
-            # enable verbose in whatif mode
-            if ($WhatIfPreference -or $WhatIf) {
-                $VerbosePreference = "Continue"
-            }
-
             # list of extensions to skip
             $skipExtensions = @(
                 ".jpg", ".jpeg", ".gif", ".bmp", ".png", ".tiff",
@@ -105,7 +96,6 @@ function Rename-InProject {
         }
         catch {
 
-            $WhatIfPreference = $originalWhatIfPreference
             throw
         }
     }
