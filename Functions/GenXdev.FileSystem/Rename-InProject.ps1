@@ -122,9 +122,10 @@ function Rename-InProject {
                 [IO.Directory]::GetDirectories($dir, "*") | ForEach-Object {
 
                     if ([IO.Path]::GetFileName($_) -notin @(".svn", ".git")) {
-                        Get-ProjectFiles $_ $mask | ForEach-Object {
-                            $result.Add($_)
-                        } | Out-Null
+                        $null = Get-ProjectFiles $_ $mask | ForEach-Object {
+
+                            $null = $result.Add($_)
+                        }
                     }
                 }
 
@@ -151,8 +152,11 @@ function Rename-InProject {
 
                         if ($content -ne $newContent) {
                             if ($PSCmdlet.ShouldProcess($filePath, "Replace content")) {
+
                                 $utf8 = [Text.UTF8Encoding]::new($false)
+
                                 [IO.File]::WriteAllText($filePath, $newContent, $utf8)
+
                                 Write-Verbose "Updated content in: $filePath"
                             }
                         }
@@ -171,7 +175,7 @@ function Rename-InProject {
 
                         if ($PSCmdlet.ShouldProcess($filePath, "Rename file")) {
                             try {
-                                Move-ItemWithTracking -Path $filePath -Destination $newPath
+                                $null = Move-ItemWithTracking -Path $filePath -Destination $newPath
                                 Write-Verbose "Renamed file: $filePath -> $newPath"
                             }
                             catch {
@@ -204,12 +208,12 @@ function Rename-InProject {
                             # merge directories if target exists
                             Start-RoboCopy -Source $dir.FullName `
                                 -DestinationDirectory $newPath -Move
-                            Remove-AllItems ($dir.FullName) -DeleteFolder
+                            $null = Remove-AllItems ($dir.FullName) -DeleteFolder
                             Write-Verbose "Merged directory: $($dir.FullName) -> $newPath"
                         }
                         else {
                             try {
-                                Move-ItemWithTracking -Path $dir.FullName -Destination $newPath
+                                $null = Move-ItemWithTracking -Path $dir.FullName -Destination $newPath
                                 Write-Verbose "Renamed directory: $($dir.FullName) -> $newPath"
                             }
                             catch {
