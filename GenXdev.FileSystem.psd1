@@ -7,7 +7,7 @@
   RootModule           = 'GenXdev.FileSystem.psm1'
 
   # Version number of this module.
-  ModuleVersion        = '1.110.2025'
+  ModuleVersion        = '1.112.2025'
 
   # ID used to uniquely identify this module
   GUID                 = '2f62080f-0483-4421-8497-b3d433b65171'
