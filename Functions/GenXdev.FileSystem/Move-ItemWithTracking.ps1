@@ -117,7 +117,7 @@ public static extern bool MoveFileEx(
                         # get detailed error information on failure
                         $errorCode = [System.Runtime.InteropServices.Marshal]:: `
                             GetLastWin32Error()
-                        throw "Move failed from '$fullSourcePath' to " + `
+                        throw "Move failed from '$fullSourcePath' to " +
                             "'$fullDestPath'. Error: $errorCode"
                     }
 
