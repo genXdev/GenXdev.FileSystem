@@ -1,23 +1,29 @@
 ################################################################################
 <#
 .SYNOPSIS
-Removes all files and folders in the specified directory.
+Recursively removes all content from a directory with advanced error handling.
 
 .DESCRIPTION
-Removes all files and folders in the specified directory.
+Safely removes all files and subdirectories within a specified directory using
+a reverse-order deletion strategy to handle deep paths. Includes WhatIf support,
+verbose logging, and fallback deletion methods for locked files.
 
 .PARAMETER Path
-The path of the directory to clear.
+The directory path to clear. Can be relative or absolute path. Will be normalized
+and expanded before processing.
 
 .PARAMETER DeleteFolder
-Also delete the root folder supplied with the Path parameter.
+When specified, also removes the root directory specified by Path after clearing
+its contents.
 
 .PARAMETER WhatIf
-Displays a message that describes the effect of the command, instead of executing
-the command.
+Shows what would happen if the cmdlet runs. The cmdlet is not run.
 
 .EXAMPLE
-Remove-AllItems -Path ".\vms"
+Remove-AllItems -Path "C:\Temp\BuildOutput" -DeleteFolder -Verbose
+
+.EXAMPLE
+sdel ".\temp" -DeleteFolder
 #>
 function Remove-AllItems {
 
@@ -47,23 +53,22 @@ function Remove-AllItems {
 
     begin {
 
-        # store original preference values for later restoration
+        # preserve original preference settings for restoration in end block
         $originalVerbosePreference = $VerbosePreference
         $originalWhatIfPreference = $WhatIfPreference
 
         try {
-            # normalize and expand the provided path
+            # convert relative or shorthand paths to full filesystem paths
             $Path = Expand-Path $Path
             Write-Verbose "Normalized path: $Path"
 
-            # enable verbose output when in whatif mode
+            # ensure verbose output is enabled during WhatIf operations
             if ($WhatIfPreference -or $WhatIf) {
                 $VerbosePreference = "Continue"
             }
         }
         catch {
-            # restore preferences and rethrow the error
-
+            # restore original whatif setting before propagating error
             $WhatIfPreference = $originalWhatIfPreference
             throw
         }
@@ -71,7 +76,7 @@ function Remove-AllItems {
 
     process {
         try {
-            # verify the directory exists before proceeding
+            # skip processing if target directory doesn't exist
             if (![System.IO.Directory]::Exists($Path)) {
                 Write-Verbose "Directory does not exist: $Path"
                 return
@@ -79,7 +84,7 @@ function Remove-AllItems {
 
             Write-Verbose "Processing directory: $Path"
 
-            # get and remove all files in reverse order for safe deletion
+            # delete files first, in reverse order to handle nested paths
             [System.IO.Directory]::GetFiles($Path, "*.*", `
                     [System.IO.SearchOption]::AllDirectories) |
             Sort-Object -Descending |
@@ -90,7 +95,7 @@ function Remove-AllItems {
                 }
             }
 
-            # get and remove all subdirectories in reverse order
+            # delete directories after files, also in reverse order
             [System.IO.Directory]::GetDirectories($Path, "*", `
                     [System.IO.SearchOption]::AllDirectories) |
             Sort-Object -Descending |
@@ -107,7 +112,7 @@ function Remove-AllItems {
                 }
             }
 
-            # delete root folder if requested
+            # optionally remove the root directory itself
             if ($DeleteFolder) {
                 if ($PSCmdlet.ShouldProcess($Path, "Remove root directory")) {
                     try {
@@ -115,23 +120,20 @@ function Remove-AllItems {
                         Write-Verbose "Removed root directory: $Path"
                     }
                     catch {
-
                         $null = Remove-ItemWithFallback -Path $Path
                     }
                 }
             }
         }
         catch {
-            # restore preferences if process block fails
-
+            # restore original whatif setting before propagating error
             $WhatIfPreference = $originalWhatIfPreference
             throw
         }
     }
 
     end {
-        # restore original preference values
-
+        # restore original preference settings
         $WhatIfPreference = $originalWhatIfPreference
     }
 }

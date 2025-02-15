@@ -2,45 +2,61 @@
 
 <#
 .SYNOPSIS
-Marks a file for deletion on next system boot using Windows API.
+Marks files or directories for deletion during the next system boot.
 
 .DESCRIPTION
-Items are renamed to a temporary filename first to handle
-locked files. All moves are tracked to maintain file system links.
+This function uses the Windows API to mark files for deletion on next boot.
+It handles locked files by first attempting to rename them to temporary names
+and tracks all moves to maintain file system integrity. If renaming fails,
+the -MarkInPlace parameter can be used to mark files in their original location.
 
 .PARAMETER Path
-The path(s) to the files or directories to mark for deletion.
+One or more file or directory paths to mark for deletion. Accepts pipeline input.
 
 .PARAMETER MarkInPlace
-Marks the file for deletion even if renaming it fails.
+If specified, marks files for deletion in their original location when renaming
+fails. This is useful for locked files that cannot be renamed.
 
 .EXAMPLE
 Remove-OnReboot -Path "C:\temp\locked-file.txt"
 
 .EXAMPLE
-"file1.txt","file2.txt" | Remove-OnReboot
+"file1.txt","file2.txt" | Remove-OnReboot -MarkInPlace
 #>
 function Remove-OnReboot {
+
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([bool])]
     param(
-        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true)]
+        ###############################################################################
+        [Parameter(
+            Mandatory = $true,
+            Position = 0,
+            ValueFromPipeline = $true,
+            HelpMessage = "Path(s) to files/directories to mark for deletion"
+        )]
         [ValidateNotNullOrEmpty()]
+        [Alias("FullName")]
         [string[]]$Path,
         ###############################################################################
-        [Parameter(Mandatory = $false, HelpMessage = "Marks the file for deletion even if renaming it fails")]
+        [Parameter(
+            Mandatory = $false,
+            HelpMessage = "Marks files for deletion without renaming"
+        )]
         [switch]$MarkInPlace
         ###############################################################################
     )
 
     begin {
-        # Registry key for pending file operations
+
+        # registry location storing pending file operations
         $regKey = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager"
         $regName = "PendingFileRenameOperations"
 
-        # Get existing pending renames or create new array
+        # get existing pending renames or initialize empty array
         try {
-            $pendingRenames = @(Get-ItemProperty -Path $regKey -Name $regName -ErrorAction SilentlyContinue).$regName
+            $pendingRenames = @(Get-ItemProperty -Path $regKey `
+                    -Name $regName -ErrorAction SilentlyContinue).$regName
         }
         catch {
             $pendingRenames = @()
@@ -52,34 +68,39 @@ function Remove-OnReboot {
     }
 
     process {
+
         try {
             foreach ($item in $Path) {
                 $fullPath = Expand-Path $item
 
                 if (Test-Path -LiteralPath $fullPath) {
                     if ($PSCmdlet.ShouldProcess($fullPath, "Mark for deletion on reboot")) {
+
                         try {
-                            # Try direct deletion first
+                            # attempt immediate deletion first
                             Remove-Item -LiteralPath $fullPath -Force -ErrorAction Stop
                             Write-Verbose "Successfully deleted: $fullPath"
                             continue
                         }
                         catch {
-                            Write-Verbose "Direct deletion failed for $fullPath, attempting rename and mark for deletion..."
+                            Write-Verbose "Direct deletion failed, attempting rename..."
 
                             try {
-                                # Get directory and generate new hidden name
+                                # create hidden temporary file name
                                 $newName = "." + [System.Guid]::NewGuid().ToString()
                                 $newPath = [System.IO.Path]::Combine($dir, $newName)
 
-                                # Rename the file and set attributes
-                                Rename-Item -Path $fullPath -NewName $newName -Force -ErrorAction Stop
+                                # rename and hide the file
+                                Rename-Item -Path $fullPath -NewName $newName -Force `
+                                    -ErrorAction Stop
                                 $file = Get-Item -LiteralPath $newPath -Force
-                                $file.Attributes = $file.Attributes -bor [System.IO.FileAttributes]::Hidden -bor [System.IO.FileAttributes]::System
+                                $file.Attributes = $file.Attributes -bor `
+                                    [System.IO.FileAttributes]::Hidden -bor `
+                                    [System.IO.FileAttributes]::System
 
                                 Write-Verbose "Renamed to hidden system file: $newPath"
 
-                                # Format paths with \??\ prefix for registry
+                                # add to pending renames with windows api path format
                                 $sourcePath = "\??\" + $newPath
                                 $pendingRenames += $sourcePath
                                 $pendingRenames += ""
@@ -88,11 +109,12 @@ function Remove-OnReboot {
                             }
                             catch {
                                 if ($MarkInPlace) {
-                                    Write-Verbose "Renaming failed, marking in place for deletion on reboot: $fullPath"
+                                    Write-Verbose "Marking original file for deletion"
                                     $sourcePath = "\??\" + $fullPath
                                     $pendingRenames += $sourcePath
                                     $pendingRenames += ""
-                                } else {
+                                }
+                                else {
                                     Write-Error "Failed to rename $($fullPath): $_"
                                     continue
                                 }
@@ -106,8 +128,9 @@ function Remove-OnReboot {
             }
 
             if ($pendingRenames.Count -gt 0) {
-                # Save as REG_MULTI_SZ
-                Set-ItemProperty -Path $regKey -Name $regName -Value $pendingRenames -Type MultiString
+                # save pending operations to registry
+                Set-ItemProperty -Path $regKey -Name $regName `
+                    -Value $pendingRenames -Type MultiString
                 return $true
             }
         }
@@ -115,7 +138,11 @@ function Remove-OnReboot {
             Write-Error "Failed to set pending file operations: $_"
             return $false
         }
-        
+
         return $true
     }
+
+    end {
+    }
 }
+################################################################################

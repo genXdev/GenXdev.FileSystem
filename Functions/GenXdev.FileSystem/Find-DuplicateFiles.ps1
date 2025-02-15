@@ -1,27 +1,29 @@
 ################################################################################
 <#
 .SYNOPSIS
-Find duplicate files by name and properties across specified directories.
+Find duplicate files across multiple directories based on configurable criteria.
 
 .DESCRIPTION
-Takes an array of directory paths, searches each path recursively for files,
-then groups files by name and optionally by size and modified date. Returns
-groups containing two or more duplicate files.
+Recursively searches specified directories for duplicate files. Files are
+considered duplicates if they share the same name and optionally match on size
+and modification date. Returns groups of duplicate files for further processing.
 
 .PARAMETER Paths
-One or more directory paths to search for duplicate files.
+Array of directory paths to recursively search for duplicate files. Accepts
+pipeline input and wildcard paths.
 
 .PARAMETER DontCompareSize
-Skip file size comparison when determining duplicates.
+When specified, file size is not used as a comparison criterion, only names
+are matched.
 
 .PARAMETER DontCompareModifiedDate
-Skip last modified date comparison when determining duplicates.
+When specified, file modification dates are not used as a comparison criterion.
 
 .EXAMPLE
-Find-DuplicateFiles -Paths "C:\Folder1","D:\Folder2" -DontCompareSize
+Find-DuplicateFiles -Paths "C:\Photos","D:\Backup\Photos"
 
 .EXAMPLE
-Get-Item "C:\Folder1","D:\Folder2" | Find-DuplicateFiles
+"C:\Photos","D:\Backup\Photos" | fdf -DontCompareSize
 #>
 function Find-DuplicateFiles {
 
@@ -58,24 +60,24 @@ function Find-DuplicateFiles {
 
     begin {
 
-        # normalize all input paths to full paths
+        # convert all input paths to full filesystem paths
         $normalizedPaths = @()
         $Paths | ForEach-Object {
             $normalizedPaths += (Expand-Path $_)
         }
 
-        # helper function to generate unique key for file comparison
+        # internal helper function to generate unique comparison key for each file
         function Get-FileKey([System.IO.FileInfo]$file) {
 
-            # start with filename as base key
+            # start with filename as the base identifier
             $key = $file.Name
 
-            # add size to key if size comparison is enabled
+            # include file size in comparison key if enabled
             if (-not $DontCompareSize) {
                 $key += "|$($file.Length)"
             }
 
-            # add modified date to key if date comparison is enabled
+            # include modification date in comparison key if enabled
             if (-not $DontCompareModifiedDate) {
                 $key += "|$($file.LastWriteTimeUtc.ToString('o'))"
             }
@@ -83,21 +85,20 @@ function Find-DuplicateFiles {
             return $key
         }
 
-        # initialize generic list for better performance with large collections
+        # initialize high-performance collection for gathering files
         $allFiles = [System.Collections.Generic.List[System.IO.FileInfo]]::new()
     }
 
     process {
 
-        # process each normalized path
         foreach ($path in $normalizedPaths) {
 
-            # verify directory exists before processing
+            # verify directory exists before attempting to process
             if ([System.IO.Directory]::Exists($path)) {
 
-                Write-Verbose "Scanning directory: $path"
+                Write-Verbose "Scanning directory for duplicates: $path"
 
-                # get all files using direct .NET IO methods for performance
+                # use direct .NET IO for faster recursive file enumeration
                 [System.IO.Directory]::GetFiles($path, "*.*",
                     [System.IO.SearchOption]::AllDirectories) |
                 ForEach-Object {
@@ -105,22 +106,22 @@ function Find-DuplicateFiles {
                 }
             }
             else {
-                Write-Warning "Directory not found: $path"
+                Write-Warning "Skipping non-existent directory: $path"
             }
         }
     }
 
     end {
 
-        # group files by composite key and return groups with duplicates
+        # group files by composite key and return only groups with duplicates
         $allFiles |
         Group-Object -Property { Get-FileKey $_ } |
         Where-Object { $_.Count -gt 1 } |
         ForEach-Object {
-            # create custom object for each group of duplicates
+            # create result object for each duplicate group
             [PSCustomObject]@{
                 FileName = $_.Group[0].Name
-                Files = $_.Group
+                Files    = $_.Group
             }
         }
     }

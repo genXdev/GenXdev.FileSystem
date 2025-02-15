@@ -4,30 +4,33 @@
 Performs case-sensitive text replacement throughout a project directory.
 
 .DESCRIPTION
-Performs find and replace operations across files and folders in a project.
-Skips common binary files and repository folders (.git, .svn).
-Always use -WhatIf first to validate planned changes.
+Recursively searches through files and directories in a project to perform text
+replacements. Handles both file/directory names and file contents. Skips common
+binary files and repository folders (.git, .svn) to avoid corruption. Uses UTF-8
+encoding without BOM for file operations.
 
 .PARAMETER Source
-The directory, filepath, or directory+searchmask to process.
+The directory, filepath, or directory+searchmask to process. Defaults to current
+directory if not specified.
 
 .PARAMETER FindText
-The case-sensitive text to find and replace.
+The case-sensitive text pattern to search for in filenames and content.
 
 .PARAMETER ReplacementText
-The text to replace FindText with.
+The text to replace all instances of FindText with.
 
 .PARAMETER WhatIf
-Shows what would happen if the cmdlet runs.
+Shows what changes would occur without actually making them.
 
 .EXAMPLE
-Rename-InProject -Source .\src\*.js -FindText "tsconfig.json" `
-    -ReplacementText "typescript.configuration.json"
+Rename-InProject -Source .\src\*.js -FindText "oldName" `
+    -ReplacementText "newName"
 
 .EXAMPLE
-rip .\src\ "MyClass" "MyNewClass" -WhatIf
+rip . "MyClass" "MyNewClass" -WhatIf
 #>
 function Rename-InProject {
+
     [CmdletBinding(SupportsShouldProcess = $true)]
     [Alias("rip")]
     param(
@@ -41,7 +44,6 @@ function Rename-InProject {
         [Alias("src", "s")]
         [PSDefaultValue(Value = ".\")]
         [string] $Source,
-
         ########################################################################
         [Parameter(
             Mandatory = $true,
@@ -52,7 +54,6 @@ function Rename-InProject {
         [Alias("find", "what", "from")]
         [ValidateNotNullOrEmpty()]
         [string] $FindText,
-
         ########################################################################
         [Parameter(
             Mandatory = $true,
@@ -67,13 +68,15 @@ function Rename-InProject {
     )
 
     begin {
+
         try {
-            # normalize and validate source path
+            # normalize path and extract search pattern if specified
             $sourcePath = Expand-Path $Source
             $searchPattern = "*"
 
-            # split path if not a directory
+            # split source into path and pattern if not a directory
             if (![System.IO.Directory]::Exists($sourcePath)) {
+
                 $searchPattern = [System.IO.Path]::GetFileName($sourcePath)
                 $sourcePath = [System.IO.Path]::GetDirectoryName($sourcePath)
 
@@ -82,48 +85,48 @@ function Rename-InProject {
                 }
             }
 
-            Write-Verbose "Source path: $sourcePath"
-            Write-Verbose "Search pattern: $searchPattern"
+            Write-Verbose "Processing source path: $sourcePath"
+            Write-Verbose "Using search pattern: $searchPattern"
 
-            # list of extensions to skip
+            # extensions to skip to avoid corrupting binary files
             $skipExtensions = @(
                 ".jpg", ".jpeg", ".gif", ".bmp", ".png", ".tiff",
                 ".exe", ".dll", ".pdb", ".so",
                 ".wav", ".mp3", ".avi", ".mkv", ".wmv",
                 ".tar", ".7z", ".zip", ".rar", ".apk", ".ipa",
-                ".cer", ".crt", ".pkf", ".db"
+                ".cer", ".crt", ".pkf", ".db", ".bin"
             )
         }
         catch {
-
             throw
         }
     }
 
     process {
-        try {
 
-            # get all files recursively excluding repos
+        try {
+            # recursive function to get all project files excluding repos
             function Get-ProjectFiles([string] $dir, [string] $mask) {
 
                 $result = [System.Collections.Generic.List[string]]::new()
 
-                # skip repo directories
+                # skip version control directories
                 if ([IO.Path]::GetFileName($dir) -in @(".svn", ".git")) {
                     return $result
                 }
 
-                # add matching files
+                # collect matching files in current directory
                 [IO.Directory]::GetFiles($dir, $mask) | ForEach-Object {
+
                     $null = $result.Add($_)
                 }
 
-                # process subdirectories
+                # recursively process subdirectories
                 [IO.Directory]::GetDirectories($dir, "*") | ForEach-Object {
 
                     if ([IO.Path]::GetFileName($_) -notin @(".svn", ".git")) {
-                        $null = Get-ProjectFiles $_ $mask | ForEach-Object {
 
+                        $null = Get-ProjectFiles $_ $mask | ForEach-Object {
                             $null = $result.Add($_)
                         }
                     }
@@ -132,30 +135,32 @@ function Rename-InProject {
                 return $result
             }
 
-            # process files
+            # process files in reverse order to handle renames safely
             Get-ProjectFiles -dir $sourcePath -mask $searchPattern |
             Sort-Object -Descending |
             ForEach-Object {
+
                 $filePath = $_
                 $extension = [IO.Path]::GetExtension($filePath).ToLower()
 
-                # skip binary files
+                # only process text files
                 if ($extension -notin $skipExtensions) {
 
                     try {
-
                         Write-Verbose "Processing file: $filePath"
 
-                        # read and replace content
-                        $content = [IO.File]::ReadAllText($filePath, [Text.Encoding]::UTF8)
+                        # replace text in file contents
+                        $content = [IO.File]::ReadAllText($filePath,
+                            [Text.Encoding]::UTF8)
                         $newContent = $content.Replace($FindText, $ReplacementText)
 
                         if ($content -ne $newContent) {
-                            if ($PSCmdlet.ShouldProcess($filePath, "Replace content")) {
+                            if ($PSCmdlet.ShouldProcess($filePath,
+                                    "Replace content")) {
 
                                 $utf8 = [Text.UTF8Encoding]::new($false)
-
-                                [IO.File]::WriteAllText($filePath, $newContent, $utf8)
+                                [IO.File]::WriteAllText($filePath, $newContent,
+                                    $utf8)
 
                                 Write-Verbose "Updated content in: $filePath"
                             }
@@ -165,17 +170,19 @@ function Rename-InProject {
                         Write-Warning "Failed to update content in: $filePath`n$_"
                     }
 
-                    # process filename
+                    # handle filename changes
                     $oldName = [IO.Path]::GetFileName($filePath)
                     $newName = $oldName.Replace($FindText, $ReplacementText)
 
                     if ($oldName -ne $newName) {
-                        $newPath = [IO.Path]::Combine([IO.Path]::GetDirectoryName($filePath),
+                        $newPath = [IO.Path]::Combine(
+                            [IO.Path]::GetDirectoryName($filePath),
                             $newName)
 
                         if ($PSCmdlet.ShouldProcess($filePath, "Rename file")) {
                             try {
-                                $null = Move-ItemWithTracking -Path $filePath -Destination $newPath
+                                $null = Move-ItemWithTracking -Path $filePath `
+                                    -Destination $newPath
                                 Write-Verbose "Renamed file: $filePath -> $newPath"
                             }
                             catch {
@@ -186,7 +193,7 @@ function Rename-InProject {
                 }
             }
 
-            # process directories
+            # process directories in reverse order
             Get-ChildItem -Path $sourcePath -Directory -Recurse |
             Sort-Object -Descending |
             Where-Object {
@@ -194,15 +201,17 @@ function Rename-InProject {
                 $_.FullName -notlike "*\.svn\*"
             } |
             ForEach-Object {
+
                 $dir = $_
                 $oldName = $dir.Name
                 $newName = $oldName.Replace($FindText, $ReplacementText)
 
                 if ($oldName -ne $newName) {
+                    $newPath = Expand-Path (
+                        [IO.Path]::Combine($dir.Parent.FullName, $newName))
 
-                    $newPath = Expand-Path ([IO.Path]::Combine($dir.Parent.FullName, $newName))
-
-                    if ($PSCmdlet.ShouldProcess($dir.FullName, "Rename directory")) {
+                    if ($PSCmdlet.ShouldProcess($dir.FullName,
+                            "Rename directory")) {
 
                         if ([IO.Directory]::Exists($newPath)) {
                             # merge directories if target exists
@@ -213,7 +222,8 @@ function Rename-InProject {
                         }
                         else {
                             try {
-                                $null = Move-ItemWithTracking -Path $dir.FullName -Destination $newPath
+                                $null = Move-ItemWithTracking -Path $dir.FullName `
+                                    -Destination $newPath
                                 Write-Verbose "Renamed directory: $($dir.FullName) -> $newPath"
                             }
                             catch {
@@ -225,16 +235,11 @@ function Rename-InProject {
             }
         }
         catch {
-
-            $WhatIfPreference = $originalWhatIfPreference
             throw
         }
     }
 
     end {
-        # restore preferences
-
-        $WhatIfPreference = $originalWhatIfPreference
     }
 }
 ################################################################################

@@ -1,27 +1,33 @@
 ################################################################################
 <#
 .SYNOPSIS
-Moves a file or directory while maintaining file system links and references.
+Moves files and directories while preserving filesystem links and references.
 
 .DESCRIPTION
-Moves files and directories using the Windows MoveFileEx API with link tracking
-enabled. This preserves file system references, symbolic links, and helps tools
-like Git track renamed files.
+Uses the Windows MoveFileEx API to move files and directories with link tracking
+enabled. This ensures that filesystem references, symbolic links, and hardlinks
+are maintained. The function is particularly useful for tools like Git that need
+to track file renames.
 
 .PARAMETER Path
-The source path of the file or directory to move.
+The source path of the file or directory to move. Accepts pipeline input and
+aliases to FullName for compatibility with Get-ChildItem output.
 
 .PARAMETER Destination
-The destination path where the item should be moved to.
+The target path where the file or directory should be moved to. Must be a valid
+filesystem path.
 
 .PARAMETER Force
-If specified, will overwrite an existing destination file.
+If specified, allows overwriting an existing file or directory at the
+destination path.
 
 .EXAMPLE
-Move-ItemWithTracking -Path ".\oldname.txt" -Destination ".\newname.txt"
+Move-ItemWithTracking -Path "C:\temp\oldfile.txt" -Destination "D:\newfile.txt"
+# Moves a file while preserving any existing filesystem links
 
 .EXAMPLE
-Move-ItemWithTracking -Path ".\olddir" -Destination ".\newdir" -Force
+"C:\temp\olddir" | Move-ItemWithTracking -Destination "D:\newdir" -Force
+# Moves a directory, overwriting destination if it exists
 #>
 function Move-ItemWithTracking {
 
@@ -36,6 +42,7 @@ function Move-ItemWithTracking {
             HelpMessage = "Source path of file/directory to move"
         )]
         [ValidateNotNullOrEmpty()]
+        [Alias("FullName")]
         [string]$Path,
         ########################################################################
         [Parameter(
@@ -55,7 +62,7 @@ function Move-ItemWithTracking {
 
     begin {
 
-        # define the win32 api signature for moving files with link tracking
+        # define the native windows api function signature for moving files
         $signature = @"
 [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
 public static extern bool MoveFileEx(
@@ -65,7 +72,7 @@ public static extern bool MoveFileEx(
 "@
 
         try {
-            # load the win32 api function into memory
+            # load the native windows api function into the current session
             $win32 = Add-Type -MemberDefinition $signature `
                 -Name "MoveFileExUtils" `
                 -Namespace Win32 `
@@ -76,10 +83,11 @@ public static extern bool MoveFileEx(
             return $false
         }
 
-        # set flags for maintaining links and handling overwrites
-        $moveFileWriteThrough = 0x8
-        $moveFileReplaceExisting = 0x1
+        # configure move operation flags for link tracking and overwrite handling
+        $moveFileWriteThrough = 0x8  # ensures the move completes before returning
+        $moveFileReplaceExisting = 0x1  # allows overwriting existing files
 
+        # combine flags based on whether Force parameter was specified
         $flags = $moveFileWriteThrough
         if ($Force) {
             $flags = $flags -bor $moveFileReplaceExisting
@@ -88,25 +96,25 @@ public static extern bool MoveFileEx(
 
     process {
         try {
-            # expand paths to full filesystem paths
+            # convert relative paths to absolute filesystem paths
             $fullSourcePath = Expand-Path $Path
             $fullDestPath = Expand-Path $Destination
 
-            # verify source path exists
+            # verify the source path exists before attempting move
             if (Test-Path -LiteralPath $fullSourcePath) {
 
-                # confirm action if -whatif specified
+                # check if user wants to proceed with the operation
                 if ($PSCmdlet.ShouldProcess($fullSourcePath,
-                    "Move to $fullDestPath")) {
+                        "Move to $fullDestPath")) {
 
                     Write-Verbose "Moving $fullSourcePath to $fullDestPath"
 
-                    # attempt the move operation
+                    # perform the move operation with link tracking
                     $result = $win32::MoveFileEx($fullSourcePath,
                         $fullDestPath, $flags)
 
                     if (-not $result) {
-                        # get detailed error on failure
+                        # get detailed error information on failure
                         $errorCode = [System.Runtime.InteropServices.Marshal]:: `
                             GetLastWin32Error()
                         throw "Move failed from '$fullSourcePath' to " + `

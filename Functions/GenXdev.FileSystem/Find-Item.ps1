@@ -1,33 +1,36 @@
 ################################################################################
 <#
 .SYNOPSIS
-Searches for file- or directory- names with optionally filtering regex content matching
+Searches for files or directories with optional content filtering.
 
 .DESCRIPTION
-Searches for file- or directory- names, optionally performs a regular expression
-match within the content of each matched file.
+Performs recursive file and directory searches with support for:
+- File/directory name patterns
+- Content matching using regular expressions
+- Searching across all drives
+- Directory-only searches
+- Object pipeline output
 
 .PARAMETER SearchMask
-Specify the file name or pattern to search for. Default is "*".
+The file/directory name pattern to search for. Supports wildcards.
+Defaults to "*" if not specified.
 
 .PARAMETER Pattern
-Regular expression pattern to search within the content of files to match against. Default is ".*".
+Regular expression to match against file contents.
+Only applies when searching files, not directories.
 
 .PARAMETER AllDrives
-Search all drives.
+Search across all available drives instead of just the current path.
 
 .PARAMETER Directory
-Search for directories only.
+Search for directories only, ignoring files.
 
 .PARAMETER PassThru
-Pass through the objects to the pipeline.
+Output matched items as objects instead of formatted strings.
 
 .EXAMPLE
-# Find all files with the .txt extension in the current directory and its subdirectories
+# Search for all .txt files in current directory and subdirectories
 Find-Item -SearchMask "*.txt"
-
-# or in short
-l *.txt
 
 .EXAMPLE
 # Find all files with that have the word "translation" in their name
@@ -113,7 +116,7 @@ function Find-Item {
             Mandatory = $false,
             Position = 1,
             ParameterSetName = 'WithPattern',
-            HelpMessage = "Regular expression pattern to search within the content of files to match against"
+            HelpMessage = "Regular expression pattern to search within file contents"
         )]
         [Alias("mc", "matchcontent")]
         [PSDefaultValue(Value = ".*")]
@@ -144,23 +147,36 @@ function Find-Item {
 
     begin {
 
+        Write-Verbose "Starting Find-Item with SearchMask: $SearchMask"
+
+        # normalize and validate the search mask
         $SearchMask = $SearchMask.Trim()
         if ($SearchMask -eq [string]::Empty) {
-
             $SearchMask = ".\*"
         }
-        $SearchMask = $SearchMask.Trim().Replace("\", [IO.Path]::DirectorySeparatorChar).Replace("/", [IO.Path]::DirectorySeparatorChar).Replace([IO.Path]::DirectorySeparatorChar + [IO.Path]::DirectorySeparatorChar, [IO.Path]::DirectorySeparatorChar)
 
+        # normalize path separators
+        $SearchMask = $SearchMask.Trim().Replace("\", [IO.Path]::DirectorySeparatorChar).`
+            Replace("/", [IO.Path]::DirectorySeparatorChar).`
+            Replace([IO.Path]::DirectorySeparatorChar + [IO.Path]::DirectorySeparatorChar,
+            [IO.Path]::DirectorySeparatorChar)
+
+        # ensure directory paths end with wildcard
         if ($SearchMask.EndsWith([IO.Path]::DirectorySeparatorChar)) {
-
             $SearchMask += "*"
         }
 
-        # expand search mask path to full path
-        $SearchMask = Expand-Path $SearchMask
+        Write-Verbose "Normalized SearchMask: $SearchMask"
 
-        # get current directory for relative path handling
+        # convert to full path
+        $SearchMask = Expand-Path $SearchMask
+        Write-Verbose "Expanded SearchMask: $SearchMask"
+
+        # store current location for relative path handling
         $location = Get-Location | ForEach-Object Path
+    }
+
+    process {
 
         # helper function to search file content
         function Search-FileContent {
@@ -172,11 +188,6 @@ function Find-Item {
             return Select-String -Path $FilePath -Pattern $Pattern
         }
 
-        $SearchMask = Expand-Path $SearchMask
-    }
-
-    process {
-
         # output blank line unless passing through objects
         if (-not $PassThru) {
             "" | Out-Host
@@ -186,14 +197,17 @@ function Find-Item {
         if ((-not $Directory) -and ($Pattern -ne ".*") -and
             (-not [string]::IsNullOrWhiteSpace($Pattern))) {
 
-            # searching all drives
-            if ($AllDrives) {
+            Write-Verbose "Searching files with content pattern: $Pattern"
 
-                # get all drives and process in parallel
+            # search all drives
+            if ($AllDrives) {
+                Write-Verbose "Searching across all drives"
+
+                # process drives in parallel
                 Get-PSDrive -ErrorAction SilentlyContinue |
                 ForEach-Object -ThrottleLimit 8 -Parallel {
 
-                    # extract filename from search mask
+                    # extract filename part
                     $file = [IO.Path]::GetFileName($SearchMask)
                     $filter = [string]::IsNullOrEmpty($file) ? "*" : $file
 
@@ -208,7 +222,7 @@ function Find-Item {
                         Where-Object -Property Name -Like $filter |
                         ForEach-Object {
 
-                            # check file content for pattern
+                            # check file content
                             if (Search-FileContent -FilePath $PSItem.FullName `
                                     -Pattern $Pattern) {
 
@@ -233,8 +247,9 @@ function Find-Item {
                 return
             }
 
-            # regular content search in current location
-            Get-ChildItem $SearchMask -File -Recurse | ForEach-Object {
+            # regular content search
+            Get-ChildItem $SearchMask -File -Recurse |
+            ForEach-Object {
                 if (($Pattern -eq ".*") -or
                     (Search-FileContent -FilePath $PSItem.FullName -Pattern $Pattern)) {
 
@@ -255,8 +270,10 @@ function Find-Item {
             return
         }
 
-        # searching all drives without content pattern
+        # search all drives without content
         if ($AllDrives) {
+            Write-Verbose "Searching all drives for matching items"
+
             Get-PSDrive -ErrorAction SilentlyContinue |
             ForEach-Object -ThrottleLimit 8 -Parallel {
                 try {
@@ -282,7 +299,9 @@ function Find-Item {
             return
         }
 
-        # regular file/directory search without content pattern
+        # regular file/directory search
+        Write-Verbose "Performing regular file/directory search"
+
         $dir = [IO.Path]::GetDirectoryName($SearchMask)
         if ([string]::IsNullOrEmpty($dir)) {
             $dir = ".$([IO.Path]::DirectorySeparatorChar)"
@@ -321,3 +340,4 @@ function Find-Item {
     end {
     }
 }
+################################################################################

@@ -1,21 +1,26 @@
 ################################################################################
 <#
 .SYNOPSIS
-Moves a file to the recycle bin using the Windows Shell API.
+Moves files and directories to the Windows Recycle Bin safely.
 
 .DESCRIPTION
-Safely moves a file or directory to the recycle bin, even if it's currently in
-use. Uses the Shell.Application COM object to perform the operation.
+Safely moves files or directories to the recycle bin using the Windows Shell API,
+even if they are currently in use. The function uses the Shell.Application COM
+object to perform the operation, ensuring proper recycling behavior and undo
+capability.
 
 .PARAMETER Path
-The path to the file or directory to move to the recycle bin.
+One or more paths to files or directories that should be moved to the recycle
+bin. Accepts pipeline input and wildcards. The paths must exist and be
+accessible.
 
 .EXAMPLE
-Move-ToRecycleBin -Path "C:\temp\myfile.txt"
+Move-ToRecycleBin -Path "C:\temp\old-report.txt"
+# Moves a single file to the recycle bin
 
 .EXAMPLE
-# Move multiple files
-"file1.txt","file2.txt" | Move-ToRecycleBin
+"file1.txt","file2.txt" | recycle
+# Moves multiple files using pipeline and alias
 #>
 function Move-ToRecycleBin {
 
@@ -32,20 +37,21 @@ function Move-ToRecycleBin {
             HelpMessage = "Specify the path(s) to move to the recycle bin"
         )]
         [ValidateNotNullOrEmpty()]
+        [Alias("FullName")]
         [string[]]$Path
         ########################################################################
     )
 
     begin {
 
-        # initialize success tracking
+        # track overall success of operations
         $success = $true
 
-        # create shell automation object for recycle bin operations
+        # initialize shell automation object for recycle bin operations
         $shellObj = $null
         try {
             $shellObj = New-Object -ComObject Shell.Application
-            Write-Verbose "Successfully created Shell.Application COM object"
+            Write-Verbose "Created Shell.Application COM object for recycle operations"
         }
         catch {
             Write-Error "Failed to create Shell.Application COM object: $_"
@@ -57,29 +63,29 @@ function Move-ToRecycleBin {
 
         foreach ($itemPath in $Path) {
 
-            # convert to full filesystem path
+            # convert relative or shorthand paths to full filesystem paths
             $fullPath = Expand-Path $itemPath
             Write-Verbose "Processing path: $fullPath"
 
             try {
-                # verify path exists
+                # check if the target path actually exists before attempting to recycle
                 if ([System.IO.File]::Exists($fullPath) -or `
-                    [System.IO.Directory]::Exists($fullPath)) {
+                        [System.IO.Directory]::Exists($fullPath)) {
 
-                    # confirm operation with user
+                    # confirm the recycle operation with the user
                     if ($PSCmdlet.ShouldProcess($fullPath, "Move to Recycle Bin")) {
 
-                        # split path for shell operation
+                        # split the path into directory and filename for shell operation
                         $dirName = [System.IO.Path]::GetDirectoryName($fullPath)
                         $fileName = [System.IO.Path]::GetFileName($fullPath)
 
-                        # get shell namespace for operation
+                        # get shell folder object for the directory containing the item
                         $folderObj = $shellObj.Namespace($dirName)
                         $fileObj = $folderObj.ParseName($fileName)
 
-                        # move to recycle bin
+                        # perform the recycle operation using shell verbs
                         $fileObj.InvokeVerb("delete")
-                        Write-Verbose "Successfully recycled: $fullPath"
+                        Write-Verbose "Successfully moved to recycle bin: $fullPath"
                     }
                 }
                 else {
@@ -96,11 +102,11 @@ function Move-ToRecycleBin {
 
     end {
 
-        # cleanup com object
+        # cleanup the COM object to prevent resource leaks
         try {
             [System.Runtime.InteropServices.Marshal]::ReleaseComObject($shellObj) | `
                 Out-Null
-            Write-Verbose "Successfully released COM object"
+            Write-Verbose "Released Shell.Application COM object"
         }
         catch {
             Write-Warning "Failed to release COM object: $_"

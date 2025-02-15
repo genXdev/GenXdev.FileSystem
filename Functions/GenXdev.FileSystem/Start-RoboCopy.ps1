@@ -1,31 +1,28 @@
 ###############################################################################
 <#
 .SYNOPSIS
-Wrapper for Microsoft's Robust Copy Utility
-Copies file data from one location to another.
+Provides a PowerShell wrapper for Microsoft's Robust Copy (RoboCopy) utility.
 
 .DESCRIPTION
-Wrapper for Microsoft's Robust Copy Utility
-Copies file data from one location to another.
+A comprehensive wrapper for the RoboCopy command-line utility that provides
+robust file and directory copying capabilities. This function exposes RoboCopy's
+extensive feature set through PowerShell-friendly parameters while maintaining
+most of its powerful functionality.
 
-Robocopy, for "Robust File Copy", is a command-line directory and/or file replication command for Microsoft Windows.
-Robocopy functionally replaces Xcopy, with more options. Created by Kevin Allen and first released as part of the
-Windows NT 4.0 Resource Kit, it has been a standard feature of Windows since Windows Vista and Windows Server 2008.
-
-Key features
-
-- Folder synchronization
-- Support for extra long pathnames > 256 characters
-- Restartable mode backups
-- Support for copying and fixing security settings
-- Advanced file attribute features
-- Advanced symbolic link and junction support
-- Monitor mode (restart copying after change threshold)
-- Optimization features for LargeFiles, multithreaded copying and network compression
-- Recovery mode (copy from failing disks)
+Key Features:
+- Directory synchronization with mirror options
+- Support for extra long pathnames (>256 characters)
+- Restartable mode for resilient copying
+- Security settings preservation
+- Advanced file attribute handling
+- Symbolic link and junction point management
+- Monitor mode for continuous synchronization
+- Performance optimization for large files
+- Network compression support
+- Recovery mode for failing devices
 
 .PARAMETER Source
-The directory, filepath, or directory+searchmask
+The source directory, file path, or directory with search mask to copy from.
 
 .PARAMETER DestinationDirectory
 The destination directory to place the copied files and directories into.
@@ -184,11 +181,14 @@ Multiple overrides:
 Displays a message that describes the effect of the command, instead of executing the command.
 
 .EXAMPLE
-Start-RoboCopy c:\videos e:\backups\videos
+# Mirror a directory with security settings
+Start-RoboCopy -Source "C:\Projects" -DestinationDirectory "D:\Backup" `
+    -Mirror -IncludeSecurity
 
-Start-RoboCopy c:\users\user\onedrive\photos\screenshots e:\backups\screenshots -Move
-
-Start-RoboCopy c:\users\user\onedrive e:\backups\onedrive -Mirror
+.EXAMPLE
+# Monitor and sync changes every 10 minutes
+Start-RoboCopy -Source "C:\Documents" -DestinationDirectory "\\server\share" `
+    -MonitorMode -MonitorModeThresholdMinutes 10
 
 .LINK
 https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/robocopy
@@ -639,6 +639,8 @@ Multiple overrides:
     )
 
     Begin {
+        # initialize robocopy path and validate system requirements
+        Write-Verbose "Initializing RoboCopy with source '$Source' and destination '$DestinationDirectory'"
 
         ###############################################################################
 
@@ -1322,7 +1324,10 @@ Multiple overrides:
         $FilesArgs = ConstructFileFilterSet $Files "FileMask"
         $cmdLine = "& '$($RobocopyPath.Replace("'", "''"))' '$($Source.Replace("'", "''"))' '$($DestinationDirectory.Replace("'", "''"))' $FilesArgs $switchesCleaned"
     }
+
     Process {
+        # construct and execute robocopy command
+        Write-Verbose "Constructing RoboCopy command with selected parameters"
 
         # WHAT IF?
         if ($WhatIf -or $WhatIfPreference) {
@@ -1366,9 +1371,13 @@ Multiple overrides:
             return;
         }
 
+        # execute robocopy with constructed parameters
+        Write-Verbose "Executing RoboCopy command: $cmdLine"
         Invoke-Expression $cmdLine
     }
-    End {
 
+    End {
+        # function has no end block operations
     }
 }
+################################################################################
