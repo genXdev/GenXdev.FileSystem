@@ -48,7 +48,6 @@ function Remove-OnReboot {
     )
 
     begin {
-
         # registry location storing pending file operations
         $regKey = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager"
         $regName = "PendingFileRenameOperations"
@@ -71,7 +70,7 @@ function Remove-OnReboot {
 
         try {
             foreach ($item in $Path) {
-                $fullPath = Expand-Path $item
+                $fullPath = GenXdev.FileSystem\Expand-Path $item
 
                 if (Test-Path -LiteralPath $fullPath) {
                     if ($PSCmdlet.ShouldProcess($fullPath, "Mark for deletion on reboot")) {

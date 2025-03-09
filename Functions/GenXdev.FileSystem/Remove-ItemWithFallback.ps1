@@ -26,7 +26,8 @@ Uses the alias 'rif' to remove a directory through the pipeline.
 function Remove-ItemWithFallback {
 
     [CmdletBinding(SupportsShouldProcess = $true)]
-    [Alias("rif")]
+    [OutputType([bool])]
+    [Alias("rmf")]
 
     param(
         ########################################################################
@@ -46,7 +47,7 @@ function Remove-ItemWithFallback {
     begin {
 
         # convert relative or provider paths to full filesystem paths
-        $Path = Expand-Path $Path
+        $Path = GenXdev.FileSystem\Expand-Path $Path
     }
 
     process {

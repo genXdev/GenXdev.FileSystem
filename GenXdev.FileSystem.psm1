@@ -2,6 +2,7 @@
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Expand-Path.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Find-DuplicateFiles.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Find-Item.ps1"
+. "$PSScriptRoot\Functions\GenXdev.FileSystem\Invoke-Fasti.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Move-ItemWithTracking.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Move-ToRecycleBin.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Remove-AllItems.ps1"

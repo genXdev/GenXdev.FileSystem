@@ -200,7 +200,8 @@ https://en.wikipedia.org/wiki/Robocopy
 function Start-RoboCopy {
     [CmdLetBinding(
         DefaultParameterSetName = "Default",
-        ConfirmImpact = "Medium"
+        ConfirmImpact = "Medium",
+        SupportsShouldProcess = $true
     )]
     [Alias("xc", "rc")]
     Param
@@ -233,7 +234,9 @@ function Start-RoboCopy {
             Position = 2,
             HelpMessage = "Optional searchmask for selecting the files that need to be copied.
             Default value = '*'"
-        )] [string[]] $Files = @(),
+        )]
+        [SupportsWildcards()]
+        [string[]] $Files = @(),
         ###############################################################################
 
         ###############################################################################
@@ -373,6 +376,7 @@ function Start-RoboCopy {
             ValueFromPipeline = $false,
             HelpMessage = "Exclude any files that matches any of these names/paths/wildcards"
         )]
+        [SupportsWildcards()]
         [string[]] $FileExcludeFilter = @(),
         ###############################################################################
 
@@ -382,6 +386,7 @@ function Start-RoboCopy {
             ValueFromPipeline = $false,
             HelpMessage = "Exclude any directories that matches any of these names/paths/wildcards"
         )]
+        [SupportsWildcards()]
         [string[]] $DirectoryExcludeFilter = @(),
         ###############################################################################
 
@@ -626,16 +631,8 @@ Multiple overrides:
     -Override `"/ReplaceThisSwitchWithValue:'SomeValue' -/RemoveThisSwitch /AddThisSwitch`"
 "
         )]
-        [string] $Override,
+        [string] $Override
         ###############################################################################
-
-        ###############################################################################
-        [Parameter(
-            Mandatory = $false,
-            ValueFromPipeline = $false,
-            HelpMessage = "Displays a message that describes the effect of the command, instead of executing the command."
-        )]
-        [switch] $WhatIf
     )
 
     Begin {
@@ -648,8 +645,8 @@ Multiple overrides:
         $RobocopyPath = "$env:SystemRoot\system32\robocopy.exe";
 
         # normalize to current directory
-        $Source = Expand-Path $Source
-        $DestinationDirectory = Expand-Path $DestinationDirectory
+        $Source = GenXdev.FileSystem\Expand-Path $Source
+        $DestinationDirectory = GenXdev.FileSystem\Expand-Path $DestinationDirectory
 
         # source is not an existing directory?
         if ([IO.Directory]::Exists($Source) -eq $false) {
@@ -697,7 +694,7 @@ Multiple overrides:
 
         ###############################################################################
 
-        function CurrentUserHasElivatedRights() {
+        function CurrentUserHasElevatedRights() {
 
             $id = [System.Security.Principal.WindowsIdentity]::GetCurrent()
             $p = New-Object System.Security.Principal.WindowsPrincipal($id)
@@ -841,7 +838,7 @@ Multiple overrides:
 
         # /B            █  copy files in Backup mode.
         # /ZB           █  use restartable mode; if access denied use Backup mode.
-        if (CurrentUserHasElivatedRights) {
+        if (CurrentUserHasElevatedRights) {
 
             $ParamMode = "/B"
         }
@@ -1267,7 +1264,7 @@ Multiple overrides:
         # -LogFilePath ➜ If specified, logging will also be done to specified file
         if ([string]::IsNullOrWhiteSpace($LogFilePath) -eq $false) {
 
-            $LogArgs = "'$((Expand-Path $LogFilePath $true).ToString().Replace("'", "''"))'"
+            $LogArgs = "'$((GenXdev.FileSystem\Expand-Path $LogFilePath $true).ToString().Replace("'", "''"))'"
             $LogPrefix = "";
             $ParamTee = "/TEE" #                          █ output to console window, as well as the log file
 
@@ -1329,31 +1326,39 @@ Multiple overrides:
         # construct and execute robocopy command
         Write-Verbose "Constructing RoboCopy command with selected parameters"
 
-        # WHAT IF?
-        if ($WhatIf -or $WhatIfPreference) {
-
-            # collect param help information
-            $paramList = @{};
+        # collect param help information
+        $paramList = @{};
             (& $RobocopyPath -?) | ForEach-Object {
-                if ($PSItem.Contains(" :: ")) {
-                    $s = $PSItem.Split([string[]]@(" :: "), [StringSplitOptions]::RemoveEmptyEntries);
-                    $paramList."$($s[0].ToLowerInvariant().split(":")[0].Split("[")[0].Trim().split(" ")[0])" = $s[1];
-                }
-            };
+            if ($PSItem.Contains(" :: ")) {
+                $s = $PSItem.Split([string[]]@(" :: "), [StringSplitOptions]::RemoveEmptyEntries);
+                $paramList."$($s[0].ToLowerInvariant().split(":")[0].Split("[")[0].Trim().split(" ")[0])" = $s[1];
+            }
+        };
 
-            $first = $true;
-            $paramsExplained = @(
+        $first = $true;
+        $paramsExplained = @(
 
-                " $switchesCleaned ".Split([string[]]@(" /"), [System.StringSplitOptions]::RemoveEmptyEntries) |
-                ForEach-Object {
+            " $switchesCleaned ".Split([string[]]@(" /"), [System.StringSplitOptions]::RemoveEmptyEntries) |
+            ForEach-Object {
 
-                    $description = $paramList."/$($PSItem.ToLowerInvariant().split(":")[0].Split("[")[0].Trim().split(" ")[0])"
-                    $Space = "                         "; if ($first) { $Space = ""; $first = $false; }
-                    "$Space/$($PSItem.ToUpperInvariant().split(":")[0].Split("[")[0].Trim().split(" ")[0].PadRight(15)) --> $description`r`n"
-                }
-            );
+                $description = $paramList."/$($PSItem.ToLowerInvariant().split(":")[0].Split("[")[0].Trim().split(" ")[0])"
+                $Space = "                         "; if ($first) { $Space = ""; $first = $false; }
+                "$Space/$($PSItem.ToUpperInvariant().split(":")[0].Split("[")[0].Trim().split(" ")[0].PadRight(15)) --> $description`r`n"
+            }
+        );
+        # create a descriptive operation message based on selected mode
+        $operation = if ($Mirror) {
+            "Mirror"
+        }
+        elseif ($Move) {
+            "Move"
+        }
+        else {
+            "Copy"
+        }
 
-            Write-Host "
+        $target = "$operation from '$Source' to '$DestinationDirectory'"
+        $message = "
 
             RoboCopy would be executed as:
                 $($cmdLine.Replace(" /L ", " "))
@@ -1366,13 +1371,16 @@ Multiple overrides:
             Move        : $($Move -eq $true)
 
             Switches    : $paramsExplained
+        "
 
-"
+        if (-not ($PSCmdlet.ShouldProcess($target, $message))) {
+
             return;
         }
 
         # execute robocopy with constructed parameters
         Write-Verbose "Executing RoboCopy command: $cmdLine"
+
         Invoke-Expression $cmdLine
     }
 

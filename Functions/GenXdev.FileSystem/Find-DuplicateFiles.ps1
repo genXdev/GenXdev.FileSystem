@@ -28,6 +28,7 @@ Find-DuplicateFiles -Paths "C:\Photos","D:\Backup\Photos"
 function Find-DuplicateFiles {
 
     [CmdletBinding()]
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseSingularNouns", "")]
     [Alias("fdf")]
 
     param(
@@ -59,11 +60,10 @@ function Find-DuplicateFiles {
     )
 
     begin {
-
         # convert all input paths to full filesystem paths
         $normalizedPaths = @()
         $Paths | ForEach-Object {
-            $normalizedPaths += (Expand-Path $_)
+            $normalizedPaths += (GenXdev.FileSystem\Expand-Path $_)
         }
 
         # internal helper function to generate unique comparison key for each file

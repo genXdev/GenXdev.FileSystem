@@ -1,6 +1,6 @@
 Describe "Start-RoboCopy" {
     BeforeAll {
-        $Script:testRoot = Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
+        $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
         Push-Location ($Script:testRoot)
     }
 
@@ -21,6 +21,32 @@ Describe "Start-RoboCopy" {
 
     AfterEach {
         Remove-Item -Path $Script:source, $Script:dest -Recurse -Force
+    }
+
+    It "should pass PSScriptAnalyzer rules" {
+
+        # get the script path for analysis
+        $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Start-RoboCopy.ps1"
+
+        # run analyzer with explicit settings
+        $analyzerResults = GenXdev.Coding\Invoke-GenXdevScriptAnalyzer `
+            -Path $scriptPath
+
+        [string] $message = ""
+        $analyzerResults | ForEach-Object {
+
+            $message = $message + @"
+--------------------------------------------------
+Rule: $($_.RuleName)`
+Description: $($_.Description)
+Message: $($_.Message)
+`r`n
+"@
+            $analyzerResults.Count | Should -Be 0 -Because @"
+The following PSScriptAnalyzer rules are being violated:
+$message
+"@;
+        }
     }
 
     It "Copies files between folders" {

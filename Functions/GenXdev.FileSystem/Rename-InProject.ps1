@@ -71,7 +71,7 @@ function Rename-InProject {
 
         try {
             # normalize path and extract search pattern if specified
-            $sourcePath = Expand-Path $Source
+            $sourcePath = GenXdev.FileSystem\Expand-Path $Source
             $searchPattern = "*"
 
             # split source into path and pattern if not a directory
@@ -106,27 +106,35 @@ function Rename-InProject {
 
         try {
             # recursive function to get all project files excluding repos
-            function Get-ProjectFiles([string] $dir, [string] $mask) {
+            function Get-ProjectFiles {
+
+                [CmdletBinding()]
+                [OutputType([System.Collections.Generic.List[string]])]
+                [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+                    "PSUseSingularNouns",
+                    "Get-ProjectFiles"
+                )]
+                param(
+                    [string] $Dir,
+                    [string] $Mask
+                )
 
                 $result = [System.Collections.Generic.List[string]]::new()
 
                 # skip version control directories
-                if ([IO.Path]::GetFileName($dir) -in @(".svn", ".git")) {
+                if ([IO.Path]::GetFileName($Dir) -in @(".svn", ".git")) {
                     return $result
                 }
 
                 # collect matching files in current directory
-                [IO.Directory]::GetFiles($dir, $mask) | ForEach-Object {
-
+                [IO.Directory]::GetFiles($Dir, $Mask) | ForEach-Object {
                     $null = $result.Add($_)
                 }
 
                 # recursively process subdirectories
-                [IO.Directory]::GetDirectories($dir, "*") | ForEach-Object {
-
+                [IO.Directory]::GetDirectories($Dir, "*") | ForEach-Object {
                     if ([IO.Path]::GetFileName($_) -notin @(".svn", ".git")) {
-
-                        $null = Get-ProjectFiles $_ $mask | ForEach-Object {
+                        $null = Get-ProjectFiles $_ $Mask | ForEach-Object {
                             $null = $result.Add($_)
                         }
                     }
@@ -207,7 +215,7 @@ function Rename-InProject {
                 $newName = $oldName.Replace($FindText, $ReplacementText)
 
                 if ($oldName -ne $newName) {
-                    $newPath = Expand-Path (
+                    $newPath = GenXdev.FileSystem\Expand-Path (
                         [IO.Path]::Combine($dir.Parent.FullName, $newName))
 
                     if ($PSCmdlet.ShouldProcess($dir.FullName,

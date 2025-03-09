@@ -1,43 +1,40 @@
 ################################################################################
 <#
 .SYNOPSIS
-Searches for files or directories with optional content filtering.
+Performs advanced file and directory searches with content filtering capabilities.
 
 .DESCRIPTION
-Performs recursive file and directory searches with support for:
-- File/directory name patterns
-- Content matching using regular expressions
-- Searching across all drives
-- Directory-only searches
-- Object pipeline output
+A powerful search utility that combines file/directory pattern matching with
+content filtering. Supports recursive searches, multi-drive operations, and
+flexible output formats. Can search by name patterns and content patterns
+simultaneously.
 
 .PARAMETER SearchMask
-The file/directory name pattern to search for. Supports wildcards.
-Defaults to "*" if not specified.
+File or directory pattern to match against. Supports wildcards (*,?).
+Default is "*" to match everything.
 
 .PARAMETER Pattern
-Regular expression to match against file contents.
-Only applies when searching files, not directories.
+Regular expression to search within file contents. Only applies to files.
+Default is ".*" to match any content.
+
+.PARAMETER RelativeBasePath
+Base directory for generating relative paths in output.
+Only used when -PassThru is not specified.
 
 .PARAMETER AllDrives
-Search across all available drives instead of just the current path.
+When specified, searches across all available filesystem drives.
 
 .PARAMETER Directory
-Search for directories only, ignoring files.
+Limits search to directories only, ignoring files.
+
+.PARAMETER FilesAndDirectories
+Includes both files and directories in search results.
 
 .PARAMETER PassThru
-Output matched items as objects instead of formatted strings.
+Returns FileInfo/DirectoryInfo objects instead of paths.
 
-.EXAMPLE
-# Search for all .txt files in current directory and subdirectories
-Find-Item -SearchMask "*.txt"
-
-.EXAMPLE
-# Find all files with that have the word "translation" in their name
-Find-Item -SearchMask "*translation*"
-
-# or in short
-l *translation*
+.PARAMETER NoRecurse
+Prevents recursive searching into subdirectories.
 
 .EXAMPLE
 # Find all files with that have the word "translation" in their content
@@ -47,9 +44,15 @@ Find-Item -Pattern "translation"
 l -mc translation
 
 .EXAMPLE
-
 # Find any javascript file that tests a version string in it's code
 Find-Item -SearchMask *.js -Pattern "Version == `"\d\d?\.\d\d?\.\d\d?`""
+# or in short
+l *.js "Version == `"\d\d?\.\d\d?\.\d\d?`""
+
+.EXAMPLE
+
+# Find any node_modules\react-dom folder on all drives
+Find-Item -SearchMask "node_modules\react-dom" -Pattern "Version == `"\d\d?\.\d\d?\.\d\d?`""
 
 # or in short
 l *.js "Version == `"\d\d?\.\d\d?\.\d\d?`""
@@ -81,54 +84,53 @@ Find-Item -SearchMask "*.xml" -PassThru
 
 # or in short
 l *.xml -PassThru
-
-.NOTES
-Assuming c:\temp exists;
-
-'Find-Item c:\temp\'
-    would search the whole content of directory 'temp' for any file or directory with the name 'temp'
-
-'Find-Item c:\temp'
-    would search the whole C drive for any file or directory with the name 'temp'
-
-'Find-Item temp -AllDrives'
-    would search the all drives for any file or directory with the name 'temp'
-so would:
-    'Find-Item c:\temp -AllDrives'
 #>
 function Find-Item {
 
     [CmdletBinding(DefaultParameterSetName = "Default")]
     [Alias("l")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseUsingScopeModifierInNewRunspaces", "")]
 
     param(
-        ###############################################################################
+        ########################################################################
         [Parameter(
             Mandatory = $false,
             Position = 0,
+            ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true,
             HelpMessage = "File name or pattern to search for. Default is '*'"
         )]
-        [Alias("like", "l")]
-        [PSDefaultValue(Value = "*")]
-        [string] $SearchMask = "*",
-        ###############################################################################
+        [Alias("like", "l", "Path", "Name", "file", "Query", "FullName")]
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildcards()]
+        [string[]] $SearchMask = "*",
+        ########################################################################
         [Parameter(
             Mandatory = $false,
             Position = 1,
             ParameterSetName = 'WithPattern',
-            HelpMessage = "Regular expression pattern to search within file contents"
+            HelpMessage = "Regular expression pattern to search within content"
         )]
         [Alias("mc", "matchcontent")]
-        [PSDefaultValue(Value = ".*")]
+        [ValidateNotNull()]
+        [SupportsWildcards()]
         [string] $Pattern = ".*",
-        ###############################################################################
+        ########################################################################
+        [Parameter(
+            Mandatory = $false,
+            HelpMessage = "Base path for resolving relative paths in output"
+        )]
+        [Alias("base")]
+        [ValidateNotNullOrEmpty()]
+        [string] $RelativeBasePath = ".\",
+        ########################################################################
         [Parameter(
             Mandatory = $false,
             HelpMessage = "Search across all available drives"
         )]
         [Alias("all")]
         [switch] $AllDrives,
-        ###############################################################################
+        ########################################################################
         [Parameter(
             Mandatory = $false,
             ParameterSetName = 'DirectoriesOnly',
@@ -136,204 +138,471 @@ function Find-Item {
         )]
         [Alias("dir")]
         [switch] $Directory,
-        ###############################################################################
+        ########################################################################
         [Parameter(
             Mandatory = $false,
-            HelpMessage = "Output matched items as objects rather than strings"
+            ParameterSetName = 'DirectoriesOnly',
+            HelpMessage = "Include both files and directories"
         )]
-        [switch] $PassThru
-        ###############################################################################
+        [Alias("both")]
+        [switch] $FilesAndDirectories,
+        ########################################################################
+        [Parameter(
+            Mandatory = $false,
+            HelpMessage = "Output matched items as objects"
+        )]
+        [switch] $PassThru,
+        ########################################################################
+        [Parameter(
+            Mandatory = $false,
+            HelpMessage = "Do not recurse into subdirectories"
+        )]
+        [switch] $NoRecurse
+        ########################################################################
     )
 
     begin {
 
-        Write-Verbose "Starting Find-Item with SearchMask: $SearchMask"
+        # helper function to search file contents using regex
+        function Search-FileContent {
+            param (
+                [string] $filePath,
+                [string] $pattern
+            )
 
-        # normalize and validate the search mask
-        $SearchMask = $SearchMask.Trim()
-        if ($SearchMask -eq [string]::Empty) {
-            $SearchMask = ".\*"
+            return (Select-String -Path $filePath -Pattern $pattern)
         }
 
-        # normalize path separators
-        $SearchMask = $SearchMask.Trim().Replace("\", [IO.Path]::DirectorySeparatorChar).`
-            Replace("/", [IO.Path]::DirectorySeparatorChar).`
-            Replace([IO.Path]::DirectorySeparatorChar + [IO.Path]::DirectorySeparatorChar,
-            [IO.Path]::DirectorySeparatorChar)
+        # helper function to recursively search directories
+        function Search-DirectoryContent {
+            param (
+                [string] $searchPhrase
+            )
 
-        # ensure directory paths end with wildcard
-        if ($SearchMask.EndsWith([IO.Path]::DirectorySeparatorChar)) {
-            $SearchMask += "*"
+            # handle empty search phrase by defaulting to current directory
+            if ([string]::IsNullOrWhiteSpace($searchPhrase)) {
+                $searchPhrase = ".\*"
+            }
+
+            # clean up and normalize the search path
+            $searchPhrase = $searchPhrase.Trim()
+
+            # ensure proper path termination for directories
+            $endedWithPathSeparator = $searchPhrase.EndsWith(
+                [System.IO.Path]::DirectorySeparatorChar)
+            if ($endedWithPathSeparator) {
+                $searchPhrase += "*"
+            }
+
+            # convert to absolute path
+            $searchPhrase = GenXdev.FileSystem\Expand-Path $searchPhrase
+            $remainingPath = $searchPhrase
+
+            # initialize stack for directory traversal
+            [System.Collections.Generic.Stack[System.Collections.Hashtable]] `
+                $directories = @()
+
+            # find the next separator
+            $index = $remainingPath.IndexOf([System.IO.Path]::DirectorySeparatorChar)
+            $indexOriginal = $index
+            $indexWildcard = $remainingPath.IndexOf("*")
+            $indexQuestionMark = $remainingPath.IndexOf("?")
+            if ($indexQuestionMark -ge 0 -and ($indexWildcard -lt 0 -or $indexQuestionMark -lt $indexWildcard)) {
+
+                $indexWildcard = $indexQuestionMark
+            }
+            $last = $index -eq -1
+
+            # be more effecient by skipping directories that don't require a match
+            # have no wildcard or a wildcard in the path that comes after next directory separator?
+            if ((-not $last) -and (($indexWildCard -lt 0) -or ($indexWildcard -gt $index))) {
+
+                # determine start position for searching wildcard preceeding directory separator character
+                $index = $indexWildcard -lt 0 ? $index : $indexWildcard
+
+                # determine if there is a wildcard after the wildcard character
+                $index2 = $indexWildcard -lt 0 ? -1 : $remainingPath.IndexOf([System.IO.Path]::DirectorySeparatorChar, $indexWildcard)
+
+                # if wildcard was found, search for the preceeding directory separator character
+                if ($indexWildCard -ge 0) {
+
+                    while ($index -ge 1 -and ($remainingPath[$index] -ne [System.IO.Path]::DirectorySeparatorChar)) {
+
+                        $index--
+                    }
+                }
+
+                # wildcard was found and did not have a preceeding directory separator character?
+                if ($index2 -lt 0) {
+
+                    # set last flag to true, for later processing
+                    $last = $true
+
+                    # if wildcard was present, make sure to adjust the position so we don't include
+                    # the directory where the wildcard was found in our next directory scan
+                    if ($indexWildcard -ge 0) {
+
+                        # we move the cursor to one character before directory separator..
+                        $index--;
+                    }
+                    else {
+
+                        # if no wildcard was found, we move the cursor to the last directory separator..
+                        $index = $remainingPath.LastIndexOf([System.IO.Path]::DirectorySeparatorChar) - 1;
+                    }
+
+                    # ..so we can now exlude the directory holding the wildcard from our next directory scan
+                    while ($index -ge 1 -and ($remainingPath[$index] -ne [System.IO.Path]::DirectorySeparatorChar)) {
+
+                        $index--
+                    }
+                }
+            }
+
+            # prepare the invocation arguments for the first directory scan
+            $invocationArgs = @{
+
+                Path        = "$($currentPath)*"
+                Force       = $true
+                ErrorAction = "SilentlyContinue"
+            }
+
+            # have no wildcard or a wildcard in the path that comes after next directory separator?
+            if (($index -ge 0) -and (($indexWildcard -lt 0) -or ($indexWildcard -gt $index))) {
+
+                # wildcard was found and did not have a preceeding directory separator character?
+                if ($last) {
+
+                    # find the last directory separator character
+                    $i = $remainingPath.LastIndexOf([System.IO.Path]::DirectorySeparatorChar)
+
+                    # set the appropiate path to search
+                    $invocationArgs.Path = "$($currentPath)$($remainingPath.Substring(0, $i))\*"
+                }
+                else {
+
+                    # set the appropiate path to search
+                    $invocationArgs.Path = "$($currentPath)$($remainingPath.Substring(0, $indexWildcard))*"
+                }
+            }
+
+            # push the first directory scan
+            $null = $directories.Push(
+                @{
+                    currentPath   = $remainingPath.Substring(0, $index + 1)
+                    remainingPath = $remainingPath.Substring($index + 1)
+                    currentDepth  = 0
+                }
+            )
+
+            # process directories
+            [hashtable]$folder = $null
+            while ($directories.TryPop([ref]$folder)) {
+
+                # find the next directory separator in the remaining path
+                $index = $folder.remainingPath.IndexOf([System.IO.Path]::DirectorySeparatorChar)
+
+                # save the original index for later use
+                $indexOriginal = $index
+
+                # find the first wildcard in the remaining path
+                $indexWildcard = $folder.remainingPath.IndexOf("*")
+                $indexQuestionMark = $folder.remainingPath.IndexOf("?")
+                if ($indexQuestionMark -ge 0 -and ($indexWildcard -lt 0 -or $indexQuestionMark -lt $indexWildcard)) {
+
+                    $indexWildcard = $indexQuestionMark
+                }
+                # determine if this is the last directory in the path
+                $last = $index -eq -1
+
+                # be more effecient by skipping directories that don't require a match
+                # have no wildcard or a wildcard in the path that comes after next directory separator?
+                if ((-not $last) -and (($indexWildCard -lt 0) -or ($indexWildcard -gt $index))) {
+
+                    # determine start position for searching wildcard preceeding directory separator character
+                    $index = $indexWildcard -lt 0 ? $index - 1 : $indexWildcard
+
+                    # determine if there is a wildcard after the wildcard character
+                    $index2 = $indexWildcard -lt 0 ? -1 : $folder.remainingPath.IndexOf([System.IO.Path]::DirectorySeparatorChar, $indexWildcard);
+
+                    # if wildcard was found, search for the preceeding directory separator character
+                    if ($indexWildCard -ge 0) {
+
+                        while ($index -ge 1 -and ($folder.remainingPath[$index] -ne [System.IO.Path]::DirectorySeparatorChar)) {
+
+                            $index--
+                        }
+                    }
+
+                    # wildcard was found and did not have a preceeding directory separator character?
+                    if ($index2 -lt 0) {
+
+                        # set last flag to true, for later processing
+                        $last = $true
+
+                        # if wildcard was present, make sure to adjust the position so we don't include
+                        # the directory where the wildcard was found in our next directory scan
+                        if ($indexWildcard -ge 0) {
+
+                            # we move the cursor to one character before directory separator..
+                            $index--;
+                        }
+                        else {
+
+                            # if no wildcard was found, we move the cursor to the last directory separator..
+                            $index = $remainingPath.LastIndexOf([System.IO.Path]::DirectorySeparatorChar) - 1;
+                        }
+
+                        # ..so we can now exlude the directory holding the wildcard from our next directory scan
+                        while ($index -ge 1 -and ($folder.remainingPath[$index] -ne [System.IO.Path]::DirectorySeparatorChar)) {
+
+                            $index--
+                        }
+                    }
+                }
+
+                # prepare the invocation arguments for the next directory scan
+                $invocationArgs = @{
+
+                    Path        = "$($folder.currentPath)*"
+                    Force       = $true
+                    ErrorAction = "SilentlyContinue"
+                }
+
+                # have no wildcard or a wildcard in the path that comes after next directory separator?
+                if (($index -ge 0) -and (($indexWildcard -lt 0) -or ($indexWildcard -gt $index))) {
+
+                    # wildcard was found and did not have a preceeding directory separator character?
+                    if ($last) {
+
+                        # find the last directory separator character
+                        $i = $folder.remainingPath.LastIndexOf([System.IO.Path]::DirectorySeparatorChar)
+
+                        # set the appropiate path to search
+                        $invocationArgs.Path = "$($folder.currentPath)$($folder.remainingPath.Substring(0, $i))\*"
+
+                        # set the name to match for the next directory scan
+                        $nameToMatch = $folder.remainingPath.Substring($i + 1)
+                    }
+                    else {
+
+                        # set the appropiate path to search
+                        $invocationArgs.Path = "$($folder.currentPath)$($folder.remainingPath.Substring(0, $indexWildcard))*"
+
+                        # set the name to match for the next directory scan
+                        $nameToMatch = $folder.remainingPath
+                    }
+                }
+                else {
+
+                    # are we following a /**/ pattern but haven't found the first matching directory yet?
+                    if ($folder.forwardSearch) {
+
+                        # set the name to match for the next directory scan
+                        $nameToMatch = $folder.nameToMatch
+
+                        # force the last flag to true, so we can keep following /**/ pattern without
+                        # losing the informatino what directory to match next
+                        $last = $folder.remainingPath.Substring(3).IndexOf(
+                            [System.IO.Path]::DirectorySeparatorChar) -lt 0;
+                    }
+                    else {
+
+                        # set the name to match for the next directory scan
+                        $nameToMatch = $folder.remainingPath
+                    }
+                }
+
+                # if we are not at the last directory in the path
+                if (-not $last) {
+
+                    # and we are not following a /**/ pattern
+                    if (-not $folder.forwardSearch) {
+
+                        # then set the next directory to match to be the next directory in the path
+                        $nameToMatch = $folder.remainingPath.Substring(0, $indexOriginal)
+                    }
+
+                    # only find directories, since there are more directories to match
+                    $invocationArgs.Directory = $true
+
+                    # invoke the next directory scan
+                    Get-ChildItem @invocationArgs | ForEach-Object {
+
+                        # are we following a /**/ pattern?
+                        if ($folder.forwardSearch) {
+
+                            # is this the next directory to match
+                            if ($_.Name -like $nameToMatch) {
+
+                                $remainingPath = $folder.remainingPath.Substring(3);
+                                $i = $remainingPath.IndexOf([System.IO.Path]::DirectorySeparatorChar)
+                                if ($i -ge 0) {
+
+                                    $remainingPath = $remainingPath.Substring($i + 1)
+                                }
+
+                                # schedule directory scan that stop the following of the /**/ pattern
+                                # and will continue the normal directory matching pattern again
+                                # where remainingPath will get shorter again
+                                $null = $directories.Push(
+                                    @{
+                                        remainingPath = $remainingPath
+                                        currentPath   = "$($folder.currentPath)$($_.Name)\"
+                                        currentDepth  = $folder.currentDepth + 1
+                                    }
+                                )
+
+                                Write-Verbose "Ending /**/ search for $nameToMatch in $($directories.Peek().currentPath)"
+                            }
+                            else {
+                                # schedule directory scan that will keep following the /**/ pattern
+                                # where remainingPath will remain the same until we find the next directory to match
+                                $null = $directories.Push(
+                                    @{
+                                        forwardSearch = $true
+                                        remainingPath = $folder.remainingPath
+                                        currentPath   = "$($folder.currentPath)$($_.Name)\"
+                                        currentDepth  = $folder.currentDepth + 1
+                                        nameToMatch   = $folder.remainingPath.Substring(3).Split([System.IO.Path]::DirectorySeparatorChar)[0]
+                                    }
+                                )
+
+                                Write-Verbose "Continuing following /**/ search for $($directories.Peek().$nameToMatch) in $($directories.Peek().currentPath)"
+                            }
+                        }
+
+                        # not following a /**/ pattern, so we are looking for the next directory to match
+                        # but first we check if we are entering a /**/ pattern
+                        elseif ($nameToMatch -eq "**") {
+
+                            # schedule directory scan that will start following the /**/ pattern
+                            # we do this for every other directory we no found during this scan
+                            $null = $directories.Push(
+                                @{
+                                    forwardSearch = $true
+                                    remainingPath = $folder.remainingPath
+                                    currentPath   = "$($folder.currentPath)$($_.Name)\"
+                                    currentDepth  = $folder.currentDepth + 1
+                                    nameToMatch   = $folder.remainingPath.Substring(3).Split([System.IO.Path]::DirectorySeparatorChar)[0]
+                                }
+                            )
+
+                            Write-Verbose "Starting /**/ search for $($directories.Peek().$nameToMatch) in $($directories.Peek().currentPath)"
+                        }
+
+                        # we are not starting or following a /**/ pattern,
+                        # so we only schedule directories that match the name to match
+                        elseif ($_.Name -like $nameToMatch) {
+
+                            $null = $directories.Push(
+                                @{
+                                    remainingPath = $folder.remainingPath.Substring($index + 1)
+                                    currentPath   = "$($folder.currentPath)$($_.Name)\"
+                                    currentDepth  = $folder.currentDepth + 1
+                                }
+                            )
+                            Write-Verbose "Matched next directory for $($nameToMatch) in $($directories.Peek().currentPath)"
+                        }
+                    }
+                    continue;
+                }
+
+                # we now at the last directory of the SearchPhrase supplied
+                # invoke the directory scan
+                # we scan for files and directories, since this is the last directory to match
+                Get-ChildItem @invocationArgs | ForEach-Object {
+
+                    # determine if the found item is a directory
+                    $isDirectory = $_ -is [System.IO.DirectoryInfo]
+
+                    # if we find directories after the last directory of the SearchPhrase supplied
+                    # we only want to scan them too if the user has specified to do so
+                    # by default we recurse directories
+                    if ($isDirectory -and (-not $NoRecurse)) {
+
+                        # schedule directory scan for this additionaly found directory
+                        $null = $directories.Push(
+                            @{
+                                remainingPath = ($Last) ? "$nameToMatch" : "*"
+                                currentPath   = "$($_.FullName)\"
+                                currentDepth  = $folder.currentDepth + 1
+                            }
+                        )
+                        Write-Verbose "Recursing after last matched directory in $($directories.Peek().currentPath)"
+                    }
+
+                    # if the item does not match the name pattern supplied
+                    # we skip it and continue with the next item
+                    if (-not ($_.Name -like $nameToMatch)) {
+
+                        return
+                    }
+
+                    # determine if the item being a directory or file
+                    # matches the type of item the user wants to search for
+                    $typeOk = ($isDirectory -and ($Directory -or $FilesAndDirectories)) -or
+                                  ((-not $Directory) -and (-not $isDirectory))
+
+                    if ($typeOk) {
+
+                        # if this is a file and a regular expression pattern was supplied
+                        # we search the file content for the pattern to see if the user
+                        # wants to include this file in the search results
+                        if ($isDirectory -or [string]::IsNullOrWhiteSpace($Pattern) -or ($Pattern -eq ".*") -or (
+
+                                # match the file content with the regular expression pattern
+                                Search-FileContent -FilePath $_.FullName -Pattern $Pattern
+                            )) {
+                            Write-Verbose "Found $($_.FullName)"
+
+                            # output FileInfo/DirectoryInfo objects if -PassThru is specified
+                            if ($PassThru) {
+
+                                Write-Output $_
+                                return;
+                            }
+
+                            # or output the relative path of the found item
+                            Resolve-Path -Path $_ -Relative -RelativeBasePath:$RelativeBasePath
+                        }
+                    }
+                }
+            }
         }
-
-        Write-Verbose "Normalized SearchMask: $SearchMask"
-
-        # convert to full path
-        $SearchMask = Expand-Path $SearchMask
-        Write-Verbose "Expanded SearchMask: $SearchMask"
-
-        # store current location for relative path handling
-        $location = Get-Location | ForEach-Object Path
     }
 
     process {
 
-        # helper function to search file content
-        function Search-FileContent {
-            param (
-                [string] $FilePath,
-                [string] $Pattern
-            )
+        Write-Verbose ("Starting search with patterns: " +
+            ($SearchMask -join ", "))
 
-            return Select-String -Path $FilePath -Pattern $Pattern
-        }
-
-        # output blank line unless passing through objects
-        if (-not $PassThru) {
-            "" | Out-Host
-        }
-
-        # searching with content pattern
-        if ((-not $Directory) -and ($Pattern -ne ".*") -and
-            (-not [string]::IsNullOrWhiteSpace($Pattern))) {
-
-            Write-Verbose "Searching files with content pattern: $Pattern"
-
-            # search all drives
-            if ($AllDrives) {
-                Write-Verbose "Searching across all drives"
-
-                # process drives in parallel
-                Get-PSDrive -ErrorAction SilentlyContinue |
-                ForEach-Object -ThrottleLimit 8 -Parallel {
-
-                    # extract filename part
-                    $file = [IO.Path]::GetFileName($SearchMask)
-                    $filter = [string]::IsNullOrEmpty($file) ? "*" : $file
-
-                    try {
-                        # skip non-filesystem providers
-                        if ($PSItem.Provider.Name -ne "FileSystem") { return }
-
-                        # search files matching name filter
-                        Get-ChildItem "$($PSItem.Root)" -File:($Directory -eq $false) `
-                            -ErrorAction SilentlyContinue `
-                            -Directory:($Directory -eq $true) -Recurse |
-                        Where-Object -Property Name -Like $filter |
-                        ForEach-Object {
-
-                            # check file content
-                            if (Search-FileContent -FilePath $PSItem.FullName `
-                                    -Pattern $Pattern) {
-
-                                if ($PassThru) {
-                                    $PSItem
-                                }
-                                else {
-                                    # return relative or full path
-                                    if ($PSItem.FullName.StartsWith($location +
-                                            [IO.Path]::DirectorySeparatorChar)) {
-                                        ".$($PSItem.FullName.Substring($location.Length))"
-                                    }
-                                    else {
-                                        $PSItem.FullName
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    catch {}
-                }
-                return
-            }
-
-            # regular content search
-            Get-ChildItem $SearchMask -File -Recurse |
-            ForEach-Object {
-                if (($Pattern -eq ".*") -or
-                    (Search-FileContent -FilePath $PSItem.FullName -Pattern $Pattern)) {
-
-                    if ($PassThru) {
-                        $PSItem
-                        return
-                    }
-
-                    if ($PSItem.FullName.StartsWith($location +
-                            [IO.Path]::DirectorySeparatorChar)) {
-                        ".$($PSItem.FullName.Substring($location.Length))"
-                    }
-                    else {
-                        $PSItem.FullName
-                    }
-                }
-            }
-            return
-        }
-
-        # search all drives without content
         if ($AllDrives) {
-            Write-Verbose "Searching all drives for matching items"
+            Write-Verbose "Searching across all available drives"
 
+            # parallel search across all filesystem drives
             Get-PSDrive -ErrorAction SilentlyContinue |
+            Where-Object Provider -EQ FileSystem |
             ForEach-Object -ThrottleLimit 8 -Parallel {
-                try {
-                    if ($PSItem.Provider.Name -ne "FileSystem") { return }
 
-                    $file = [IO.Path]::GetFileName($SearchMask)
-                    $filter = [string]::IsNullOrEmpty($file) ? "*" : $file
+                foreach ($currentSearchPhrase in $using:SearchMask) {
 
-                    Get-ChildItem "$($PSItem.Root)" -File:($Directory -eq $false) `
-                        -ErrorAction SilentlyContinue `
-                        -Directory:($Directory -eq $true) -Recurse |
-                    Where-Object -Property Name -Like $filter |
-                    ForEach-Object {
-                        if ($PassThru) {
-                            $PSItem
-                            return
-                        }
-                        $PSItem.FullName
-                    }
+                    Write-Verbose "Processing search pattern: $currentSearchPhrase"
+
+                    $expandedPath = GenXdev.FileSystem\Expand-Path $currentSearchPhrase `
+                        -ForceDrive $PSItem.Name
+
+                    Search-DirectoryContent -SearchPhrase $expandedPath
                 }
-                catch {}
             }
             return
         }
 
-        # regular file/directory search
-        Write-Verbose "Performing regular file/directory search"
+        # sequential search for each pattern
+        foreach ($currentSearchPhrase in $SearchMask) {
 
-        $dir = [IO.Path]::GetDirectoryName($SearchMask)
-        if ([string]::IsNullOrEmpty($dir)) {
-            $dir = ".$([IO.Path]::DirectorySeparatorChar)"
-        }
-
-        $file = [IO.Path]::GetFileName($SearchMask)
-        $search = [string]::IsNullOrEmpty($dir) ?
-            ([string]::IsNullOrEmpty($file) ? "*" : $file) : $dir
-        $filter = [string]::IsNullOrEmpty($file) ? "*" : $file
-
-        Get-ChildItem $search -File:($Directory -eq $false) `
-            -ErrorAction SilentlyContinue `
-            -Directory:($Directory -eq $true) -Recurse |
-        Where-Object -Property Name -Like $filter |
-        ForEach-Object {
-            if ($PassThru) {
-                $PSItem
-                return
-            }
-
-            if ($PSItem.FullName.StartsWith($location +
-                    [IO.Path]::DirectorySeparatorChar)) {
-                ".$($PSItem.FullName.Substring($location.Length))"
-            }
-            else {
-                $PSItem.FullName
-            }
-        }
-
-        # output blank line unless passing through objects
-        if (-not $PassThru) {
-            "" | Out-Host
+            Write-Verbose "Processing search pattern: $currentSearchPhrase"
+            Search-DirectoryContent -SearchPhrase $currentSearchPhrase
         }
     }
 

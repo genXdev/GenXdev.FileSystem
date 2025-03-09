@@ -29,6 +29,8 @@ function Remove-AllItems {
 
     [CmdletBinding(SupportsShouldProcess)]
     [Alias("sdel")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseSingularNouns", "")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments", "")]
 
     param(
         ###############################################################################
@@ -40,6 +42,7 @@ function Remove-AllItems {
             HelpMessage = "The directory path to clear"
         )]
         [ValidateNotNullOrEmpty()]
+        [Alias("FullName")]
         [string] $Path,
         ###############################################################################
         [Parameter(
@@ -59,7 +62,7 @@ function Remove-AllItems {
 
         try {
             # convert relative or shorthand paths to full filesystem paths
-            $Path = Expand-Path $Path
+            $Path = GenXdev.FileSystem\Expand-Path $Path
             Write-Verbose "Normalized path: $Path"
 
             # ensure verbose output is enabled during WhatIf operations

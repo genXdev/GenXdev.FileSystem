@@ -1,13 +1,38 @@
 ################################################################################
 
-################################################################################
+Describe "Expand-Path unit tests" {
 
-Describe "GenXdev.FileSystem\Expand-Path unit tests" {
+    It "should pass PSScriptAnalyzer rules" {
+
+        # get the script path for analysis
+        $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Expand-Path.ps1"
+
+        # run analyzer with explicit settings
+        $analyzerResults = GenXdev.Coding\Invoke-GenXdevScriptAnalyzer `
+            -Path $scriptPath
+
+        [string] $message = ""
+        $analyzerResults | ForEach-Object {
+
+            $message = $message + @"
+--------------------------------------------------
+Rule: $($_.RuleName)`
+Description: $($_.Description)
+Message: $($_.Message)
+`r`n
+"@
+        }
+
+        $analyzerResults.Count | Should -Be 0 -Because @"
+The following PSScriptAnalyzer rules are being violated:
+$message
+"@;
+    }
 
     BeforeAll {
 
         # define test paths
-        $Script:testPath = Join-Path $PSScriptRoot "TestData"
+        $Script:testPath = [IO.Path]::GetFullPath("$($Env:TEMP)")
         $Script:testFile = Join-Path $Script:testPath "test.txt"
     }
 
@@ -17,7 +42,7 @@ Describe "GenXdev.FileSystem\Expand-Path unit tests" {
         Push-Location $Script:testPath
 
         # act
-        $result = Expand-Path $relativePath
+        $result = GenXdev.FileSystem\Expand-Path $relativePath
 
         # assert
         $result | Should -Be "$((Get-Location).Path)\test.txt"
@@ -31,7 +56,7 @@ Describe "GenXdev.FileSystem\Expand-Path unit tests" {
         $uncPath = "\\server\share\file.txt"
 
         # act
-        $result = Expand-Path $uncPath
+        $result = GenXdev.FileSystem\Expand-Path $uncPath
 
         # assert
         $result | Should -Be $uncPath
@@ -42,7 +67,7 @@ Describe "GenXdev.FileSystem\Expand-Path unit tests" {
         $uncPath = "\\server\share\file.txt"
 
         # act
-        $result = Expand-Path $uncPath
+        $result = GenXdev.FileSystem\Expand-Path $uncPath
 
         # assert
         $result | Should -Be $uncPath
@@ -53,7 +78,7 @@ Describe "GenXdev.FileSystem\Expand-Path unit tests" {
         $uncPath = "\\webserver\sites\powershell.genxdev.net\"
 
         # act
-        $result = Expand-Path $uncPath
+        $result = GenXdev.FileSystem\Expand-Path $uncPath
 
         # assert
         $result | Should -Be "\\webserver\sites\powershell.genxdev.net"
@@ -66,10 +91,55 @@ Describe "GenXdev.FileSystem\Expand-Path unit tests" {
         $homePath = "~/test.txt"
 
         # act
-        $result = Expand-Path $homePath
+        $result = GenXdev.FileSystem\Expand-Path $homePath
 
         # assert
         $result | Should -Be (Join-Path $HOME "test.txt")
+    }
+
+    It "takes into account current locations on other drives" {
+
+        Push-Location
+
+        Set-Location b:\movies\
+        Set-Location c:\
+
+        $result = GenXdev.FileSystem\Expand-Path "b:"
+        $result | Should -Be "B:\Movies"
+
+        $result = GenXdev.FileSystem\Expand-Path "b:movie.mp4"
+        $result | Should -Be "B:\Movies\movie.mp4"
+
+        Pop-Location
+    }
+
+    It "tests -ForceDrive parameter" {
+
+        $result = GenXdev.FileSystem\Expand-Path "b:\movies\classics\*.mp4" -ForceDrive Z
+        $result | Should -Be "Z:\**\movies\classics\*.mp4"
+
+        $result = GenXdev.FileSystem\Expand-Path "\movies\classics\*.mp4" -ForceDrive Z
+        $result | Should -Be "Z:\movies\classics\*.mp4"
+
+        $result = GenXdev.FileSystem\Expand-Path "\\media\data\users\*" -ForceDrive Z
+        $result | Should -Be "Z:\**\data\users\*"
+
+        $result = GenXdev.FileSystem\Expand-Path "B:" -ForceDrive Z
+        $result | Should -Be "Z:\"
+
+        $result = GenXdev.FileSystem\Expand-Path "B:*.txt" -ForceDrive Z
+        $result | Should -Be "Z:\**\*.txt"
+
+        $result = GenXdev.FileSystem\Expand-Path "\folder1\*.ps1" -ForceDrive Z
+        $result | Should -Be "Z:\folder1\*.ps1"
+
+        $result = GenXdev.FileSystem\Expand-Path ".\folder1\*.ps1" -ForceDrive Z
+        $result | Should -Be "Z:\**\folder1\*.ps1"
+
+        $result = GenXdev.FileSystem\Expand-Path "folder1\*.ps1" -ForceDrive Z
+        $result | Should -Be "Z:\**\folder1\*.ps1"
+
+        Pop-Location
     }
 }
 

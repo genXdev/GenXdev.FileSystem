@@ -9,6 +9,10 @@ enabled. This ensures that filesystem references, symbolic links, and hardlinks
 are maintained. The function is particularly useful for tools like Git that need
 to track file renames.
 
+.OUTPUTS
+System.Boolean
+Returns $true if the move operation succeeds, $false otherwise.
+
 .PARAMETER Path
 The source path of the file or directory to move. Accepts pipeline input and
 aliases to FullName for compatibility with Get-ChildItem output.
@@ -32,6 +36,7 @@ Move-ItemWithTracking -Path "C:\temp\oldfile.txt" -Destination "D:\newfile.txt"
 function Move-ItemWithTracking {
 
     [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([System.Boolean])]
     param(
         ########################################################################
         [Parameter(
@@ -97,8 +102,8 @@ public static extern bool MoveFileEx(
     process {
         try {
             # convert relative paths to absolute filesystem paths
-            $fullSourcePath = Expand-Path $Path
-            $fullDestPath = Expand-Path $Destination
+            $fullSourcePath = GenXdev.FileSystem\Expand-Path $Path
+            $fullDestPath = GenXdev.FileSystem\Expand-Path $Destination
 
             # verify the source path exists before attempting move
             if (Test-Path -LiteralPath $fullSourcePath) {
@@ -118,7 +123,7 @@ public static extern bool MoveFileEx(
                         $errorCode = [System.Runtime.InteropServices.Marshal]:: `
                             GetLastWin32Error()
                         throw "Move failed from '$fullSourcePath' to " +
-                            "'$fullDestPath'. Error: $errorCode"
+                        "'$fullDestPath'. Error: $errorCode"
                     }
 
                     Write-Verbose "Move completed successfully with link tracking"

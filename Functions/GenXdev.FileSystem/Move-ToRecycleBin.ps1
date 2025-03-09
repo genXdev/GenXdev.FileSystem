@@ -43,7 +43,6 @@ function Move-ToRecycleBin {
     )
 
     begin {
-
         # track overall success of operations
         $success = $true
 
@@ -64,7 +63,7 @@ function Move-ToRecycleBin {
         foreach ($itemPath in $Path) {
 
             # convert relative or shorthand paths to full filesystem paths
-            $fullPath = Expand-Path $itemPath
+            $fullPath = GenXdev.FileSystem\Expand-Path $itemPath
             Write-Verbose "Processing path: $fullPath"
 
             try {

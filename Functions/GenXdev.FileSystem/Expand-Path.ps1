@@ -55,15 +55,59 @@ function Expand-Path {
             Mandatory = $false,
             HelpMessage = "Will delete the file if it already exists"
         )]
-        [switch] $DeleteExistingFile
+        [switch] $DeleteExistingFile,
+        ########################################################################
+        [Parameter(
+            Mandatory = $false,
+            HelpMessage = "Will force the use of a specific drive"
+        )]
+        [char] $ForceDrive = '*',
+        ########################################################################
+        [Parameter(
+            Mandatory = $false,
+            HelpMessage = "Will throw if file does not exist"
+        )]
+        [switch] $FileMustExist,
+        ########################################################################
+        [Parameter(
+            Mandatory = $false,
+            HelpMessage = "Will throw if directory does not exist"
+        )]
+        [switch] $DirectoryMustExist
         ########################################################################
     )
 
     begin {
 
         # normalize path separators and remove double separators
-        $normalizedPath = $FilePath.Trim().Replace("\", [IO.Path]::DirectorySeparatorChar).
-        Replace("/", [IO.Path]::DirectorySeparatorChar)
+        [string] $normalizedPath = $FilePath.Trim().Replace("\", [IO.Path]::DirectorySeparatorChar).
+        Replace("/", [IO.Path]::DirectorySeparatorChar);
+
+        if ($normalizedPath.StartsWith([IO.Path]::DirectorySeparatorChar + [IO.Path]::DirectorySeparatorChar)) {
+
+            $normalizedPath = [IO.Path]::DirectorySeparatorChar + [IO.Path]::DirectorySeparatorChar +
+            $normalizedPath.Substring(2).Replace(
+                [IO.Path]::DirectorySeparatorChar + [IO.Path]::DirectorySeparatorChar,
+                [IO.Path]::DirectorySeparatorChar
+            )
+
+            if (($ForceDrive -ne '*') -and
+                ("ABCDEFGHIJKLMNOPQRSTUVWXYZ".IndexOf(($ForceDrive -as [string]).ToUpperInvariant()) -ge 0)) {
+
+                $i = $normalizedPath.IndexOf([IO.Path]::DirectorySeparatorChar, 2);
+                $normalizedPath = $ForceDrive + ":" + (
+
+                    $i -lt 0 ? ([IO.Path]::DirectorySeparatorChar) : $normalizedPath.Substring($i)
+                )
+            }
+        }
+        else {
+
+            $normalizedPath = $normalizedPath.Replace(
+                [IO.Path]::DirectorySeparatorChar + [IO.Path]::DirectorySeparatorChar,
+                [IO.Path]::DirectorySeparatorChar
+            )
+        }
 
         # check if path ends with a directory separator
         $hasTrailingSeparator = $normalizedPath.EndsWith(
@@ -75,14 +119,49 @@ function Expand-Path {
 
         # expand home directory if path starts with ~
         if ($normalizedPath.StartsWith("~")) {
-            $normalizedPath = Join-Path (Resolve-Path ~).Path `
-                $normalizedPath.Substring(1)
+
+            if (($ForceDrive -ne '*') -and
+                ("ABCDEFGHIJKLMNOPQRSTUVWXYZ".IndexOf(($ForceDrive -as [string]).ToUpperInvariant()) -ge 0)) {
+
+                $i = $normalizedPath.IndexOf([IO.Path]::DirectorySeparatorChar, 1);
+                $normalizedPath = $ForceDrive + ":" + (
+
+                    $i -lt 0 ? [IO.Path]::DirectorySeparatorChar + "**" + [IO.Path]::DirectorySeparatorChar : ("\**" + $normalizedPath.Substring($i))
+                )
+            }
+            else {
+
+                $normalizedPath = Join-Path (Convert-Path ~) `
+                    $normalizedPath.Substring(1)
+            }
+        }
+
+        if ((($normalizedPath.Length -gt 1) -and
+                ($normalizedPath.Substring(1, 1) -eq ":"))) {
+
+            if (($ForceDrive -ne '*') -and
+                ("ABCDEFGHIJKLMNOPQRSTUVWXYZ".IndexOf(($ForceDrive -as [string]).ToUpperInvariant()) -ge 0)) {
+                $i = $normalizedPath.IndexOf([IO.Path]::DirectorySeparatorChar);
+                $normalizedPath = $ForceDrive + ":" + [IO.Path]::DirectorySeparatorChar + (($i -eq -1 -and $normalizedPath.Length -gt 2) -or $i -eq 2 ? "**" + [IO.Path]::DirectorySeparatorChar : "") + $normalizedPath.Substring(2)
+            }
+            else {
+
+                if (($normalizedPath.Length -lt 3) -or ($normalizedPath.Substring(2, 1) -ne [System.IO.Path]::DirectorySeparatorChar)) {
+
+                    Push-Location $normalizedPath.Substring(0, 2)
+                    try {
+                        $normalizedPath = "$(Get-Location)$([IO.Path]::DirectorySeparatorChar)$($normalizedPath.Substring(2))"
+                        $normalizedPath = [System.IO.Path]::GetFullPath($normalizedPath)
+                    }
+                    finally {
+                        Pop-Location
+                    }
+                }
+            }
         }
 
         # handle absolute paths (drive letter or UNC)
-        if ((($normalizedPath.Length -gt 1) -and
-                ($normalizedPath.Substring(1, 1) -eq ":")) -or
-            $normalizedPath.StartsWith("\\")) {
+        if ($normalizedPath.StartsWith([IO.Path]::DirectorySeparatorChar + [IO.Path]::DirectorySeparatorChar)) {
 
             try {
                 $normalizedPath = [System.IO.Path]::GetFullPath($normalizedPath)
@@ -92,6 +171,40 @@ function Expand-Path {
             }
         }
         else {
+
+            if (($ForceDrive -ne '*') -and
+                ("ABCDEFGHIJKLMNOPQRSTUVWXYZ".IndexOf(($ForceDrive -as [string]).ToUpperInvariant()) -ge 0)) {
+
+                if ($normalizedPath.Length -lt 2 -or $normalizedPath.Substring(1, 1) -ne ":") {
+
+                    $newPath = $ForceDrive + ":" + [IO.Path]::DirectorySeparatorChar;
+
+                    while ($normalizedPath.StartsWith(".")) {
+
+                        $i = $normalizedPath.IndexOf([IO.Path]::DirectorySeparatorChar);
+                        if ($i -lt 0) {
+
+                            $normalizedPath = ""
+                        }
+                        else {
+
+                            $normalizedPath = $normalizedPath.Substring($i + 1)
+                        }
+                    }
+
+                    if ($normalizedPath.StartsWith([IO.Path]::DirectorySeparatorChar)) {
+
+                        $newPath += $normalizedPath
+                    }
+                    else {
+
+                        $newPath += "**" + [IO.Path]::DirectorySeparatorChar + $normalizedPath
+                    }
+
+                    $normalizedPath = $newPath
+                }
+            }
+
             # handle relative paths
             try {
                 $normalizedPath = [System.IO.Path]::GetFullPath(
@@ -99,6 +212,30 @@ function Expand-Path {
             }
             catch {
                 $normalizedPath = Convert-Path $normalizedPath
+            }
+        }
+
+        # handle directory/file creation if requested
+        if ($DirectoryMustExist -or $FileMustExist) {
+
+            # get directory path accounting for trailing separator
+            $directoryPath = if ($hasTrailingSeparator) {
+                [IO.Path]::TrimEndingDirectorySeparator($normalizedPath)
+            }
+            else {
+                [IO.Path]::TrimEndingDirectorySeparator(
+                    [System.IO.Path]::GetDirectoryName($normalizedPath))
+            }
+
+            # create directory if it doesn't exist
+            if ($DirectoryMustExist -and (-not [IO.Directory]::Exists($directoryPath))) {
+
+                throw "Directory does not exist: $directoryPath"
+            }
+
+            if ($FileMustExist -and (-not [IO.File]::Exists($normalizedPath))) {
+
+                throw "File does not exist: $normalizedPath"
             }
         }
 
