@@ -12,7 +12,7 @@ AfterAll {
 
 ###############################################################################
 Describe "Rename-InProject" {
-    It "should pass PSScriptAnalyzer rules" {
+    It "Should pass PSScriptAnalyzer rules" {
 
         # get the script path for analysis
         $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Rename-InProject.ps1"
@@ -117,7 +117,7 @@ $message
 
         Rename-InProject -Source . -FindText "old" -ReplacementText "new"
 
-        # Binary file should remain unchanged
+        # Binary file Should remain unchanged
         Test-Path $binPath | Should -BeTrue
         $newBytes = [System.IO.File]::ReadAllBytes((Join-Path $Script:testDir $binPath))
         $newBytes | Should -Be $bytes

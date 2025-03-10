@@ -148,8 +148,8 @@ Update-Module
 ### SYNTAX 
 ````PowerShell 
 
-   Expand-Path [-FilePath] <String> [-CreateDirectory] [-CreateFile] [-DeleteExistingFile] [-ForceDrive <Char>] [-FileMustExist] [-DirectoryMustExist]   
-   [<CommonParameters>]  
+   Expand-Path [-FilePath] <String> [-CreateDirectory] [-CreateFile] [-DeleteExistingFile] [-ForceDrive <Char>] [-FileMustExist]   
+   [-DirectoryMustExist] [<CommonParameters>]  
 ```` 
 
 ### DESCRIPTION 
@@ -815,23 +815,23 @@ Update-Module
 ### SYNTAX 
 ````PowerShell 
 
-   Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>] [-Mirror] [-Move] [-IncludeSecurity] [-SkipDirectories]   
-   [-CopyOnlyDirectoryTreeStructureAndEmptyFiles] [-SkipAllSymbolicLinks] [-SkipSymbolicFileLinks] [-CopySymbolicLinksAsLinks] [-Force]   
-   [-SkipFilesWithoutArchiveAttribute] [-ResetArchiveAttributeAfterSelection] [-FileExcludeFilter <String[]>] [-AttributeIncludeFilter <String>]   
-   [-AttributeExcludeFilter <String>] [-SetAttributesAfterCopy <String>] [-RemoveAttributesAfterCopy <String>] [-MinFileSize <Int32>] [-MaxFileSize <Int32>]   
-   [-MinFileAge <Int32>] [-MaxFileAge <Int32>] [-MinLastAccessAge <Int32>] [-MaxLastAccessAge <Int32>] [-RecoveryMode] [-MonitorMode]   
-   [-MonitorModeThresholdMinutes <Int32>] [-MonitorModeThresholdNrOfChanges <Int32>] [-MonitorModeRunHoursFrom <Int32>] [-MonitorModeRunHoursUntil <Int32>]   
-   [-LogFilePath <String>] [-LogfileOverwrite] [-LogDirectoryNames] [-LogAllFileNames] [-Unicode] [-LargeFiles] [-MultiThreaded] [-CompressibleContent]   
-   [[-Override] <String>] [-WhatIf] [-Confirm] [<CommonParameters>]  
-   Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>] [-Mirror] [-Move] [-IncludeSecurity] [-SkipEmptyDirectories]   
-   [-CopyOnlyDirectoryTreeStructure] [-CopyOnlyDirectoryTreeStructureAndEmptyFiles] [-SkipAllSymbolicLinks] [-SkipSymbolicFileLinks] [-CopySymbolicLinksAsLinks]   
-   [-SkipJunctions] [-CopyJunctionsAsJunctons] [-Force] [-SkipFilesWithoutArchiveAttribute] [-ResetArchiveAttributeAfterSelection] [-FileExcludeFilter   
-   <String[]>] [-DirectoryExcludeFilter <String[]>] [-AttributeIncludeFilter <String>] [-AttributeExcludeFilter <String>] [-SetAttributesAfterCopy <String>]   
-   [-RemoveAttributesAfterCopy <String>] [-MaxSubDirTreeLevelDepth <Int32>] [-MinFileSize <Int32>] [-MaxFileSize <Int32>] [-MinFileAge <Int32>] [-MaxFileAge   
-   <Int32>] [-MinLastAccessAge <Int32>] [-MaxLastAccessAge <Int32>] [-RecoveryMode] [-MonitorMode] [-MonitorModeThresholdMinutes <Int32>]   
-   [-MonitorModeThresholdNrOfChanges <Int32>] [-MonitorModeRunHoursFrom <Int32>] [-MonitorModeRunHoursUntil <Int32>] [-LogFilePath <String>] [-LogfileOverwrite]   
-   [-LogDirectoryNames] [-LogAllFileNames] [-Unicode] [-LargeFiles] [-MultiThreaded] [-CompressibleContent] [[-Override] <String>] [-WhatIf] [-Confirm]   
-   [<CommonParameters>]  
+   Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>] [-Mirror] [-Move] [-IncludeSecurity]   
+   [-SkipDirectories] [-CopyOnlyDirectoryTreeStructureAndEmptyFiles] [-SkipAllSymbolicLinks] [-SkipSymbolicFileLinks] [-CopySymbolicLinksAsLinks]   
+   [-Force] [-SkipFilesWithoutArchiveAttribute] [-ResetArchiveAttributeAfterSelection] [-FileExcludeFilter <String[]>] [-AttributeIncludeFilter   
+   <String>] [-AttributeExcludeFilter <String>] [-SetAttributesAfterCopy <String>] [-RemoveAttributesAfterCopy <String>] [-MinFileSize <Int32>]   
+   [-MaxFileSize <Int32>] [-MinFileAge <Int32>] [-MaxFileAge <Int32>] [-MinLastAccessAge <Int32>] [-MaxLastAccessAge <Int32>] [-RecoveryMode]   
+   [-MonitorMode] [-MonitorModeThresholdMinutes <Int32>] [-MonitorModeThresholdNrOfChanges <Int32>] [-MonitorModeRunHoursFrom <Int32>]   
+   [-MonitorModeRunHoursUntil <Int32>] [-LogFilePath <String>] [-LogfileOverwrite] [-LogDirectoryNames] [-LogAllFileNames] [-Unicode] [-LargeFiles]   
+   [-MultiThreaded] [-CompressibleContent] [[-Override] <String>] [-WhatIf] [-Confirm] [<CommonParameters>]  
+   Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>] [-Mirror] [-Move] [-IncludeSecurity]   
+   [-SkipEmptyDirectories] [-CopyOnlyDirectoryTreeStructure] [-CopyOnlyDirectoryTreeStructureAndEmptyFiles] [-SkipAllSymbolicLinks]   
+   [-SkipSymbolicFileLinks] [-CopySymbolicLinksAsLinks] [-SkipJunctions] [-CopyJunctionsAsJunctons] [-Force] [-SkipFilesWithoutArchiveAttribute]   
+   [-ResetArchiveAttributeAfterSelection] [-FileExcludeFilter <String[]>] [-DirectoryExcludeFilter <String[]>] [-AttributeIncludeFilter <String>]   
+   [-AttributeExcludeFilter <String>] [-SetAttributesAfterCopy <String>] [-RemoveAttributesAfterCopy <String>] [-MaxSubDirTreeLevelDepth <Int32>]   
+   [-MinFileSize <Int32>] [-MaxFileSize <Int32>] [-MinFileAge <Int32>] [-MaxFileAge <Int32>] [-MinLastAccessAge <Int32>] [-MaxLastAccessAge <Int32>]   
+   [-RecoveryMode] [-MonitorMode] [-MonitorModeThresholdMinutes <Int32>] [-MonitorModeThresholdNrOfChanges <Int32>] [-MonitorModeRunHoursFrom   
+   <Int32>] [-MonitorModeRunHoursUntil <Int32>] [-LogFilePath <String>] [-LogfileOverwrite] [-LogDirectoryNames] [-LogAllFileNames] [-Unicode]   
+   [-LargeFiles] [-MultiThreaded] [-CompressibleContent] [[-Override] <String>] [-WhatIf] [-Confirm] [<CommonParameters>]  
 ```` 
 
 ### DESCRIPTION 
@@ -878,7 +878,8 @@ Update-Module
         Aliases                        
         Accept wildcard characters?  true  
     -Mirror [<SwitchParameter>]  
-        Synchronizes the content of specified directories, will also delete any files and directories in the destination that do not exist in the source  
+        Synchronizes the content of specified directories, will also delete any files and directories in the destination that do not exist in the   
+        source  
         Required?                    false  
         Position?                    named  
         Default value                False  

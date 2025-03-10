@@ -23,7 +23,7 @@ Describe "Start-RoboCopy" {
         Remove-Item -Path $Script:source, $Script:dest -Recurse -Force
     }
 
-    It "should pass PSScriptAnalyzer rules" {
+    It "Should pass PSScriptAnalyzer rules" {
 
         # get the script path for analysis
         $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Start-RoboCopy.ps1"
