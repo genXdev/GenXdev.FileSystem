@@ -582,7 +582,7 @@ function Find-Item {
 
             # parallel search across all filesystem drives
             Get-PSDrive -ErrorAction SilentlyContinue |
-            Where-Object Provider -EQ FileSystem |
+            Where-Object Provider -Like "*FileSystem" |
             ForEach-Object -ThrottleLimit 8 -Parallel {
 
                 foreach ($currentSearchPhrase in $using:SearchMask) {
