@@ -291,8 +291,8 @@ Update-Module
    [-NoRecurse] [<CommonParameters>]  
    Find-Item [[-SearchMask] <String[]>] [[-Pattern] <String>] [-RelativeBasePath <String>]   
    [-AllDrives] [-PassThru] [-NoRecurse] [<CommonParameters>]  
-   Find-Item [[-SearchMask] <String[]>] [-RelativeBasePath <String>] [-AllDrives] [-Directory]   
-   [-FilesAndDirectories] [-PassThru] [-NoRecurse] [<CommonParameters>]  
+   Find-Item [[-SearchMask] <String[]>] [-RelativeBasePath <String>] [-AllDrives]   
+   [-Directory] [-FilesAndDirectories] [-PassThru] [-NoRecurse] [<CommonParameters>]  
 ```` 
 
 ### DESCRIPTION 
@@ -567,7 +567,8 @@ Update-Module
 ### SYNTAX 
 ````PowerShell 
 
-   Remove-AllItems [-Path] <String> [[-DeleteFolder]] [-WhatIf] [-Confirm] [<CommonParameters>]  
+   Remove-AllItems [-Path] <String> [[-DeleteFolder]] [-WhatIf] [-Confirm]   
+   [<CommonParameters>]  
 ```` 
 
 ### DESCRIPTION 
@@ -825,15 +826,15 @@ Update-Module
    [-CopyOnlyDirectoryTreeStructureAndEmptyFiles] [-SkipAllSymbolicLinks]   
    [-SkipSymbolicFileLinks] [-CopySymbolicLinksAsLinks] [-Force]   
    [-SkipFilesWithoutArchiveAttribute] [-ResetArchiveAttributeAfterSelection]   
-   [-FileExcludeFilter <String[]>] [-AttributeIncludeFilter <String>] [-AttributeExcludeFilter   
-   <String>] [-SetAttributesAfterCopy <String>] [-RemoveAttributesAfterCopy <String>]   
-   [-MinFileSize <Int32>] [-MaxFileSize <Int32>] [-MinFileAge <Int32>] [-MaxFileAge <Int32>]   
-   [-MinLastAccessAge <Int32>] [-MaxLastAccessAge <Int32>] [-RecoveryMode] [-MonitorMode]   
-   [-MonitorModeThresholdMinutes <Int32>] [-MonitorModeThresholdNrOfChanges <Int32>]   
-   [-MonitorModeRunHoursFrom <Int32>] [-MonitorModeRunHoursUntil <Int32>] [-LogFilePath   
-   <String>] [-LogfileOverwrite] [-LogDirectoryNames] [-LogAllFileNames] [-Unicode]   
-   [-LargeFiles] [-MultiThreaded] [-CompressibleContent] [[-Override] <String>] [-WhatIf]   
-   [-Confirm] [<CommonParameters>]  
+   [-FileExcludeFilter <String[]>] [-AttributeIncludeFilter <String>]   
+   [-AttributeExcludeFilter <String>] [-SetAttributesAfterCopy <String>]   
+   [-RemoveAttributesAfterCopy <String>] [-MinFileSize <Int32>] [-MaxFileSize <Int32>]   
+   [-MinFileAge <Int32>] [-MaxFileAge <Int32>] [-MinLastAccessAge <Int32>] [-MaxLastAccessAge   
+   <Int32>] [-RecoveryMode] [-MonitorMode] [-MonitorModeThresholdMinutes <Int32>]   
+   [-MonitorModeThresholdNrOfChanges <Int32>] [-MonitorModeRunHoursFrom <Int32>]   
+   [-MonitorModeRunHoursUntil <Int32>] [-LogFilePath <String>] [-LogfileOverwrite]   
+   [-LogDirectoryNames] [-LogAllFileNames] [-Unicode] [-LargeFiles] [-MultiThreaded]   
+   [-CompressibleContent] [[-Override] <String>] [-WhatIf] [-Confirm] [<CommonParameters>]  
    Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>]   
    [-Mirror] [-Move] [-IncludeSecurity] [-SkipEmptyDirectories]   
    [-CopyOnlyDirectoryTreeStructure] [-CopyOnlyDirectoryTreeStructureAndEmptyFiles]   
@@ -978,7 +979,8 @@ Update-Module
         Aliases                        
         Accept wildcard characters?  false  
     -SkipJunctions [<SwitchParameter>]  
-        Do not copy directory junctions (symbolic link for a folder) or the content they point to  
+        Do not copy directory junctions (symbolic link for a folder) or the content they point   
+        to  
         Required?                    false  
         Position?                    named  
         Default value                False  
@@ -1091,8 +1093,8 @@ Update-Module
         Aliases                        
         Accept wildcard characters?  false  
     -MinFileAge <Int32>  
-        Skip files that are not at least: n days old OR created before n date (if n < 1900 then   
-        n = n days, else n = YYYYMMDD date)  
+        Skip files that are not at least: n days old OR created before n date (if n < 1900   
+        then n = n days, else n = YYYYMMDD date)  
         Required?                    false  
         Position?                    named  
         Default value                -1  
@@ -1109,8 +1111,8 @@ Update-Module
         Aliases                        
         Accept wildcard characters?  false  
     -MinLastAccessAge <Int32>  
-        Skip files that are accessed within the last: n days OR before n date (if n < 1900 then   
-        n = n days, else n = YYYYMMDD date)  
+        Skip files that are accessed within the last: n days OR before n date (if n < 1900   
+        then n = n days, else n = YYYYMMDD date)  
         Required?                    false  
         Position?                    named  
         Default value                -1  
@@ -1118,8 +1120,8 @@ Update-Module
         Aliases                        
         Accept wildcard characters?  false  
     -MaxLastAccessAge <Int32>  
-        Skip files that have not been accessed in: n days OR after n date (if n < 1900 then n =   
-        n days, else n = YYYYMMDD date)  
+        Skip files that have not been accessed in: n days OR after n date (if n < 1900 then n   
+        = n days, else n = YYYYMMDD date)  
         Required?                    false  
         Position?                    named  
         Default value                -1  
@@ -1135,8 +1137,8 @@ Update-Module
         Aliases                        
         Accept wildcard characters?  false  
     -MonitorMode [<SwitchParameter>]  
-        Will stay active after copying, and copy additional changes after a a default threshold   
-        of 10 minutes  
+        Will stay active after copying, and copy additional changes after a a default   
+        threshold of 10 minutes  
         Required?                    false  
         Position?                    named  
         Default value                False  

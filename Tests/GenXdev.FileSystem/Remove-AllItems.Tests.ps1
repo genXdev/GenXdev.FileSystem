@@ -70,4 +70,3 @@ $message
         $items.Count | Should -BeGreaterThan 0
     }
 }
-

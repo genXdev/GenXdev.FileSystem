@@ -123,4 +123,3 @@ $message
         $newBytes | Should -Be $bytes
     }
 }
-

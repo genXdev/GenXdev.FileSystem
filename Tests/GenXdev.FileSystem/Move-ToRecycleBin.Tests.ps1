@@ -48,4 +48,3 @@ $message
         Move-ToRecycleBin -Path $Script:testFile | Should -BeTrue
     }
 }
-

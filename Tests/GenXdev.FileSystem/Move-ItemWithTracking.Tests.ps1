@@ -56,4 +56,3 @@ $message
         Test-Path -Path $destFile | Should -BeTrue
     }
 }
-

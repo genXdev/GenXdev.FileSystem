@@ -59,4 +59,3 @@ $message
         Test-Path $Script:testFile | Should -BeTrue
     }
 }
-

@@ -46,72 +46,72 @@ function Invoke-Fasti {
 
         # process each archive file found in current directory
         Get-ChildItem $extensions -File -ErrorAction SilentlyContinue |
-            ForEach-Object {
+        ForEach-Object {
 
-                Write-Verbose "Processing archive: $($PSItem.Name)"
+            Write-Verbose "Processing archive: $($PSItem.Name)"
 
-                # initialize 7zip executable path
-                $sevenZip = "7z"
+            # initialize 7zip executable path
+            $sevenZip = "7z"
 
-                # get archive details
-                $zipFile = $PSItem.fullname
-                $name = [system.IO.Path]::GetFileNameWithoutExtension($zipFile)
-                $path = [System.IO.Path]::GetDirectoryName($zipFile)
-                $extractPath = [system.Io.Path]::Combine($path, $name)
+            # get archive details
+            $zipFile = $PSItem.fullname
+            $name = [system.IO.Path]::GetFileNameWithoutExtension($zipFile)
+            $path = [System.IO.Path]::GetDirectoryName($zipFile)
+            $extractPath = [system.Io.Path]::Combine($path, $name)
 
-                # create extraction directory if it doesn't exist
-                if ([System.IO.Directory]::exists($extractPath) -eq $false) {
+            # create extraction directory if it doesn't exist
+            if ([System.IO.Directory]::exists($extractPath) -eq $false) {
 
-                    Write-Verbose "Creating directory: $extractPath"
-                    [System.IO.Directory]::CreateDirectory($extractPath)
-                }
+                Write-Verbose "Creating directory: $extractPath"
+                [System.IO.Directory]::CreateDirectory($extractPath)
+            }
 
-                # verify 7zip installation or attempt to install it
-                if ((Get-Command $sevenZip -ErrorAction SilentlyContinue).Length -eq 0) {
+            # verify 7zip installation or attempt to install it
+            if ((Get-Command $sevenZip -ErrorAction SilentlyContinue).Length -eq 0) {
 
-                    $sevenZip = "${env:ProgramFiles}\7-Zip\7z.exe"
+                $sevenZip = "${env:ProgramFiles}\7-Zip\7z.exe"
+
+                if (![IO.File]::Exists($sevenZip)) {
+
+                    if ((Get-Command winget -ErrorAction SilentlyContinue).Length -eq 0) {
+
+                        throw "You need to install 7zip or winget first"
+                    }
+
+                    Write-Verbose "Installing 7-Zip via winget..."
+                    winget install 7zip
 
                     if (![IO.File]::Exists($sevenZip)) {
 
-                        if ((Get-Command winget -ErrorAction SilentlyContinue).Length -eq 0) {
-
-                            throw "You need to install 7zip or winget first"
-                        }
-
-                        Write-Verbose "Installing 7-Zip via winget..."
-                        winget install 7zip
-
-                        if (![IO.File]::Exists($sevenZip)) {
-
-                            throw "You need to install 7-zip"
-                        }
-                    }
-                }
-
-                # extract archive contents
-                Write-Verbose "Extracting to: $extractPath"
-                $pwparam = if ($Password) { "-p$Password" } else { "" }
-                if ([string]::IsNullOrWhiteSpace($Password)) {
-
-                    & $sevenZip x -y "-o$extractPath" $zipFile
-                }
-                else {
-
-                    & $sevenZip x -y $pwparam "-o$extractPath" $zipFile
-                }
-
-                # delete original archive if extraction succeeded
-                if ($?) {
-
-                    try {
-                        Write-Verbose "Removing original archive: $zipFile"
-                        Remove-Item "$zipFile" -Force -ErrorAction silentlycontinue
-                    }
-                    catch {
-                        Write-Verbose "Failed to remove original archive"
+                        throw "You need to install 7-zip"
                     }
                 }
             }
+
+            # extract archive contents
+            Write-Verbose "Extracting to: $extractPath"
+            $pwparam = if ($Password) { "-p$Password" } else { "" }
+            if ([string]::IsNullOrWhiteSpace($Password)) {
+
+                & $sevenZip x -y "-o$extractPath" $zipFile
+            }
+            else {
+
+                & $sevenZip x -y $pwparam "-o$extractPath" $zipFile
+            }
+
+            # delete original archive if extraction succeeded
+            if ($?) {
+
+                try {
+                    Write-Verbose "Removing original archive: $zipFile"
+                    Remove-Item "$zipFile" -Force -ErrorAction silentlycontinue
+                }
+                catch {
+                    Write-Verbose "Failed to remove original archive"
+                }
+            }
+        }
     }
 
     end {

@@ -44,4 +44,3 @@ $message
         Remove-OnReboot -Path $testFile | Should -BeTrue
     }
 }
-
