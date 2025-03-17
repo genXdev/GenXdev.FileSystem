@@ -343,6 +343,6 @@ $message
         $found | Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Rename-InProject.ps1")
         $found | Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Start-RoboCopy.ps1")
 
-        $found.Count | Should -Be 12
+        $found.Count | Should -Be 24
     }
 }
