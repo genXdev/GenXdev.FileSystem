@@ -164,16 +164,16 @@ function Find-Item {
 
     process {
 
-        Write-Verbose ("Starting search with patterns: " +
+        Microsoft.PowerShell.Utility\Write-Verbose ("Starting search with patterns: " +
             ($SearchMask -join ", "))
 
         # parallel search across all filesystem drives
         ($AllDrives ? (
-            Get-PSDrive -ErrorAction SilentlyContinue |
-            Where-Object {
+            Microsoft.PowerShell.Management\Get-PSDrive -ErrorAction SilentlyContinue |
+            Microsoft.PowerShell.Core\Where-Object {
                     ($PSItem.Provider -Like "*FileSystem") -and ($PSItem.Name.Length -eq 1)
             }) : $null) |
-        ForEach-Object -ThrottleLimit 8 -Parallel {
+        Microsoft.PowerShell.Core\ForEach-Object -ThrottleLimit 8 -Parallel {
 
             # helper function to search file contents using regex
             function Search-FileContent {
@@ -182,7 +182,7 @@ function Find-Item {
                     [string] $using:Pattern
                 )
 
-                return (Select-String -Path $filePath -Pattern $using:Pattern)
+                return (Microsoft.PowerShell.Utility\Select-String -Path $filePath -Pattern $using:Pattern)
             }
 
             # helper function to recursively search directories
@@ -439,7 +439,7 @@ function Find-Item {
                         $invocationArgs.Directory = $true
 
                         # invoke the next directory scan
-                        Get-ChildItem @invocationArgs | ForEach-Object {
+                        Microsoft.PowerShell.Management\Get-ChildItem @invocationArgs | Microsoft.PowerShell.Core\ForEach-Object {
 
                             # are we following a /**/ pattern?
 
@@ -466,7 +466,7 @@ function Find-Item {
                                         }
                                     )
 
-                                    Write-Verbose "Ending /**/ search for $nameToMatch in $($directories.Peek().currentPath)"
+                                    Microsoft.PowerShell.Utility\Write-Verbose "Ending /**/ search for $nameToMatch in $($directories.Peek().currentPath)"
                                 }
                                 else {
                                     # schedule directory scan that will keep following the /**/ pattern
@@ -481,7 +481,7 @@ function Find-Item {
                                         }
                                     )
 
-                                    Write-Verbose "Continuing following /**/ search for $($directories.Peek().$nameToMatch) in $($directories.Peek().currentPath)"
+                                    Microsoft.PowerShell.Utility\Write-Verbose "Continuing following /**/ search for $($directories.Peek().$nameToMatch) in $($directories.Peek().currentPath)"
                                 }
                             }
 
@@ -501,7 +501,7 @@ function Find-Item {
                                     }
                                 )
 
-                                Write-Verbose "Starting /**/ search for $($directories.Peek().$nameToMatch) in $($directories.Peek().currentPath)"
+                                Microsoft.PowerShell.Utility\Write-Verbose "Starting /**/ search for $($directories.Peek().$nameToMatch) in $($directories.Peek().currentPath)"
                             }
 
                             # we are not starting or following a /**/ pattern,
@@ -515,7 +515,7 @@ function Find-Item {
                                         currentDepth  = $folder.currentDepth + 1
                                     }
                                 )
-                                Write-Verbose "Matched next directory for $($nameToMatch) in $($directories.Peek().currentPath)"
+                                Microsoft.PowerShell.Utility\Write-Verbose "Matched next directory for $($nameToMatch) in $($directories.Peek().currentPath)"
                             }
                         }
                         continue;
@@ -524,7 +524,7 @@ function Find-Item {
                     # we now at the last directory of the SearchPhrase supplied
                     # invoke the directory scan
                     # we scan for files and directories, since this is the last directory to match
-                    Get-ChildItem @invocationArgs | ForEach-Object {
+                    Microsoft.PowerShell.Management\Get-ChildItem @invocationArgs | Microsoft.PowerShell.Core\ForEach-Object {
 
                         # determine if the found item is a directory
                         $isDirectory = $_ -is [System.IO.DirectoryInfo]
@@ -542,7 +542,7 @@ function Find-Item {
                                     currentDepth  = $folder.currentDepth + 1
                                 }
                             )
-                            Write-Verbose "Recursing after last matched directory in $($directories.Peek().currentPath)"
+                            Microsoft.PowerShell.Utility\Write-Verbose "Recursing after last matched directory in $($directories.Peek().currentPath)"
                         }
 
                         # if the item does not match the name pattern supplied
@@ -567,17 +567,17 @@ function Find-Item {
                                     # match the file content with the regular expression pattern
                                     Search-FileContent -FilePath ($_.FullName) -Pattern $using:Pattern
                                 )) {
-                                Write-Verbose "Found $($_.FullName)"
+                                Microsoft.PowerShell.Utility\Write-Verbose "Found $($_.FullName)"
 
                                 # output FileInfo/DirectoryInfo objects if -PassThru is specified
                                 if ($using:PassThru) {
 
-                                    Write-Output $_
+                                    Microsoft.PowerShell.Utility\Write-Output $_
                                     return;
                                 }
 
                                 # or output the relative path of the found item
-                                Resolve-Path -Path $_ -Relative -RelativeBasePath:$using:RelativeBasePath
+                                Microsoft.PowerShell.Management\Resolve-Path -Path $_ -Relative -RelativeBasePath:$using:RelativeBasePath
                             }
                         }
                     }
@@ -586,7 +586,7 @@ function Find-Item {
 
             foreach ($currentSearchPhrase in $using:SearchMask) {
 
-                Write-Verbose "Processing search pattern: $currentSearchPhrase"
+                Microsoft.PowerShell.Utility\Write-Verbose "Processing search pattern: $currentSearchPhrase"
 
                 if ($null -eq $PSItem) {
 

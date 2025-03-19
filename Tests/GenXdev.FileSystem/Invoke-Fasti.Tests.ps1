@@ -1,7 +1,7 @@
 ################################################################################
-Describe "Invoke-Fasti" {
+Pester\Describe "Invoke-Fasti" {
 
-    It "Should pass PSScriptAnalyzer rules" {
+    Pester\It "Should pass PSScriptAnalyzer rules" {
 
         # get the script path for analysis
         $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Invoke-Fasti.ps1"
@@ -10,7 +10,7 @@ Describe "Invoke-Fasti" {
             -Path $scriptPath
 
         [string] $message = ""
-        $analyzerResults | ForEach-Object {
+        $analyzerResults | Microsoft.PowerShell.Core\ForEach-Object {
 
             $message = $message + @"
 --------------------------------------------------
@@ -21,7 +21,7 @@ Message: $($_.Message)
 "@
         }
 
-        $analyzerResults.Count | Should -Be 0 -Because @"
+        $analyzerResults.Count | Pester\Should -Be 0 -Because @"
 The following PSScriptAnalyzer rules are being violated:
 $message
 "@;

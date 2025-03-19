@@ -78,13 +78,13 @@ public static extern bool MoveFileEx(
 
         try {
             # load the native windows api function into the current session
-            $win32 = Add-Type -MemberDefinition $signature `
+            $win32 = Microsoft.PowerShell.Utility\Add-Type -MemberDefinition $signature `
                 -Name "MoveFileExUtils" `
                 -Namespace Win32 `
                 -PassThru
         }
         catch {
-            Write-Error "Failed to load Win32 API: $_"
+            Microsoft.PowerShell.Utility\Write-Error "Failed to load Win32 API: $_"
             return $false
         }
 
@@ -106,13 +106,13 @@ public static extern bool MoveFileEx(
             $fullDestPath = GenXdev.FileSystem\Expand-Path $Destination
 
             # verify the source path exists before attempting move
-            if (Test-Path -LiteralPath $fullSourcePath) {
+            if (Microsoft.PowerShell.Management\Test-Path -LiteralPath $fullSourcePath) {
 
                 # check if user wants to proceed with the operation
                 if ($PSCmdlet.ShouldProcess($fullSourcePath,
                         "Move to $fullDestPath")) {
 
-                    Write-Verbose "Moving $fullSourcePath to $fullDestPath"
+                    Microsoft.PowerShell.Utility\Write-Verbose "Moving $fullSourcePath to $fullDestPath"
 
                     # perform the move operation with link tracking
                     $result = $win32::MoveFileEx($fullSourcePath,
@@ -126,17 +126,17 @@ public static extern bool MoveFileEx(
                         "'$fullDestPath'. Error: $errorCode"
                     }
 
-                    Write-Verbose "Move completed successfully with link tracking"
+                    Microsoft.PowerShell.Utility\Write-Verbose "Move completed successfully with link tracking"
                     return $true
                 }
             }
             else {
-                Write-Warning "Source path not found: $fullSourcePath"
+                Microsoft.PowerShell.Utility\Write-Warning "Source path not found: $fullSourcePath"
                 return $false
             }
         }
         catch {
-            Write-Error $_
+            Microsoft.PowerShell.Utility\Write-Error $_
             return $false
         }
     }

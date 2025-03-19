@@ -49,11 +49,11 @@ function Move-ToRecycleBin {
         # initialize shell automation object for recycle bin operations
         $shellObj = $null
         try {
-            $shellObj = New-Object -ComObject Shell.Application
-            Write-Verbose "Created Shell.Application COM object for recycle operations"
+            $shellObj = Microsoft.PowerShell.Utility\New-Object -ComObject Shell.Application
+            Microsoft.PowerShell.Utility\Write-Verbose "Created Shell.Application COM object for recycle operations"
         }
         catch {
-            Write-Error "Failed to create Shell.Application COM object: $_"
+            Microsoft.PowerShell.Utility\Write-Error "Failed to create Shell.Application COM object: $_"
             return $false
         }
     }
@@ -64,7 +64,7 @@ function Move-ToRecycleBin {
 
             # convert relative or shorthand paths to full filesystem paths
             $fullPath = GenXdev.FileSystem\Expand-Path $itemPath
-            Write-Verbose "Processing path: $fullPath"
+            Microsoft.PowerShell.Utility\Write-Verbose "Processing path: $fullPath"
 
             try {
                 # check if the target path actually exists before attempting to recycle
@@ -84,16 +84,16 @@ function Move-ToRecycleBin {
 
                         # perform the recycle operation using shell verbs
                         $fileObj.InvokeVerb("delete")
-                        Write-Verbose "Successfully moved to recycle bin: $fullPath"
+                        Microsoft.PowerShell.Utility\Write-Verbose "Successfully moved to recycle bin: $fullPath"
                     }
                 }
                 else {
-                    Write-Warning "Path not found: $fullPath"
+                    Microsoft.PowerShell.Utility\Write-Warning "Path not found: $fullPath"
                     $success = $false
                 }
             }
             catch {
-                Write-Error "Failed to recycle $fullPath : $_"
+                Microsoft.PowerShell.Utility\Write-Error "Failed to recycle $fullPath : $_"
                 $success = $false
             }
         }
@@ -104,11 +104,11 @@ function Move-ToRecycleBin {
         # cleanup the COM object to prevent resource leaks
         try {
             [System.Runtime.InteropServices.Marshal]::ReleaseComObject($shellObj) | `
-                Out-Null
-            Write-Verbose "Released Shell.Application COM object"
+                Microsoft.PowerShell.Core\Out-Null
+            Microsoft.PowerShell.Utility\Write-Verbose "Released Shell.Application COM object"
         }
         catch {
-            Write-Warning "Failed to release COM object: $_"
+            Microsoft.PowerShell.Utility\Write-Warning "Failed to release COM object: $_"
         }
 
         return $success

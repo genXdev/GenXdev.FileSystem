@@ -131,7 +131,7 @@ function Expand-Path {
             }
             else {
 
-                $normalizedPath = Join-Path (Convert-Path ~) `
+                $normalizedPath = Microsoft.PowerShell.Management\Join-Path (Microsoft.PowerShell.Management\Convert-Path ~) `
                     $normalizedPath.Substring(1)
             }
         }
@@ -148,13 +148,13 @@ function Expand-Path {
 
                 if (($normalizedPath.Length -lt 3) -or ($normalizedPath.Substring(2, 1) -ne [System.IO.Path]::DirectorySeparatorChar)) {
 
-                    Push-Location $normalizedPath.Substring(0, 2)
+                    Microsoft.PowerShell.Management\Push-Location $normalizedPath.Substring(0, 2)
                     try {
-                        $normalizedPath = "$(Get-Location)$([IO.Path]::DirectorySeparatorChar)$($normalizedPath.Substring(2))"
+                        $normalizedPath = "$(Microsoft.PowerShell.Management\Get-Location)$([IO.Path]::DirectorySeparatorChar)$($normalizedPath.Substring(2))"
                         $normalizedPath = [System.IO.Path]::GetFullPath($normalizedPath)
                     }
                     finally {
-                        Pop-Location
+                        Microsoft.PowerShell.Management\Pop-Location
                     }
                 }
             }
@@ -167,7 +167,7 @@ function Expand-Path {
                 $normalizedPath = [System.IO.Path]::GetFullPath($normalizedPath)
             }
             catch {
-                Write-Verbose "Failed to normalize path, keeping original"
+                Microsoft.PowerShell.Utility\Write-Verbose "Failed to normalize path, keeping original"
             }
         }
         else {
@@ -211,7 +211,7 @@ function Expand-Path {
                     [System.IO.Path]::Combine($pwd, $normalizedPath))
             }
             catch {
-                $normalizedPath = Convert-Path $normalizedPath
+                $normalizedPath = Microsoft.PowerShell.Management\Convert-Path $normalizedPath
             }
         }
 
@@ -254,7 +254,7 @@ function Expand-Path {
             # create directory if it doesn't exist
             if (-not [IO.Directory]::Exists($directoryPath)) {
                 $null = [IO.Directory]::CreateDirectory($directoryPath)
-                Write-Verbose "Created directory: $directoryPath"
+                Microsoft.PowerShell.Utility\Write-Verbose "Created directory: $directoryPath"
             }
         }
 
@@ -266,12 +266,12 @@ function Expand-Path {
                 throw "Cannot create file: Path refers to an existing directory"
             }
 
-            if (-not (Remove-ItemWithFallback -Path $normalizedPath)) {
+            if (-not (GenXdev.FileSystem\Remove-ItemWithFallback -Path $normalizedPath)) {
 
                 throw "Failed to delete existing file: $normalizedPath"
             }
 
-            Write-Verbose "Deleted existing file: $normalizedPath"
+            Microsoft.PowerShell.Utility\Write-Verbose "Deleted existing file: $normalizedPath"
         }
 
         # handle file creation if requested
@@ -286,7 +286,7 @@ function Expand-Path {
             # create empty file if it doesn't exist
             if (-not [IO.File]::Exists($normalizedPath)) {
                 $null = [IO.File]::WriteAllText($normalizedPath, "")
-                Write-Verbose "Created empty file: $normalizedPath"
+                Microsoft.PowerShell.Utility\Write-Verbose "Created empty file: $normalizedPath"
             }
         }
 

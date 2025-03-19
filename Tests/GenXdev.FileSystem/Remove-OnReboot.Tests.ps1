@@ -1,7 +1,7 @@
 ###############################################################################
-Describe 'Remove-OnReboot' {
+Pester\Describe 'Remove-OnReboot' {
     ###############################################################################
-    It "Should pass PSScriptAnalyzer rules" {
+    Pester\It "Should pass PSScriptAnalyzer rules" {
 
         # get the script path for analysis
         $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Remove-OnReboot.ps1"
@@ -11,7 +11,7 @@ Describe 'Remove-OnReboot' {
             -Path $scriptPath
 
         [string] $message = ""
-        $analyzerResults | ForEach-Object {
+        $analyzerResults | Microsoft.PowerShell.Core\ForEach-Object {
 
             $message = $message + @"
 --------------------------------------------------
@@ -22,25 +22,25 @@ Message: $($_.Message)
 "@
         }
 
-        $analyzerResults.Count | Should -Be 0 -Because @"
+        $analyzerResults.Count | Pester\Should -Be 0 -Because @"
 The following PSScriptAnalyzer rules are being violated:
 $message
 "@;
     }
 
-    BeforeAll {
+    Pester\BeforeAll {
         $testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
-        Set-Location $testRoot
-        $testFile = Join-Path $testRoot 'reboot-delete.txt'
-        Set-Content -Path $testFile -Value "test content"
+        Microsoft.PowerShell.Management\Set-Location $testRoot
+        $testFile = Microsoft.PowerShell.Management\Join-Path $testRoot 'reboot-delete.txt'
+        Microsoft.PowerShell.Management\Set-Content -Path $testFile -Value "test content"
     }
 
-    AfterAll {
+    Pester\AfterAll {
         $testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
-        Remove-AllItems $testRoot -DeleteFolder
+        GenXdev.FileSystem\Remove-AllItems $testRoot -DeleteFolder
     }
 
-    It 'Marks file for deletion on reboot' {
-        Remove-OnReboot -Path $testFile | Should -BeTrue
+    Pester\It 'Marks file for deletion on reboot' {
+        GenXdev.FileSystem\Remove-OnReboot -Path $testFile | Pester\Should -BeTrue
     }
 }

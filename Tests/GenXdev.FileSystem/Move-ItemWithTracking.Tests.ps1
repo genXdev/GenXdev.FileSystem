@@ -1,19 +1,19 @@
 ###############################################################################
-BeforeAll {
+Pester\BeforeAll {
     $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
-    Push-Location $testRoot
+    Microsoft.PowerShell.Management\Push-Location $testRoot
 }
 
-AfterAll {
+Pester\AfterAll {
     $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
 
     # cleanup test folder
-    Remove-AllItems $testRoot -DeleteFolder
+    GenXdev.FileSystem\Remove-AllItems $testRoot -DeleteFolder
 }
 
 ###############################################################################
-Describe 'Move-ItemWithTracking' {
-    It "Should pass PSScriptAnalyzer rules" {
+Pester\Describe 'Move-ItemWithTracking' {
+    Pester\It "Should pass PSScriptAnalyzer rules" {
         # get the script path for analysis
         $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Move-ItemWithTracking.ps1"
 
@@ -22,7 +22,7 @@ Describe 'Move-ItemWithTracking' {
             -Path $scriptPath
 
         [string] $message = ""
-        $analyzerResults | ForEach-Object {
+        $analyzerResults | Microsoft.PowerShell.Core\ForEach-Object {
             $message = $message + @"
 --------------------------------------------------
 Rule: $($_.RuleName)`
@@ -32,27 +32,27 @@ Message: $($_.Message)
 "@
         }
 
-        $analyzerResults.Count | Should -Be 0 -Because @"
+        $analyzerResults.Count | Pester\Should -Be 0 -Because @"
 The following PSScriptAnalyzer rules are being violated:
 $message
 "@;
     }
 
-    BeforeAll {
-        $sourceFile = Join-Path $testRoot 'track-source.txt'
-        $destFile = Join-Path $testRoot 'track-dest.txt'
-        Set-Content -Path $sourceFile -Value "test content"
+    Pester\BeforeAll {
+        $sourceFile = Microsoft.PowerShell.Management\Join-Path $testRoot 'track-source.txt'
+        $destFile = Microsoft.PowerShell.Management\Join-Path $testRoot 'track-dest.txt'
+        Microsoft.PowerShell.Management\Set-Content -Path $sourceFile -Value "test content"
     }
 
-    It 'Moves file with link tracking' {
-        Mock Add-Type {
+    Pester\It 'Moves file with link tracking' {
+        Pester\Mock Add-Type {
             return @{
                 MoveFileEx = { return $true }
             }
         }
 
-        Move-ItemWithTracking -Path $sourceFile -Destination $destFile | Should -BeTrue
-        Test-Path -Path $sourceFile | Should -BeFalse
-        Test-Path -Path $destFile | Should -BeTrue
+        GenXdev.FileSystem\Move-ItemWithTracking -Path $sourceFile -Destination $destFile | Pester\Should -BeTrue
+        Microsoft.PowerShell.Management\Test-Path -Path $sourceFile | Pester\Should -BeFalse
+        Microsoft.PowerShell.Management\Test-Path -Path $destFile | Pester\Should -BeTrue
     }
 }

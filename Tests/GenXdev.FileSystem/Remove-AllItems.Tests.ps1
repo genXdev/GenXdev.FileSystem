@@ -1,22 +1,22 @@
 ###############################################################################
-BeforeAll {
+Pester\BeforeAll {
     $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
-    Push-Location $testRoot
+    Microsoft.PowerShell.Management\Push-Location $testRoot
 }
 
-AfterAll {
+Pester\AfterAll {
     $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
 
     # cleanup test folder
-    if (Test-Path $testRoot) {
-        $null = Remove-AllItems $testRoot -DeleteFolder
+    if (Microsoft.PowerShell.Management\Test-Path $testRoot) {
+        $null = GenXdev.FileSystem\Remove-AllItems $testRoot -DeleteFolder
     }
 }
 
 ###############################################################################
-Describe "Remove-AllItems" {
+Pester\Describe "Remove-AllItems" {
 
-    It "Should pass PSScriptAnalyzer rules" {
+    Pester\It "Should pass PSScriptAnalyzer rules" {
 
         # get the script path for analysis
         $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Remove-AllItems.ps1"
@@ -26,7 +26,7 @@ Describe "Remove-AllItems" {
             -Path $scriptPath
 
         [string] $message = ""
-        $analyzerResults | ForEach-Object {
+        $analyzerResults | Microsoft.PowerShell.Core\ForEach-Object {
 
             $message = $message + @"
 --------------------------------------------------
@@ -37,36 +37,36 @@ Message: $($_.Message)
 "@
         }
 
-        $analyzerResults.Count | Should -Be 0 -Because @"
+        $analyzerResults.Count | Pester\Should -Be 0 -Because @"
 The following PSScriptAnalyzer rules are being violated:
 $message
 "@;
     }
 
-    BeforeEach {
+    Pester\BeforeEach {
         # setup test folder structure
         $testPath = "$testRoot\delete_test"
-        New-Item -ItemType Directory -Path $testPath -Force
-        New-Item -ItemType Directory -Path "$testPath\subdir" -Force
-        "test1" | Out-File "$testPath\file1.txt"
-        "test2" | Out-File "$testPath\subdir\file2.txt"
+        Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path $testPath -Force
+        Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path "$testPath\subdir" -Force
+        "test1" | Microsoft.PowerShell.Utility\Out-File "$testPath\file1.txt"
+        "test2" | Microsoft.PowerShell.Utility\Out-File "$testPath\subdir\file2.txt"
     }
 
-    It "Removes all files and subdirectories" {
-        $null = Remove-AllItems -Path $testPath
-        $remaining = Get-ChildItem $testPath -Recurse
-        $remaining.Count | Should -Be 0
+    Pester\It "Removes all files and subdirectories" {
+        $null = GenXdev.FileSystem\Remove-AllItems -Path $testPath
+        $remaining = Microsoft.PowerShell.Management\Get-ChildItem $testPath -Recurse
+        $remaining.Count | Pester\Should -Be 0
     }
 
-    It "Removes root folder when specified" {
-        $null = Remove-AllItems -Path $testPath -DeleteFolder
-        Test-Path $testPath | Should -Be $false
+    Pester\It "Removes root folder when specified" {
+        $null = GenXdev.FileSystem\Remove-AllItems -Path $testPath -DeleteFolder
+        Microsoft.PowerShell.Management\Test-Path $testPath | Pester\Should -Be $false
     }
 
-    It "Shows what-if output without deleting" {
-        $null = Remove-AllItems -Path $testPath -WhatIf
-        Test-Path $testPath | Should -Be $true
-        $items = Get-ChildItem $testPath -Recurse
-        $items.Count | Should -BeGreaterThan 0
+    Pester\It "Shows what-if output without deleting" {
+        $null = GenXdev.FileSystem\Remove-AllItems -Path $testPath -WhatIf
+        Microsoft.PowerShell.Management\Test-Path $testPath | Pester\Should -Be $true
+        $items = Microsoft.PowerShell.Management\Get-ChildItem $testPath -Recurse
+        $items.Count | Pester\Should -BeGreaterThan 0
     }
 }

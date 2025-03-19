@@ -1,18 +1,18 @@
 ###############################################################################
-BeforeAll {
+Pester\BeforeAll {
     $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
 }
 
-AfterAll {
+Pester\AfterAll {
     $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
 
     # cleanup test folder
-    Remove-AllItems $Script:testRoot -DeleteFolder
+    GenXdev.FileSystem\Remove-AllItems $Script:testRoot -DeleteFolder
 }
 
 ###############################################################################
-Describe "Rename-InProject" {
-    It "Should pass PSScriptAnalyzer rules" {
+Pester\Describe "Rename-InProject" {
+    Pester\It "Should pass PSScriptAnalyzer rules" {
 
         # get the script path for analysis
         $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Rename-InProject.ps1"
@@ -22,7 +22,7 @@ Describe "Rename-InProject" {
             -Path $scriptPath
 
         [string] $message = ""
-        $analyzerResults | ForEach-Object {
+        $analyzerResults | Microsoft.PowerShell.Core\ForEach-Object {
 
             $message = $message + @"
 --------------------------------------------------
@@ -33,25 +33,25 @@ Message: $($_.Message)
 "@
         }
 
-        $analyzerResults.Count | Should -Be 0 -Because @"
+        $analyzerResults.Count | Pester\Should -Be 0 -Because @"
 The following PSScriptAnalyzer rules are being violated:
 $message
 "@;
     }
 
-    BeforeAll {
-        Push-Location $Script:testRoot
+    Pester\BeforeAll {
+        Microsoft.PowerShell.Management\Push-Location $Script:testRoot
     }
 
-    AfterAll {
-        Pop-Location
-        Remove-AllItems $Script:testRoot -DeleteFolder
+    Pester\AfterAll {
+        Microsoft.PowerShell.Management\Pop-Location
+        GenXdev.FileSystem\Remove-AllItems $Script:testRoot -DeleteFolder
     }
 
-    BeforeEach {
+    Pester\BeforeEach {
         # Setup test directory structure
-        $Script:testDir = Join-Path $Script:testRoot "rename-test"
-        New-Item -Path $Script:testDir -ItemType Directory -Force
+        $Script:testDir = Microsoft.PowerShell.Management\Join-Path $Script:testRoot "rename-test"
+        Microsoft.PowerShell.Management\New-Item -Path $Script:testDir -ItemType Directory -Force
 
         # Create test files with content using Unix-style line endings
         $Script:files = @{
@@ -61,65 +61,65 @@ $message
         }
 
         foreach ($file in $Script:files.Keys) {
-            $path = Join-Path $Script:testDir $file
-            New-Item -Path (Split-Path $path) -ItemType Directory -Force
+            $path = Microsoft.PowerShell.Management\Join-Path $Script:testDir $file
+            Microsoft.PowerShell.Management\New-Item -Path (Microsoft.PowerShell.Management\Split-Path $path) -ItemType Directory -Force
             # Use Set-Content with -NoNewline to avoid adding line endings
-            Set-Content -Path $path -Value $Script:files[$file] -NoNewline
+            Microsoft.PowerShell.Management\Set-Content -Path $path -Value $Script:files[$file] -NoNewline
         }
 
-        Push-Location $Script:testDir
+        Microsoft.PowerShell.Management\Push-Location $Script:testDir
     }
 
-    AfterEach {
-        Pop-Location
-        Remove-Item -Path (Join-Path $Script:testRoot "rename-test") -Recurse -Force -ErrorAction SilentlyContinue
+    Pester\AfterEach {
+        Microsoft.PowerShell.Management\Pop-Location
+        Microsoft.PowerShell.Management\Remove-Item -Path (Microsoft.PowerShell.Management\Join-Path $Script:testRoot "rename-test") -Recurse -Force -ErrorAction SilentlyContinue
     }
 
-    It "Replaces text content in files" {
-        Rename-InProject -Source .\ -FindText "oldtext" -ReplacementText "newtext"
+    Pester\It "Replaces text content in files" {
+        GenXdev.FileSystem\Rename-InProject -Source .\ -FindText "oldtext" -ReplacementText "newtext"
 
         # Trim any line endings when comparing content
-        $content = (Get-Content "oldfile.txt" -Raw).TrimEnd()
-        $content | Should -Be "This is newtext in a file"
+        $content = (Microsoft.PowerShell.Management\Get-Content "oldfile.txt" -Raw).TrimEnd()
+        $content | Pester\Should -Be "This is newtext in a file"
 
-        $nestedContent = (Get-Content "subdir/nested.txt" -Raw).TrimEnd()
-        $nestedContent | Should -Be "More newtext content"
+        $nestedContent = (Microsoft.PowerShell.Management\Get-Content "subdir/nested.txt" -Raw).TrimEnd()
+        $nestedContent | Pester\Should -Be "More newtext content"
     }
 
-    It "Renames files containing search text" {
-        Rename-InProject -Source .\ -FindText "old" -ReplacementText "new"
+    Pester\It "Renames files containing search text" {
+        GenXdev.FileSystem\Rename-InProject -Source .\ -FindText "old" -ReplacementText "new"
 
-        Test-Path "newfile.txt" | Should -BeTrue
-        Test-Path "oldfile.txt" | Should -BeFalse
+        Microsoft.PowerShell.Management\Test-Path "newfile.txt" | Pester\Should -BeTrue
+        Microsoft.PowerShell.Management\Test-Path "oldfile.txt" | Pester\Should -BeFalse
     }
 
-    It "Renames directories containing search text" {
-        Rename-InProject -Source . -FindText "OldName" -ReplacementText "NewName"
+    Pester\It "Renames directories containing search text" {
+        GenXdev.FileSystem\Rename-InProject -Source . -FindText "OldName" -ReplacementText "NewName"
 
-        Test-Path "NewName" | Should -BeTrue
-        Test-Path "OldName" | Should -BeFalse
-        Test-Path "NewName/test.txt" | Should -BeTrue
+        Microsoft.PowerShell.Management\Test-Path "NewName" | Pester\Should -BeTrue
+        Microsoft.PowerShell.Management\Test-Path "OldName" | Pester\Should -BeFalse
+        Microsoft.PowerShell.Management\Test-Path "NewName/test.txt" | Pester\Should -BeTrue
     }
 
-    It "Performs no changes in WhatIf mode" {
-        Rename-InProject -Source . -FindText "oldtext" -ReplacementText "newtext" -WhatIf
+    Pester\It "Performs no changes in WhatIf mode" {
+        GenXdev.FileSystem\Rename-InProject -Source . -FindText "oldtext" -ReplacementText "newtext" -WhatIf
 
-        $content = (Get-Content "oldfile.txt" -Raw).TrimEnd()
-        $content | Should -Be "This is oldtext in a file"
-        Test-Path "oldfile.txt" | Should -BeTrue
+        $content = (Microsoft.PowerShell.Management\Get-Content "oldfile.txt" -Raw).TrimEnd()
+        $content | Pester\Should -Be "This is oldtext in a file"
+        Microsoft.PowerShell.Management\Test-Path "oldfile.txt" | Pester\Should -BeTrue
     }
 
-    It "Skips binary files" {
+    Pester\It "Skips binary files" {
         # Create a fake binary file
         $binPath = "test.exe"
         [byte[]]$bytes = 1..10
-        [System.IO.File]::WriteAllBytes((Join-Path $Script:testDir $binPath), $bytes)
+        [System.IO.File]::WriteAllBytes((Microsoft.PowerShell.Management\Join-Path $Script:testDir $binPath), $bytes)
 
-        Rename-InProject -Source . -FindText "old" -ReplacementText "new"
+        GenXdev.FileSystem\Rename-InProject -Source . -FindText "old" -ReplacementText "new"
 
         # Binary file Should remain unchanged
-        Test-Path $binPath | Should -BeTrue
-        $newBytes = [System.IO.File]::ReadAllBytes((Join-Path $Script:testDir $binPath))
-        $newBytes | Should -Be $bytes
+        Microsoft.PowerShell.Management\Test-Path $binPath | Pester\Should -BeTrue
+        $newBytes = [System.IO.File]::ReadAllBytes((Microsoft.PowerShell.Management\Join-Path $Script:testDir $binPath))
+        $newBytes | Pester\Should -Be $bytes
     }
 }

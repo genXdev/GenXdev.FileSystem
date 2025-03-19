@@ -54,7 +54,7 @@ function Remove-OnReboot {
 
         # get existing pending renames or initialize empty array
         try {
-            $pendingRenames = @(Get-ItemProperty -Path $regKey `
+            $pendingRenames = @(Microsoft.PowerShell.Management\Get-ItemProperty -Path $regKey `
                     -Name $regName -ErrorAction SilentlyContinue).$regName
         }
         catch {
@@ -72,17 +72,17 @@ function Remove-OnReboot {
             foreach ($item in $Path) {
                 $fullPath = GenXdev.FileSystem\Expand-Path $item
 
-                if (Test-Path -LiteralPath $fullPath) {
+                if (Microsoft.PowerShell.Management\Test-Path -LiteralPath $fullPath) {
                     if ($PSCmdlet.ShouldProcess($fullPath, "Mark for deletion on reboot")) {
 
                         try {
                             # attempt immediate deletion first
-                            Remove-Item -LiteralPath $fullPath -Force -ErrorAction Stop
-                            Write-Verbose "Successfully deleted: $fullPath"
+                            Microsoft.PowerShell.Management\Remove-Item -LiteralPath $fullPath -Force -ErrorAction Stop
+                            Microsoft.PowerShell.Utility\Write-Verbose "Successfully deleted: $fullPath"
                             continue
                         }
                         catch {
-                            Write-Verbose "Direct deletion failed, attempting rename..."
+                            Microsoft.PowerShell.Utility\Write-Verbose "Direct deletion failed, attempting rename..."
 
                             try {
                                 # create hidden temporary file name
@@ -90,31 +90,31 @@ function Remove-OnReboot {
                                 $newPath = [System.IO.Path]::Combine($dir, $newName)
 
                                 # rename and hide the file
-                                Rename-Item -Path $fullPath -NewName $newName -Force `
+                                Microsoft.PowerShell.Management\Rename-Item -Path $fullPath -NewName $newName -Force `
                                     -ErrorAction Stop
-                                $file = Get-Item -LiteralPath $newPath -Force
+                                $file = Microsoft.PowerShell.Management\Get-Item -LiteralPath $newPath -Force
                                 $file.Attributes = $file.Attributes -bor `
                                     [System.IO.FileAttributes]::Hidden -bor `
                                     [System.IO.FileAttributes]::System
 
-                                Write-Verbose "Renamed to hidden system file: $newPath"
+                                Microsoft.PowerShell.Utility\Write-Verbose "Renamed to hidden system file: $newPath"
 
                                 # add to pending renames with windows api path format
                                 $sourcePath = "\??\" + $newPath
                                 $pendingRenames += $sourcePath
                                 $pendingRenames += ""
 
-                                Write-Verbose "Marked for deletion on reboot: $newPath"
+                                Microsoft.PowerShell.Utility\Write-Verbose "Marked for deletion on reboot: $newPath"
                             }
                             catch {
                                 if ($MarkInPlace) {
-                                    Write-Verbose "Marking original file for deletion"
+                                    Microsoft.PowerShell.Utility\Write-Verbose "Marking original file for deletion"
                                     $sourcePath = "\??\" + $fullPath
                                     $pendingRenames += $sourcePath
                                     $pendingRenames += ""
                                 }
                                 else {
-                                    Write-Error "Failed to rename $($fullPath): $_"
+                                    Microsoft.PowerShell.Utility\Write-Error "Failed to rename $($fullPath): $_"
                                     continue
                                 }
                             }
@@ -122,19 +122,19 @@ function Remove-OnReboot {
                     }
                 }
                 else {
-                    Write-Warning "Path not found: $fullPath"
+                    Microsoft.PowerShell.Utility\Write-Warning "Path not found: $fullPath"
                 }
             }
 
             if ($pendingRenames.Count -gt 0) {
                 # save pending operations to registry
-                Set-ItemProperty -Path $regKey -Name $regName `
+                Microsoft.PowerShell.Management\Set-ItemProperty -Path $regKey -Name $regName `
                     -Value $pendingRenames -Type MultiString
                 return $true
             }
         }
         catch {
-            Write-Error "Failed to set pending file operations: $_"
+            Microsoft.PowerShell.Utility\Write-Error "Failed to set pending file operations: $_"
             return $false
         }
 

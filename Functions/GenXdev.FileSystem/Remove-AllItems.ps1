@@ -63,7 +63,7 @@ function Remove-AllItems {
         try {
             # convert relative or shorthand paths to full filesystem paths
             $Path = GenXdev.FileSystem\Expand-Path $Path
-            Write-Verbose "Normalized path: $Path"
+            Microsoft.PowerShell.Utility\Write-Verbose "Normalized path: $Path"
 
             # ensure verbose output is enabled during WhatIf operations
             if ($WhatIfPreference -or $WhatIf) {
@@ -81,36 +81,36 @@ function Remove-AllItems {
         try {
             # skip processing if target directory doesn't exist
             if (![System.IO.Directory]::Exists($Path)) {
-                Write-Verbose "Directory does not exist: $Path"
+                Microsoft.PowerShell.Utility\Write-Verbose "Directory does not exist: $Path"
                 return
             }
 
-            Write-Verbose "Processing directory: $Path"
+            Microsoft.PowerShell.Utility\Write-Verbose "Processing directory: $Path"
 
             # delete files first, in reverse order to handle nested paths
             [System.IO.Directory]::GetFiles($Path, "*.*", `
                     [System.IO.SearchOption]::AllDirectories) |
-            Sort-Object -Descending |
-            ForEach-Object {
+            Microsoft.PowerShell.Utility\Sort-Object -Descending |
+            Microsoft.PowerShell.Core\ForEach-Object {
                 $filePath = $_
                 if ($PSCmdlet.ShouldProcess($filePath, "Remove file")) {
-                    $null = Remove-ItemWithFallback -Path $filePath
+                    $null = GenXdev.FileSystem\Remove-ItemWithFallback -Path $filePath
                 }
             }
 
             # delete directories after files, also in reverse order
             [System.IO.Directory]::GetDirectories($Path, "*", `
                     [System.IO.SearchOption]::AllDirectories) |
-            Sort-Object -Descending |
-            ForEach-Object {
+            Microsoft.PowerShell.Utility\Sort-Object -Descending |
+            Microsoft.PowerShell.Core\ForEach-Object {
                 $dirPath = $_
                 if ($PSCmdlet.ShouldProcess($dirPath, "Remove directory")) {
                     try {
                         [System.IO.Directory]::Delete($dirPath, $true)
-                        Write-Verbose "Removed directory: $dirPath"
+                        Microsoft.PowerShell.Utility\Write-Verbose "Removed directory: $dirPath"
                     }
                     catch {
-                        Write-Warning "Failed to delete directory: $dirPath"
+                        Microsoft.PowerShell.Utility\Write-Warning "Failed to delete directory: $dirPath"
                     }
                 }
             }
@@ -120,10 +120,10 @@ function Remove-AllItems {
                 if ($PSCmdlet.ShouldProcess($Path, "Remove root directory")) {
                     try {
                         [System.IO.Directory]::Delete($Path, $true)
-                        Write-Verbose "Removed root directory: $Path"
+                        Microsoft.PowerShell.Utility\Write-Verbose "Removed root directory: $Path"
                     }
                     catch {
-                        $null = Remove-ItemWithFallback -Path $Path
+                        $null = GenXdev.FileSystem\Remove-ItemWithFallback -Path $Path
                     }
                 }
             }

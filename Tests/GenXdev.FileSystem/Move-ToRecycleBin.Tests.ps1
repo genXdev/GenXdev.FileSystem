@@ -1,7 +1,7 @@
 ###############################################################################
-Describe 'Move-ToRecycleBin' {
+Pester\Describe 'Move-ToRecycleBin' {
 
-    It "Should pass PSScriptAnalyzer rules" {
+    Pester\It "Should pass PSScriptAnalyzer rules" {
 
         # get the script path for analysis
         $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Move-ToRecycleBin.ps1"
@@ -11,7 +11,7 @@ Describe 'Move-ToRecycleBin' {
             -Path $scriptPath
 
         [string] $message = ""
-        $analyzerResults | ForEach-Object {
+        $analyzerResults | Microsoft.PowerShell.Core\ForEach-Object {
 
             $message = $message + @"
 --------------------------------------------------
@@ -22,29 +22,29 @@ Message: $($_.Message)
 "@
         }
 
-        $analyzerResults.Count | Should -Be 0 -Because @"
+        $analyzerResults.Count | Pester\Should -Be 0 -Because @"
 The following PSScriptAnalyzer rules are being violated:
 $message
 "@;
     }
 
     ###############################################################################
-    BeforeAll {
+    Pester\BeforeAll {
         $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
-        Set-Location $Script:testRoot
-        $Script:testFile = Join-Path $Script:testRoot 'recycle-test.txt'
-        Set-Content -Path $Script:testFile -Value "test content"
+        Microsoft.PowerShell.Management\Set-Location $Script:testRoot
+        $Script:testFile = Microsoft.PowerShell.Management\Join-Path $Script:testRoot 'recycle-test.txt'
+        Microsoft.PowerShell.Management\Set-Content -Path $Script:testFile -Value "test content"
     }
 
-    AfterAll {
+    Pester\AfterAll {
         $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
 
         # cleanup test folder
-        Remove-AllItems $Script:testRoot -DeleteFolder
+        GenXdev.FileSystem\Remove-AllItems $Script:testRoot -DeleteFolder
     }
 
-    It 'Moves file to recycle bin' {
+    Pester\It 'Moves file to recycle bin' {
 
-        Move-ToRecycleBin -Path $Script:testFile | Should -BeTrue
+        GenXdev.FileSystem\Move-ToRecycleBin -Path $Script:testFile | Pester\Should -BeTrue
     }
 }

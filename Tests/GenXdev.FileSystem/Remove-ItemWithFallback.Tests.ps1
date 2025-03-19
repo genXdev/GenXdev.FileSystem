@@ -1,17 +1,17 @@
 ###############################################################################
 $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
 
-AfterAll {
+Pester\AfterAll {
     $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
 
     # cleanup test folder
-    Remove-AllItems $testRoot -DeleteFolder
+    GenXdev.FileSystem\Remove-AllItems $testRoot -DeleteFolder
 }
 
 ###############################################################################
-Describe 'Remove-ItemWithFallback' {
+Pester\Describe 'Remove-ItemWithFallback' {
 
-    It "Should pass PSScriptAnalyzer rules" {
+    Pester\It "Should pass PSScriptAnalyzer rules" {
         # get the script path for analysis
         $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Remove-ItemWithFallback.ps1"
 
@@ -20,7 +20,7 @@ Describe 'Remove-ItemWithFallback' {
             -Path $scriptPath
 
         [string] $message = ""
-        $analyzerResults | ForEach-Object {
+        $analyzerResults | Microsoft.PowerShell.Core\ForEach-Object {
             $message = $message + @"
 --------------------------------------------------
 Rule: $($_.RuleName)`
@@ -30,32 +30,32 @@ Message: $($_.Message)
 "@
         }
 
-        $analyzerResults.Count | Should -Be 0 -Because @"
+        $analyzerResults.Count | Pester\Should -Be 0 -Because @"
 The following PSScriptAnalyzer rules are being violated:
 $message
 "@;
     }
 
-    BeforeAll {
-        Set-Location $Script:testRoot
+    Pester\BeforeAll {
+        Microsoft.PowerShell.Management\Set-Location $Script:testRoot
         $Script:testFile = GenXdev.FileSystem\Expand-Path "$Script:testRoot\fallback-test.txt" -CreateFile
-        Set-Content -Path $Script:testFile -Value "test content"
+        Microsoft.PowerShell.Management\Set-Content -Path $Script:testFile -Value "test content"
         $Script:lockedFile = [IO.File]::OpenWrite($Script:testFile)
     }
 
-    AfterAll {
+    Pester\AfterAll {
         if ($Script:lockedFile) {
             $Script:lockedFile.Close()
         }
 
         if ([IO.Path]::Exists($Script:testFile)) {
-            Remove-Item $Script:testFile -Force
+            Microsoft.PowerShell.Management\Remove-Item $Script:testFile -Force
         }
     }
 
-    It 'Removes file using direct deletion' {
+    Pester\It 'Removes file using direct deletion' {
         # Should fail since file is locked
-        { Remove-ItemWithFallback -Path $Script:testFile -ErrorAction Stop } | Should -Throw
-        Test-Path $Script:testFile | Should -BeTrue
+        { GenXdev.FileSystem\Remove-ItemWithFallback -Path $Script:testFile -ErrorAction Stop } | Pester\Should -Throw
+        Microsoft.PowerShell.Management\Test-Path $Script:testFile | Pester\Should -BeTrue
     }
 }

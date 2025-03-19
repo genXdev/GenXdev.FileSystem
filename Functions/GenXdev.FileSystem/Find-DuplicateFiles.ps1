@@ -62,7 +62,7 @@ function Find-DuplicateFiles {
     begin {
         # convert all input paths to full filesystem paths
         $normalizedPaths = @()
-        $Paths | ForEach-Object {
+        $Paths | Microsoft.PowerShell.Core\ForEach-Object {
             $normalizedPaths += (GenXdev.FileSystem\Expand-Path $_)
         }
 
@@ -96,17 +96,17 @@ function Find-DuplicateFiles {
             # verify directory exists before attempting to process
             if ([System.IO.Directory]::Exists($path)) {
 
-                Write-Verbose "Scanning directory for duplicates: $path"
+                Microsoft.PowerShell.Utility\Write-Verbose "Scanning directory for duplicates: $path"
 
                 # use direct .NET IO for faster recursive file enumeration
                 [System.IO.Directory]::GetFiles($path, "*.*",
                     [System.IO.SearchOption]::AllDirectories) |
-                ForEach-Object {
+                Microsoft.PowerShell.Core\ForEach-Object {
                     $null = $allFiles.Add([System.IO.FileInfo]::new($_))
                 }
             }
             else {
-                Write-Warning "Skipping non-existent directory: $path"
+                Microsoft.PowerShell.Utility\Write-Warning "Skipping non-existent directory: $path"
             }
         }
     }
@@ -115,9 +115,9 @@ function Find-DuplicateFiles {
 
         # group files by composite key and return only groups with duplicates
         $allFiles |
-        Group-Object -Property { Get-FileKey $_ } |
-        Where-Object { $_.Count -gt 1 } |
-        ForEach-Object {
+        Microsoft.PowerShell.Utility\Group-Object -Property { Get-FileKey $_ } |
+        Microsoft.PowerShell.Core\Where-Object { $_.Count -gt 1 } |
+        Microsoft.PowerShell.Core\ForEach-Object {
             # create result object for each duplicate group
             [PSCustomObject]@{
                 FileName = $_.Group[0].Name

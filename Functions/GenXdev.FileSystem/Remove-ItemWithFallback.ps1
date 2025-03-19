@@ -53,7 +53,7 @@ function Remove-ItemWithFallback {
     process {
         try {
             # verify item exists and get its provider information
-            $item = Get-Item -LiteralPath $Path `
+            $item = Microsoft.PowerShell.Management\Get-Item -LiteralPath $Path `
                 -ErrorAction Stop
 
             # handle filesystem items with direct IO methods for best performance
@@ -64,14 +64,14 @@ function Remove-ItemWithFallback {
                     # try fastest method first - direct file deletion
                     if ([System.IO.File]::Exists($Path)) {
                         [System.IO.File]::Delete($Path)
-                        Write-Verbose "Successfully removed file using IO: $Path"
+                        Microsoft.PowerShell.Utility\Write-Verbose "Successfully removed file using IO: $Path"
                         return $true
                     }
 
                     # handle directory deletion with recursive option
                     if ([System.IO.Directory]::Exists($Path)) {
                         [System.IO.Directory]::Delete($Path, $true)
-                        Write-Verbose "Successfully removed directory using IO: $Path"
+                        Microsoft.PowerShell.Utility\Write-Verbose "Successfully removed directory using IO: $Path"
                         return $true
                     }
                 }
@@ -79,28 +79,28 @@ function Remove-ItemWithFallback {
             else {
                 # non-filesystem items need provider-specific handling
                 if ($PSCmdlet.ShouldProcess($Path, "Remove via provider")) {
-                    Remove-Item -LiteralPath $Path `
+                    Microsoft.PowerShell.Management\Remove-Item -LiteralPath $Path `
                         -Force
-                    Write-Verbose "Removed item via provider: $Path"
+                    Microsoft.PowerShell.Utility\Write-Verbose "Removed item via provider: $Path"
                     return $true
                 }
             }
         }
         catch {
-            Write-Verbose "Standard deletion failed, attempting boot-time removal..."
+            Microsoft.PowerShell.Utility\Write-Verbose "Standard deletion failed, attempting boot-time removal..."
 
             # only try boot-time deletion for filesystem items
-            if ((Get-Item -LiteralPath $Path).PSProvider.Name -eq 'FileSystem') {
+            if ((Microsoft.PowerShell.Management\Get-Item -LiteralPath $Path).PSProvider.Name -eq 'FileSystem') {
 
                 # last resort - mark for deletion on next boot
-                if (Remove-OnReboot -Path $Path) {
-                    Write-Verbose "Marked for deletion on next reboot: $Path"
+                if (GenXdev.FileSystem\Remove-OnReboot -Path $Path) {
+                    Microsoft.PowerShell.Utility\Write-Verbose "Marked for deletion on next reboot: $Path"
                     return $true
                 }
             }
 
-            Write-Warning "All deletion methods failed for: $Path"
-            Write-Error $_.Exception.Message
+            Microsoft.PowerShell.Utility\Write-Warning "All deletion methods failed for: $Path"
+            Microsoft.PowerShell.Utility\Write-Error $_.Exception.Message
             return $false
         }
     }
