@@ -66,7 +66,8 @@ function Remove-OnReboot {
         }
     }
 
-    process {
+
+process {
 
         try {
             foreach ($item in $Path) {

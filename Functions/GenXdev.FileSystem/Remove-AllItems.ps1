@@ -77,7 +77,8 @@ function Remove-AllItems {
         }
     }
 
-    process {
+
+process {
         try {
             # skip processing if target directory doesn't exist
             if (![System.IO.Directory]::Exists($Path)) {

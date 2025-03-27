@@ -1322,7 +1322,8 @@ Multiple overrides:
         $cmdLine = "& '$($RobocopyPath.Replace("'", "''"))' '$($Source.Replace("'", "''"))' '$($DestinationDirectory.Replace("'", "''"))' $FilesArgs $switchesCleaned"
     }
 
-    Process {
+
+process {
         # construct and execute robocopy command
         Microsoft.PowerShell.Utility\Write-Verbose "Constructing RoboCopy command with selected parameters"
 

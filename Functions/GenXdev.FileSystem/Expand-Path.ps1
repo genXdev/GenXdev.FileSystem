@@ -115,7 +115,8 @@ function Expand-Path {
         $normalizedPath.EndsWith([System.IO.Path]::AltDirectorySeparatorChar)
     }
 
-    process {
+
+process {
 
         # expand home directory if path starts with ~
         if ($normalizedPath.StartsWith("~")) {

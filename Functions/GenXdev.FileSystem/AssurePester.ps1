@@ -24,7 +24,8 @@ function AssurePester {
         Microsoft.PowerShell.Utility\Write-Verbose "Checking for Pester module installation..."
     }
 
-    process {
+
+process {
 
         # attempt silent import of pester to check if it's available
         Microsoft.PowerShell.Core\Import-Module -Name Pester -ErrorAction SilentlyContinue

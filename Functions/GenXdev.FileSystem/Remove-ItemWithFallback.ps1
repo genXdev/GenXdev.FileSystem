@@ -50,7 +50,8 @@ function Remove-ItemWithFallback {
         $Path = GenXdev.FileSystem\Expand-Path $Path
     }
 
-    process {
+
+process {
         try {
             # verify item exists and get its provider information
             $item = Microsoft.PowerShell.Management\Get-Item -LiteralPath $Path `

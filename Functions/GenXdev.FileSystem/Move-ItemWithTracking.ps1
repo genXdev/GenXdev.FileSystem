@@ -99,7 +99,8 @@ public static extern bool MoveFileEx(
         }
     }
 
-    process {
+
+process {
         try {
             # convert relative paths to absolute filesystem paths
             $fullSourcePath = GenXdev.FileSystem\Expand-Path $Path

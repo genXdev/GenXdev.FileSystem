@@ -42,7 +42,8 @@ function Invoke-Fasti {
             "*.vmdk", "*.wim", "*.xar", "*.z")
     }
 
-    process {
+
+process {
 
         # process each archive file found in current directory
         Microsoft.PowerShell.Management\Get-ChildItem $extensions -File -ErrorAction SilentlyContinue |

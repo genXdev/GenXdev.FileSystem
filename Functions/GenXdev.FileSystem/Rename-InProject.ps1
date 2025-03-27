@@ -102,7 +102,8 @@ function Rename-InProject {
         }
     }
 
-    process {
+
+process {
 
         try {
             # recursive function to get all project files excluding repos
@@ -189,6 +190,16 @@ function Rename-InProject {
 
                         if ($PSCmdlet.ShouldProcess($filePath, "Rename file")) {
                             try {
+
+                                if ("$filePath".ToLowerInvariant() -eq "$newPath".ToLowerInvariant()) {
+
+                                    $newPath = "$newPath.$([DateTime]::Now.Ticks).tmp"
+                                    $null = GenXdev.FileSystem\Move-ItemWithTracking -Path $filePath `
+                                        -Destination "$newPath.tmp12389"
+                                    Microsoft.PowerShell.Utility\Write-Verbose "Renamed file: $filePath -> $newPath"
+                                    $filePath = $newPath
+                                }
+
                                 $null = GenXdev.FileSystem\Move-ItemWithTracking -Path $filePath `
                                     -Destination $newPath
                                 Microsoft.PowerShell.Utility\Write-Verbose "Renamed file: $filePath -> $newPath"

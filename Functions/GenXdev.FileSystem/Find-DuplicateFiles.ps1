@@ -89,7 +89,8 @@ function Find-DuplicateFiles {
         $allFiles = [System.Collections.Generic.List[System.IO.FileInfo]]::new()
     }
 
-    process {
+
+process {
 
         foreach ($path in $normalizedPaths) {
 

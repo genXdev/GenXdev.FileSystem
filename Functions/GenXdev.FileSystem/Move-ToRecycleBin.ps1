@@ -58,7 +58,8 @@ function Move-ToRecycleBin {
         }
     }
 
-    process {
+
+process {
 
         foreach ($itemPath in $Path) {
 
