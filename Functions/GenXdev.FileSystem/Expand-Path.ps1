@@ -275,6 +275,13 @@ process {
             Microsoft.PowerShell.Utility\Write-Verbose "Deleted existing file: $normalizedPath"
         }
 
+
+        # clean up trailing separators except for root paths
+        while ([IO.Path]::EndsInDirectorySeparator($normalizedPath) -and
+            $normalizedPath.Length -gt 4) {
+            $normalizedPath = [IO.Path]::TrimEndingDirectorySeparator($normalizedPath)
+        }
+
         # handle file creation if requested
         if ($CreateFile) {
 
@@ -289,12 +296,6 @@ process {
                 $null = [IO.File]::WriteAllText($normalizedPath, "")
                 Microsoft.PowerShell.Utility\Write-Verbose "Created empty file: $normalizedPath"
             }
-        }
-
-        # clean up trailing separators except for root paths
-        while ([IO.Path]::EndsInDirectorySeparator($normalizedPath) -and
-            $normalizedPath.Length -gt 4) {
-            $normalizedPath = [IO.Path]::TrimEndingDirectorySeparator($normalizedPath)
         }
 
         return $normalizedPath

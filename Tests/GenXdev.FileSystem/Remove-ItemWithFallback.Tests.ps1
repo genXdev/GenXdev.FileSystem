@@ -1,17 +1,20 @@
 ###############################################################################
-$Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
-
-Pester\AfterAll {
-    $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
-
-    # cleanup test folder
-    GenXdev.FileSystem\Remove-AllItems $testRoot -DeleteFolder
-}
-
-###############################################################################
 Pester\Describe 'Remove-ItemWithFallback' {
 
+    Pester\BeforeAll {
+        ###############################################################################
+        $testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
+    }
+
+    Pester\AfterAll {
+        $testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
+
+        # cleanup test folder
+        GenXdev.FileSystem\Remove-AllItems $testRoot -DeleteFolder
+    }
+
     Pester\It "Should pass PSScriptAnalyzer rules" {
+
         # get the script path for analysis
         $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Remove-ItemWithFallback.ps1"
 
@@ -37,25 +40,42 @@ $message
     }
 
     Pester\BeforeAll {
-        Microsoft.PowerShell.Management\Set-Location $Script:testRoot
-        $Script:testFile = GenXdev.FileSystem\Expand-Path "$Script:testRoot\fallback-test.txt" -CreateFile
-        Microsoft.PowerShell.Management\Set-Content -Path $Script:testFile -Value "test content"
-        $Script:lockedFile = [IO.File]::OpenWrite($Script:testFile)
+        Microsoft.PowerShell.Management\Set-Location "$($testRoot)"
+        $testFile = GenXdev.FileSystem\Expand-Path "$($testRoot)\fallback-test.txt" -CreateFile
+        Microsoft.PowerShell.Management\Set-Content -Path $testFile -Value "test content"
+        $lockedFile = [IO.File]::OpenWrite($testFile)
     }
 
     Pester\AfterAll {
-        if ($Script:lockedFile) {
-            $Script:lockedFile.Close()
+        if ($lockedFile) {
+            $lockedFile.Close()
         }
 
-        if ([IO.Path]::Exists($Script:testFile)) {
-            Microsoft.PowerShell.Management\Remove-Item $Script:testFile -Force
+        if ([IO.Path]::Exists($testFile)) {
+            Microsoft.PowerShell.Management\Remove-Item $testFile -Force -ErrorAction SilentlyContinue
         }
     }
 
     Pester\It 'Removes file using direct deletion' {
         # Should fail since file is locked
-        { GenXdev.FileSystem\Remove-ItemWithFallback -Path $Script:testFile -ErrorAction Stop } | Pester\Should -Throw
-        Microsoft.PowerShell.Management\Test-Path $Script:testFile | Pester\Should -BeTrue
+        { GenXdev.FileSystem\Remove-ItemWithFallback -Path $testFile -ErrorAction Stop } |
+            Pester\Should -Throw -Because "the file is locked and cannot be deleted"
+
+        # File should still exist after failed deletion
+        Microsoft.PowerShell.Management\Test-Path $testFile | Pester\Should -BeTrue
     }
+
+    # Pester\It 'Returns false when deletion fails without ErrorAction Stop' {
+    #     # Should return false without throwing when ErrorAction is not Stop
+    #     $result = GenXdev.FileSystem\Remove-ItemWithFallback -Path $testFile -ErrorAction SilentlyContinue
+    #     $result | Pester\Should -BeFalse -Because "immediate deletion fails and CountRebootDeletionAsSuccess is false by default"
+    #     Microsoft.PowerShell.Management\Test-Path $testFile | Pester\Should -BeTrue
+    # }
+
+    # Pester\It 'Returns true when deletion fails but CountRebootDeletionAsSuccess is true' {
+    #     # Should return true when CountRebootDeletionAsSuccess is specified
+    #     $result = GenXdev.FileSystem\Remove-ItemWithFallback -Path $testFile -ErrorAction SilentlyContinue -CountRebootDeletionAsSuccess
+    #     $result | Pester\Should -BeTrue -Because "file is marked for deletion on reboot and CountRebootDeletionAsSuccess is true"
+    #     Microsoft.PowerShell.Management\Test-Path $testFile | Pester\Should -BeTrue
+    # }
 }

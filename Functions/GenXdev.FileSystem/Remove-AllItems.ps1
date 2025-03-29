@@ -78,7 +78,7 @@ function Remove-AllItems {
     }
 
 
-process {
+    process {
         try {
             # skip processing if target directory doesn't exist
             if (![System.IO.Directory]::Exists($Path)) {
@@ -124,7 +124,10 @@ process {
                         Microsoft.PowerShell.Utility\Write-Verbose "Removed root directory: $Path"
                     }
                     catch {
-                        $null = GenXdev.FileSystem\Remove-ItemWithFallback -Path $Path
+                        try {
+                            $null = GenXdev.FileSystem\Remove-ItemWithFallback -Path $Path
+                        }
+                        catch {}
                     }
                 }
             }
