@@ -324,7 +324,7 @@ $message
 
     Pester\It 'Should match the pattern' {
 
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.164.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.170.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
 
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\_AssureTypes.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\AssurePester.ps1")
