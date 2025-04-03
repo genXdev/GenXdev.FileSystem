@@ -3,14 +3,48 @@ Pester\Describe 'Remove-ItemWithFallback' {
 
     Pester\BeforeAll {
         ###############################################################################
-        $testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
+        # Create test directory in TEMP path
+        $script:testRoot = GenXdev.FileSystem\Expand-Path "${env:TEMP}\GenXdev.FileSystem.Tests\" -CreateDirectory
+
+        # Explicitly set working location to avoid C:\ access issues
+        Microsoft.PowerShell.Management\Set-Location $script:testRoot
+
+        # Create test files in the test directory
+        $script:testFile = GenXdev.FileSystem\Expand-Path "${script:testRoot}\fallback-test.txt" -CreateFile
+        Microsoft.PowerShell.Management\Set-Content -Path $script:testFile -Value "test content"
+
+        try {
+            $script:lockedFile = [IO.File]::OpenWrite($script:testFile)
+        }
+        catch {
+            Microsoft.PowerShell.Utility\Write-Warning "Failed to lock test file: $_"
+        }
     }
 
     Pester\AfterAll {
-        $testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
+        # Ensure file is unlocked and cleaned up
+        if ($null -ne $script:lockedFile) {
+            try {
+                $script:lockedFile.Close()
+                $script:lockedFile.Dispose()
+                $script:lockedFile = $null
+            }
+            catch {
+                Microsoft.PowerShell.Utility\Write-Warning "Failed to close file handle: $_"
+            }
+        }
 
-        # cleanup test folder
-        GenXdev.FileSystem\Remove-AllItems $testRoot -DeleteFolder
+        if ($script:testFile -and (Microsoft.PowerShell.Management\Test-Path $script:testFile -ErrorAction SilentlyContinue)) {
+            Microsoft.PowerShell.Management\Remove-Item $script:testFile -Force -ErrorAction SilentlyContinue
+        }
+
+        # Ensure we have a valid test directory
+        if (![string]::IsNullOrEmpty($script:testRoot) -and (Microsoft.PowerShell.Management\Test-Path $script:testRoot)) {
+            # cleanup test folder, but make sure we're not accidentally deleting C:\
+            if ($script:testRoot -like "${env:TEMP}*") {
+                GenXdev.FileSystem\Remove-AllItems $script:testRoot -DeleteFolder -ErrorAction SilentlyContinue
+            }
+        }
     }
 
     Pester\It "Should pass PSScriptAnalyzer rules" {
@@ -39,30 +73,13 @@ $message
 "@;
     }
 
-    Pester\BeforeAll {
-        Microsoft.PowerShell.Management\Set-Location "$($testRoot)"
-        $testFile = GenXdev.FileSystem\Expand-Path "$($testRoot)\fallback-test.txt" -CreateFile
-        Microsoft.PowerShell.Management\Set-Content -Path $testFile -Value "test content"
-        $lockedFile = [IO.File]::OpenWrite($testFile)
-    }
-
-    Pester\AfterAll {
-        if ($lockedFile) {
-            $lockedFile.Close()
-        }
-
-        if ([IO.Path]::Exists($testFile)) {
-            Microsoft.PowerShell.Management\Remove-Item $testFile -Force -ErrorAction SilentlyContinue
-        }
-    }
-
     Pester\It 'Removes file using direct deletion' {
         # Should fail since file is locked
-        { GenXdev.FileSystem\Remove-ItemWithFallback -Path $testFile -ErrorAction Stop } |
+        { GenXdev.FileSystem\Remove-ItemWithFallback -Path $script:testFile -ErrorAction Stop } |
             Pester\Should -Throw -Because "the file is locked and cannot be deleted"
 
         # File should still exist after failed deletion
-        Microsoft.PowerShell.Management\Test-Path $testFile | Pester\Should -BeTrue
+        Microsoft.PowerShell.Management\Test-Path $script:testFile | Pester\Should -BeTrue
     }
 
     # Pester\It 'Returns false when deletion fails without ErrorAction Stop' {

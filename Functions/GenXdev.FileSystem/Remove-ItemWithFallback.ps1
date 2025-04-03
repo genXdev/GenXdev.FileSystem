@@ -129,13 +129,16 @@ function Remove-ItemWithFallback {
                 throw
             }
 
-            # only try boot-time deletion for filesystem items
-            if ((Microsoft.PowerShell.Management\Get-Item -LiteralPath $Path).PSProvider.Name -eq 'FileSystem') {
+            # Only try boot-time deletion for filesystem items and verify path exists first
+            if (Microsoft.PowerShell.Management\Test-Path -LiteralPath $Path -ErrorAction SilentlyContinue) {
+                $providerInfo = (Microsoft.PowerShell.Management\Get-Item -LiteralPath $Path -ErrorAction SilentlyContinue).PSProvider
 
-                # last resort - mark for deletion on next boot
-                if (GenXdev.FileSystem\Remove-OnReboot -Path $Path) {
-                    Microsoft.PowerShell.Utility\Write-Verbose "Marked for deletion on next reboot: $Path"
-                    return [bool]$CountRebootDeletionAsSuccess
+                if ($null -ne $providerInfo -and $providerInfo.Name -eq 'FileSystem') {
+                    # last resort - mark for deletion on next boot
+                    if (GenXdev.FileSystem\Remove-OnReboot -Path $Path) {
+                        Microsoft.PowerShell.Utility\Write-Verbose "Marked for deletion on next reboot: $Path"
+                        return [bool]$CountRebootDeletionAsSuccess
+                    }
                 }
             }
 
