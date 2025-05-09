@@ -950,8 +950,8 @@ function Find-Item {
                                     else {
                                         # output relative path of the found item
                                         Microsoft.PowerShell.Utility\Write-Information "Resolving relative path with base: $relativeBasePath"
-                                        $rp = Microsoft.PowerShell.Management\Resolve-Path -LiteralPath $itemInfo.FullName `
-                                            -Relative -RelativeBasePath:$relativeBasePath
+                                        $rp = Microsoft.PowerShell.Management\Resolve-Path -LiteralPath:($itemInfo.FullName) -Relative -RelativeBasePath:$relativeBasePath
+                                        Microsoft.PowerShell.Utility\Write-Verbose "Microsoft.PowerShell.Management\Resolve-Path -LiteralPath '$($itemInfo.FullName)'  -Relative -RelativeBasePath:'$relativeBasePath'"
 
                                         Microsoft.PowerShell.Utility\Write-Information "Relative path: $rp"
                                         Microsoft.PowerShell.Utility\Write-Output $rp
