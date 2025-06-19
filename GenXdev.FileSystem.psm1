@@ -1,4 +1,4 @@
-. "$PSScriptRoot\Functions\GenXdev.FileSystem\AssurePester.ps1"
+. "$PSScriptRoot\Functions\GenXdev.FileSystem\EnsurePester.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Expand-Path.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Find-DuplicateFiles.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Find-Item.ps1"

@@ -84,8 +84,8 @@ Update-Module
 ### GenXdev.FileSystem<hr/>
 | Command&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | aliases&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Description |
 | --- | --- | --- |
-| [_AssureTypes](#_AssureTypes) |  |  |
-| [AssurePester](#AssurePester) |  | Ensures Pester testing framework is available for use. |
+| [_EnsureTypes](#_EnsureTypes) |  |  |
+| [EnsurePester](#EnsurePester) |  | Ensures Pester testing framework is available for use. |
 | [Expand-Path](#Expand-Path) | ep | Expands any given file reference to a full pathname. |
 | [Find-DuplicateFiles](#Find-DuplicateFiles) | fdf | Find duplicate files across multiple directories based on configurable criteria. |
 | [Find-Item](#Find-Item) | l | Performs advanced file and directory searches with content filtering capabilities. |

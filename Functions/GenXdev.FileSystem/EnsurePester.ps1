@@ -10,10 +10,10 @@ PowerShell Gallery and imports it into the current session. This ensures that
 Pester testing capabilities are available when needed.
 
 .EXAMPLE
-AssurePester
+EnsurePester
 # This ensures Pester is installed and ready for use
 #>
-function AssurePester {
+function EnsurePester {
 
     [CmdletBinding()]
     param()
