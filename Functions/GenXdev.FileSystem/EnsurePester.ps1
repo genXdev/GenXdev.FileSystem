@@ -1,4 +1,4 @@
-################################################################################
+###############################################################################
 <#
 .SYNOPSIS
 Ensures Pester testing framework is available for use.
@@ -11,8 +11,8 @@ Pester testing capabilities are available when needed.
 
 .EXAMPLE
 EnsurePester
-# This ensures Pester is installed and ready for use
-#>
+        ###############################################################################This ensures Pester is installed and ready for use
+        ###############################################################################>
 function EnsurePester {
 
     [CmdletBinding()]
@@ -67,4 +67,4 @@ process {
     end {
     }
 }
-################################################################################
+        ###############################################################################

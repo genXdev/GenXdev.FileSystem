@@ -181,12 +181,12 @@ Multiple overrides:
 Displays a message that describes the effect of the command, instead of executing the command.
 
 .EXAMPLE
-# Mirror a directory with security settings
+        ###############################################################################Mirror a directory with security settings
 Start-RoboCopy -Source "C:\Projects" -DestinationDirectory "D:\Backup" `
     -Mirror -IncludeSecurity
 
 .EXAMPLE
-# Monitor and sync changes every 10 minutes
+        ###############################################################################Monitor and sync changes every 10 minutes
 Start-RoboCopy -Source "C:\Documents" -DestinationDirectory "\\server\share" `
     -MonitorMode -MonitorModeThresholdMinutes 10
 
@@ -196,7 +196,7 @@ https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/
 .LINK
 https://en.wikipedia.org/wiki/Robocopy
 
-#>
+        ###############################################################################>
 function Start-RoboCopy {
     [CmdLetBinding(
         DefaultParameterSetName = "Default",
@@ -1389,4 +1389,4 @@ process {
         # function has no end block operations
     }
 }
-################################################################################
+        ###############################################################################

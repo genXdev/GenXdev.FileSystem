@@ -14,10 +14,10 @@ Pester\AfterAll {
 Pester\Describe "Rename-InProject" {
     Pester\It "Should pass PSScriptAnalyzer rules" {
 
-        # get the script path for analysis
+# get the script path for analysis
         $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Rename-InProject.ps1"
 
-        # run analyzer with explicit settings
+# run analyzer with explicit settings
         $analyzerResults = GenXdev.Coding\Invoke-GenXdevScriptAnalyzer `
             -Path $scriptPath
 
@@ -49,11 +49,11 @@ $message
     }
 
     Pester\BeforeEach {
-        # Setup test directory structure
+# Setup test directory structure
         $Script:testDir = Microsoft.PowerShell.Management\Join-Path $Script:testRoot "rename-test"
         Microsoft.PowerShell.Management\New-Item -Path $Script:testDir -ItemType Directory -Force
 
-        # Create test files with content using Unix-style line endings
+# Create test files with content using Unix-style line endings
         $Script:files = @{
             "oldfile.txt"       = "This is oldtext in a file"
             "subdir/nested.txt" = "More oldtext content"
@@ -63,7 +63,7 @@ $message
         foreach ($file in $Script:files.Keys) {
             $path = Microsoft.PowerShell.Management\Join-Path $Script:testDir $file
             Microsoft.PowerShell.Management\New-Item -Path (Microsoft.PowerShell.Management\Split-Path $path) -ItemType Directory -Force
-            # Use Set-Content with -NoNewline to avoid adding line endings
+    # Use Set-Content with -NoNewline to avoid adding line endings
             Microsoft.PowerShell.Management\Set-Content -Path $path -Value $Script:files[$file] -NoNewline
         }
 
@@ -78,7 +78,7 @@ $message
     Pester\It "Replaces text content in files" {
         GenXdev.FileSystem\Rename-InProject -Source .\ -FindText "oldtext" -ReplacementText "newtext"
 
-        # Trim any line endings when comparing content
+# Trim any line endings when comparing content
         $content = (Microsoft.PowerShell.Management\Get-Content "oldfile.txt" -Raw).TrimEnd()
         $content | Pester\Should -Be "This is newtext in a file"
 
@@ -110,14 +110,14 @@ $message
     }
 
     Pester\It "Skips binary files" {
-        # Create a fake binary file
+# Create a fake binary file
         $binPath = "test.exe"
         [byte[]]$bytes = 1..10
         [System.IO.File]::WriteAllBytes((Microsoft.PowerShell.Management\Join-Path $Script:testDir $binPath), $bytes)
 
         GenXdev.FileSystem\Rename-InProject -Source . -FindText "old" -ReplacementText "new"
 
-        # Binary file Should remain unchanged
+# Binary file Should remain unchanged
         Microsoft.PowerShell.Management\Test-Path $binPath | Pester\Should -BeTrue
         $newBytes = [System.IO.File]::ReadAllBytes((Microsoft.PowerShell.Management\Join-Path $Script:testDir $binPath))
         $newBytes | Pester\Should -Be $bytes

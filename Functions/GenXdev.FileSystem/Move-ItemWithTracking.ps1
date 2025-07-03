@@ -1,4 +1,4 @@
-################################################################################
+###############################################################################
 <#
 .SYNOPSIS
 Moves files and directories while preserving filesystem links and references.
@@ -27,12 +27,12 @@ destination path.
 
 .EXAMPLE
 Move-ItemWithTracking -Path "C:\temp\oldfile.txt" -Destination "D:\newfile.txt"
-# Moves a file while preserving any existing filesystem links
+        ###############################################################################Moves a file while preserving any existing filesystem links
 
 .EXAMPLE
 "C:\temp\olddir" | Move-ItemWithTracking -Destination "D:\newdir" -Force
-# Moves a directory, overwriting destination if it exists
-#>
+        ###############################################################################Moves a directory, overwriting destination if it exists
+        ###############################################################################>
 function Move-ItemWithTracking {
 
     [CmdletBinding(SupportsShouldProcess)]
@@ -145,4 +145,4 @@ process {
     end {
     }
 }
-################################################################################
+        ###############################################################################

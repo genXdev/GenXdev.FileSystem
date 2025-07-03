@@ -1,4 +1,4 @@
-################################################################################
+###############################################################################
 <#
 .SYNOPSIS
 Performs case-sensitive text replacement throughout a project directory.
@@ -28,7 +28,7 @@ Rename-InProject -Source .\src\*.js -FindText "oldName" `
 
 .EXAMPLE
 rip . "MyClass" "MyNewClass" -WhatIf
-#>
+        ###############################################################################>
 function Rename-InProject {
 
     [CmdletBinding(SupportsShouldProcess = $true)]
@@ -261,4 +261,4 @@ process {
     end {
     }
 }
-################################################################################
+        ###############################################################################

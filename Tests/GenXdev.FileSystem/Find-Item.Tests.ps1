@@ -2,10 +2,10 @@
 Pester\Describe "Find-Item 1" {
     Pester\It "Should pass PSScriptAnalyzer rules" {
 
-        # get the script path for analysis
+# get the script path for analysis
         $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Find-Item.ps1"
 
-        # run analyzer with explicit settings
+# run analyzer with explicit settings
         $analyzerResults = GenXdev.Coding\Invoke-GenXdevScriptAnalyzer `
             -Path $scriptPath
 
@@ -40,7 +40,7 @@ $message
     Pester\AfterAll {
         $testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
 
-        # cleanup test folder
+# cleanup test folder
         GenXdev.FileSystem\Remove-AllItems $testRoot -DeleteFolder
     }
 
@@ -55,7 +55,7 @@ $message
     }
 
     Pester\It "Finds files by extension" {
-        # setup test folder structure
+# setup test folder structure
         $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\find-item-test\" -CreateDirectory
         Microsoft.PowerShell.Management\Set-Location $testDir
         Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path "dir1", "dir2/subdir" -Force
@@ -69,7 +69,7 @@ $message
     }
 
     Pester\It "Finds files by content pattern" {
-        # setup test folder structure
+# setup test folder structure
         $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\find-item-test\" -CreateDirectory
         Microsoft.PowerShell.Management\Set-Location $testDir
         Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path "dir1", "dir2/subdir" -Force
@@ -83,7 +83,7 @@ $message
     }
 
     Pester\It "Finds only directories" {
-        # setup test folder structure
+# setup test folder structure
         $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\find-item-test\" -CreateDirectory
         Microsoft.PowerShell.Management\Set-Location $testDir
         Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path "dir1", "dir2/subdir" -Force
@@ -114,7 +114,7 @@ $message
 
     Pester\It 'Finds files by name pattern' {
 
-        # setup test folder structure
+# setup test folder structure
         $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\find-item-test\" -CreateDirectory
         Microsoft.PowerShell.Management\Set-Location $testDir
         Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path "dir1", "dir2/subdir" -Force
@@ -324,7 +324,7 @@ $message
 
     Pester\It 'Should match the pattern' {
 
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.198.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.200.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
 
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\_EnsureTypes.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\EnsurePester.ps1")
@@ -353,17 +353,17 @@ $message
     }
 
     Pester\It 'Should only show ADS when IncludeAlternateFileStreams is specified' {
-        # Create a file with an alternate data stream
+# Create a file with an alternate data stream
         $testFile = "$testDir\test-ads.txt"
         "Main content" | Microsoft.PowerShell.Utility\Out-File -FilePath $testFile
         "Stream content" | Microsoft.PowerShell.Management\Set-Content -Path $testFile -Stream "test-stream"
 
-        # Without the -IncludeAlternateFileStreams switch, only the base file should be returned
+# Without the -IncludeAlternateFileStreams switch, only the base file should be returned
         $found1 = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile)
         $found1.Count | Pester\Should -Be 1
         $found1[0] | Pester\Should -Be (Microsoft.PowerShell.Management\Resolve-Path -Path $testFile -Relative)
 
-        # With the -IncludeAlternateFileStreams switch, both the base file and the stream should be returned
+# With the -IncludeAlternateFileStreams switch, both the base file and the stream should be returned
         $found2 = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -IncludeAlternateFileStreams)
         $found2.Count | Pester\Should -Be 2
         $found2[0] | Pester\Should -Be (Microsoft.PowerShell.Management\Resolve-Path -Path $testFile -Relative)
@@ -371,25 +371,25 @@ $message
     }
 
     Pester\It 'Should find specific named streams when using streammask' {
-        # Create a file with multiple alternate data streams
+# Create a file with multiple alternate data streams
         $testFile = "$testDir\stream-test.txt"
         "Main content" | Microsoft.PowerShell.Utility\Out-File -FilePath $testFile
         "Stream1 content" | Microsoft.PowerShell.Management\Set-Content -Path $testFile -Stream "stream1"
         "Stream2 content" | Microsoft.PowerShell.Management\Set-Content -Path $testFile -Stream "stream2"
         "Zone content" | Microsoft.PowerShell.Management\Set-Content -Path $testFile -Stream "Zone.Identifier"
 
-        # Test explicit stream search (no file, only matching stream)
+# Test explicit stream search (no file, only matching stream)
         $found1 = @(GenXdev.FileSystem\Find-Item -SearchMask "${testFile}:stream1")
         $found1.Count | Pester\Should -Be 1
         $found1[0] | Pester\Should -Be "$((Microsoft.PowerShell.Management\Resolve-Path -Path $testFile -Relative)):stream1"
 
-        # Test wildcard stream search
+# Test wildcard stream search
         $found2 = @(GenXdev.FileSystem\Find-Item -SearchMask "${testFile}:stream*")
         $found2.Count | Pester\Should -Be 2
         $found2 | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -Path $testFile -Relative)):stream1"
         $found2 | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -Path $testFile -Relative)):stream2"
 
-        # Test colon at end means all streams (implicit wildcard)
+# Test colon at end means all streams (implicit wildcard)
         $found4 = @(GenXdev.FileSystem\Find-Item -SearchMask "${testFile}:")
         $found4.Count | Pester\Should -Be 4
         $found4 | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -Path $testFile -Relative))::`$DATA"
@@ -399,24 +399,24 @@ $message
     }
 
     Pester\It 'Should filter streams with pattern matching' {
-        # Create a file with multiple alternate data streams with different content
+# Create a file with multiple alternate data streams with different content
         $testFile = "$testDir\pattern-stream.txt"
         "Main content" | Microsoft.PowerShell.Utility\Out-File -FilePath $testFile
         "Content with password123" | Microsoft.PowerShell.Management\Set-Content -Path $testFile -Stream "secret"
         "Content with no match" | Microsoft.PowerShell.Management\Set-Content -Path $testFile -Stream "normal"
 
-        # Test pattern matching within streams
+# Test pattern matching within streams
         $found = @(GenXdev.FileSystem\Find-Item -SearchMask "${testFile}:*" -Pattern "password\d+")
         $found.Count | Pester\Should -Be 1
         $found[0] | Pester\Should -Be ".\pattern-stream.txt:secret"
 
-        # Verify no match returns empty
+# Verify no match returns empty
         $noMatch = @(GenXdev.FileSystem\Find-Item -SearchMask "${testFile}:*" -Pattern "nonexistent")
         $noMatch.Count | Pester\Should -Be 0
     }
 
     Pester\It 'Should handle wildcards in file and stream patterns' {
-        # Create multiple files with streams
+# Create multiple files with streams
         $testFile1 = "$testDir\wildcard1.dat"
         $testFile2 = "$testDir\wildcard2.dat"
 
@@ -427,33 +427,33 @@ $message
         "Stream meta 1" | Microsoft.PowerShell.Management\Set-Content -Path $testFile1 -Stream "meta"
         "Stream data 2" | Microsoft.PowerShell.Management\Set-Content -Path $testFile2 -Stream "data"
 
-        # Test wildcard file with specific stream
+# Test wildcard file with specific stream
         $found1 = @(GenXdev.FileSystem\Find-Item -SearchMask "$testDir\wildcard*.dat:data")
         $found1.Count | Pester\Should -Be 2
         $found1 | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -Path $testFile1 -Relative)):data"
         $found1 | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -Path $testFile2 -Relative)):data"
 
-        # Test wildcard file with wildcard stream
+# Test wildcard file with wildcard stream
         $found2 = @(GenXdev.FileSystem\Find-Item -SearchMask "$testDir\wildcard1*:m*")
         $found2.Count | Pester\Should -Be 1
         $found2[0] | Pester\Should -Be "$((Microsoft.PowerShell.Management\Resolve-Path -Path $testFile1 -Relative)):meta"
     }
 
     Pester\It 'Should correctly handle -ads flag vs explicit stream masks' {
-        # Create a file with streams
+# Create a file with streams
         $testFile = "$testDir\ads-vs-mask.txt"
         "Main content" | Microsoft.PowerShell.Utility\Out-File -FilePath $testFile
         "Stream content" | Microsoft.PowerShell.Management\Set-Content -Path $testFile -Stream "test1"
         "Another stream" | Microsoft.PowerShell.Management\Set-Content -Path $testFile -Stream "test2"
 
-        # Test: with -ads flag and no streammask, return file and all streams
+# Test: with -ads flag and no streammask, return file and all streams
         $found1 = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -IncludeAlternateFileStreams)
         $found1.Count | Pester\Should -Be 3
         $found1 | Pester\Should -Contain (Microsoft.PowerShell.Management\Resolve-Path -Path $testFile -Relative)
         $found1 | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -Path $testFile -Relative)):test1"
         $found1 | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -Path $testFile -Relative)):test2"
 
-        # Test: with streammask, only return matching streams (no file)
+# Test: with streammask, only return matching streams (no file)
         $found2 = @(GenXdev.FileSystem\Find-Item -SearchMask "${testFile}:test*")
         $found2.Count | Pester\Should -Be 2
         $found2 | Pester\Should -Not -Contain (Microsoft.PowerShell.Management\Resolve-Path -Path $testFile -Relative)
@@ -462,7 +462,7 @@ $message
     }
 
     Pester\It 'Should work with wildcard file paths and combined with stream masks' {
-        # Create multiple files in subdirectories with streams
+# Create multiple files in subdirectories with streams
         $subDir = "$testDir\adstest"
         Microsoft.PowerShell.Management\New-Item -Path $subDir -ItemType Directory -Force | Microsoft.PowerShell.Core\Out-Null
 
@@ -476,13 +476,13 @@ $message
         "Description 2" | Microsoft.PowerShell.Management\Set-Content -Path $file2 -Stream "description.json"
         "Zone data" | Microsoft.PowerShell.Management\Set-Content -Path $file1 -Stream "Zone.Identifier"
 
-        # Test: Find all description.json streams in all jpg files
+# Test: Find all description.json streams in all jpg files
         $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$subDir\*.jpg:description.json")
         $found.Count | Pester\Should -Be 2
         $found | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -Path $file1 -Relative)):description.json"
         $found | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -Path $file2 -Relative)):description.json"
 
-        # Test: Combination of file wildcards, stream wildcards and content pattern
+# Test: Combination of file wildcards, stream wildcards and content pattern
         "Metadata with secret key" | Microsoft.PowerShell.Management\Set-Content -Path $file1 -Stream "metadata"
         "Regular metadata" | Microsoft.PowerShell.Management\Set-Content -Path $file2 -Stream "metadata"
 

@@ -1,4 +1,4 @@
-################################################################################
+###############################################################################
 <#
 .SYNOPSIS
 Extracts archive files in the current directory and deletes the originals.
@@ -18,7 +18,7 @@ PS C:\Downloads> fasti
 .NOTES
 Supported formats: 7z, zip, rar, tar, iso and many others.
 Requires 7-Zip installation (will attempt auto-install via winget if missing).
-#>
+        ###############################################################################>
 function Invoke-Fasti {
 
     [CmdletBinding()]
@@ -118,4 +118,4 @@ process {
     end {
     }
 }
-################################################################################
+        ###############################################################################

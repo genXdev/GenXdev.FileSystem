@@ -1,13 +1,13 @@
-################################################################################
+###############################################################################
 
 Pester\Describe "Expand-Path unit tests" {
 
     Pester\It "Should pass PSScriptAnalyzer rules" {
 
-        # get the script path for analysis
+# get the script path for analysis
         $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Expand-Path.ps1"
 
-        # run analyzer with explicit settings
+# run analyzer with explicit settings
         $analyzerResults = GenXdev.Coding\Invoke-GenXdevScriptAnalyzer `
             -Path $scriptPath
 
@@ -31,69 +31,69 @@ $message
 
     Pester\BeforeAll {
 
-        # define test paths
+# define test paths
         $Script:testPath = [IO.Path]::GetFullPath("$($Env:TEMP)")
         $Script:testFile = Microsoft.PowerShell.Management\Join-Path $Script:testPath "test.txt"
     }
 
     Pester\It "expands relative path to absolute path" {
-        # arrange
+# arrange
         $relativePath = ".\test.txt"
         Microsoft.PowerShell.Management\Push-Location $Script:testPath
 
-        # act
+# act
         $result = GenXdev.FileSystem\Expand-Path $relativePath
 
-        # assert
+# assert
         $result | Pester\Should -Be "$((Microsoft.PowerShell.Management\Get-Location).Path)\test.txt"
 
-        # cleanup
+# cleanup
         Microsoft.PowerShell.Management\Pop-Location
     }
 
     Pester\It "handles UNC paths" {
-        # arrange
+# arrange
         $uncPath = "\\server\share\file.txt"
 
-        # act
+# act
         $result = GenXdev.FileSystem\Expand-Path $uncPath
 
-        # assert
+# assert
         $result | Pester\Should -Be $uncPath
     }
 
     Pester\It "preserves UNC paths exactly as provided" {
-        # arrange
+# arrange
         $uncPath = "\\server\share\file.txt"
 
-        # act
+# act
         $result = GenXdev.FileSystem\Expand-Path $uncPath
 
-        # assert
+# assert
         $result | Pester\Should -Be $uncPath
     }
 
     Pester\It "preserves UNC paths with trailing slashes" {
-        # arrange
+# arrange
         $uncPath = "\\webserver\sites\powershell.genxdev.net\"
 
-        # act
+# act
         $result = GenXdev.FileSystem\Expand-Path $uncPath
 
-        # assert
+# assert
         $result | Pester\Should -Be "\\webserver\sites\powershell.genxdev.net"
         $result | Pester\Should -Not -Be "e:\webserver\sites\powershell.genxdev.net"
         $result | Pester\Should -Match "^\\\\[^\\]+"
     }
 
     Pester\It "expands user home directory" {
-        # arrange
+# arrange
         $homePath = "~/test.txt"
 
-        # act
+# act
         $result = GenXdev.FileSystem\Expand-Path $homePath
 
-        # assert
+# assert
         $result | Pester\Should -Be (Microsoft.PowerShell.Management\Join-Path $HOME "test.txt")
     }
 
@@ -127,4 +127,4 @@ $message
     }
 }
 
-################################################################################
+###############################################################################

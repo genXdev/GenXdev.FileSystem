@@ -1,4 +1,4 @@
-################################################################################
+###############################################################################
 <#
 .SYNOPSIS
 Recursively removes all content from a directory with advanced error handling.
@@ -24,7 +24,7 @@ Remove-AllItems -Path "C:\Temp\BuildOutput" -DeleteFolder -Verbose
 
 .EXAMPLE
 sdel ".\temp" -DeleteFolder
-#>
+        ###############################################################################>
 function Remove-AllItems {
 
     [CmdletBinding(SupportsShouldProcess)]
@@ -144,4 +144,4 @@ function Remove-AllItems {
         $WhatIfPreference = $originalWhatIfPreference
     }
 }
-################################################################################
+        ###############################################################################

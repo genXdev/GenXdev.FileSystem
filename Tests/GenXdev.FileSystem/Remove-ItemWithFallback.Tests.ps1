@@ -2,14 +2,14 @@
 Pester\Describe 'Remove-ItemWithFallback' {
 
     Pester\BeforeAll {
-        ###############################################################################
-        # Create test directory in TEMP path
+###############################################################################
+# Create test directory in TEMP path
         $script:testRoot = GenXdev.FileSystem\Expand-Path "${env:TEMP}\GenXdev.FileSystem.Tests\" -CreateDirectory
 
-        # Explicitly set working location to avoid C:\ access issues
+# Explicitly set working location to avoid C:\ access issues
         Microsoft.PowerShell.Management\Set-Location $script:testRoot
 
-        # Create test files in the test directory
+# Create test files in the test directory
         $script:testFile = GenXdev.FileSystem\Expand-Path "${script:testRoot}\fallback-test.txt" -CreateFile
         Microsoft.PowerShell.Management\Set-Content -Path $script:testFile -Value "test content"
 
@@ -22,7 +22,7 @@ Pester\Describe 'Remove-ItemWithFallback' {
     }
 
     Pester\AfterAll {
-        # Ensure file is unlocked and cleaned up
+# Ensure file is unlocked and cleaned up
         if ($null -ne $script:lockedFile) {
             try {
                 $script:lockedFile.Close()
@@ -38,9 +38,9 @@ Pester\Describe 'Remove-ItemWithFallback' {
             Microsoft.PowerShell.Management\Remove-Item $script:testFile -Force -ErrorAction SilentlyContinue
         }
 
-        # Ensure we have a valid test directory
+# Ensure we have a valid test directory
         if (![string]::IsNullOrEmpty($script:testRoot) -and (Microsoft.PowerShell.Management\Test-Path $script:testRoot)) {
-            # cleanup test folder, but make sure we're not accidentally deleting C:\
+    # cleanup test folder, but make sure we're not accidentally deleting C:\
             if ($script:testRoot -like "${env:TEMP}*") {
                 GenXdev.FileSystem\Remove-AllItems $script:testRoot -DeleteFolder -ErrorAction SilentlyContinue
             }
@@ -49,10 +49,10 @@ Pester\Describe 'Remove-ItemWithFallback' {
 
     Pester\It "Should pass PSScriptAnalyzer rules" {
 
-        # get the script path for analysis
+# get the script path for analysis
         $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Remove-ItemWithFallback.ps1"
 
-        # run analyzer with explicit settings
+# run analyzer with explicit settings
         $analyzerResults = GenXdev.Coding\Invoke-GenXdevScriptAnalyzer `
             -Path $scriptPath
 
@@ -74,11 +74,11 @@ $message
     }
 
     Pester\It 'Removes file using direct deletion' {
-        # Should fail since file is locked
+# Should fail since file is locked
         { GenXdev.FileSystem\Remove-ItemWithFallback -Path $script:testFile -ErrorAction Stop } |
             Pester\Should -Throw -Because "the file is locked and cannot be deleted"
 
-        # File should still exist after failed deletion
+# File should still exist after failed deletion
         Microsoft.PowerShell.Management\Test-Path $script:testFile | Pester\Should -BeTrue
     }
 

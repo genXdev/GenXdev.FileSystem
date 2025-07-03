@@ -1,4 +1,4 @@
-################################################################################
+###############################################################################
 <#
 .SYNOPSIS
 Removes files or directories with multiple fallback mechanisms for reliable deletion.
@@ -26,7 +26,7 @@ Attempts to remove the file using all available methods.
 .EXAMPLE
 "C:\temp\mydir" | rif
 Uses the alias 'rif' to remove a directory through the pipeline.
-#>
+        ###############################################################################>
 function Remove-ItemWithFallback {
 
     [CmdletBinding(SupportsShouldProcess = $true)]
@@ -151,4 +151,4 @@ function Remove-ItemWithFallback {
     end {
     }
 }
-################################################################################
+        ###############################################################################

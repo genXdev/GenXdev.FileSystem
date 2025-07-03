@@ -1,4 +1,4 @@
-################################################################################
+###############################################################################
 <#
 .SYNOPSIS
 Find duplicate files across multiple directories based on configurable criteria.
@@ -24,7 +24,7 @@ Find-DuplicateFiles -Paths "C:\Photos","D:\Backup\Photos"
 
 .EXAMPLE
 "C:\Photos","D:\Backup\Photos" | fdf -DontCompareSize
-#>
+        ###############################################################################>
 function Find-DuplicateFiles {
 
     [CmdletBinding()]
@@ -127,4 +127,4 @@ process {
         }
     }
 }
-################################################################################
+        ###############################################################################

@@ -1,4 +1,4 @@
-################################################################################
+###############################################################################
 <#
 .SYNOPSIS
 Moves files and directories to the Windows Recycle Bin safely.
@@ -16,12 +16,12 @@ accessible.
 
 .EXAMPLE
 Move-ToRecycleBin -Path "C:\temp\old-report.txt"
-# Moves a single file to the recycle bin
+        ###############################################################################Moves a single file to the recycle bin
 
 .EXAMPLE
 "file1.txt","file2.txt" | recycle
-# Moves multiple files using pipeline and alias
-#>
+        ###############################################################################Moves multiple files using pipeline and alias
+        ###############################################################################>
 function Move-ToRecycleBin {
 
     [CmdletBinding(SupportsShouldProcess)]
@@ -115,4 +115,4 @@ process {
         return $success
     }
 }
-################################################################################
+        ###############################################################################

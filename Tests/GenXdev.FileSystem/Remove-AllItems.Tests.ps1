@@ -18,10 +18,10 @@ Pester\Describe "Remove-AllItems" {
 
     Pester\It "Should pass PSScriptAnalyzer rules" {
 
-        # get the script path for analysis
+# get the script path for analysis
         $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Remove-AllItems.ps1"
 
-        # run analyzer with explicit settings
+# run analyzer with explicit settings
         $analyzerResults = GenXdev.Coding\Invoke-GenXdevScriptAnalyzer `
             -Path $scriptPath
 
@@ -44,7 +44,7 @@ $message
     }
 
     Pester\BeforeEach {
-        # setup test folder structure
+# setup test folder structure
         $testPath = "$testRoot\delete_test"
         Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path $testPath -Force
         Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path "$testPath\subdir" -Force

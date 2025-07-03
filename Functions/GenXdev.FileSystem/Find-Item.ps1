@@ -1,4 +1,4 @@
-################################################################################
+###############################################################################
 <#
 .SYNOPSIS
 Performs advanced file and directory searches with content filtering capabilities.
@@ -40,86 +40,86 @@ Include alternate data streams in search results.
 Prevents recursive searching into subdirectories.
 
 .EXAMPLE
-# Find all files with that have the word "translation" in their content
+        ###############################################################################Find all files with that have the word "translation" in their content
 Find-Item -Pattern "translation"
 
-# or in short
+        ###############################################################################or in short
 l -mc translation
 
 .EXAMPLE
-# Find any javascript file that tests a version string in it's code
+        ###############################################################################Find any javascript file that tests a version string in it's code
 Find-Item -SearchMask *.js -Pattern "Version == `"\d\d?\.\d\d?\.\d\d?`""
 
-# or in short
+        ###############################################################################or in short
 l *.js "Version == `"\d\d?\.\d\d?\.\d\d?`""
 
 .EXAMPLE
-# Find any node_modules\react-dom folder on all drives
+        ###############################################################################Find any node_modules\react-dom folder on all drives
 Find-Item -SearchMask "node_modules\react-dom" -Pattern "Version == `"\d\d?\.\d\d?\.\d\d?`""
 
-# or in short
+        ###############################################################################or in short
 l *.js "Version == `"\d\d?\.\d\d?\.\d\d?`""
 
 .EXAMPLE
-# Find all directories in the current directory and its subdirectories
+        ###############################################################################Find all directories in the current directory and its subdirectories
 Find-Item -Directory
 
-# or in short
+        ###############################################################################or in short
 l -dir
 
 .EXAMPLE
-# Find all files with the .log extension in all drives
+        ###############################################################################Find all files with the .log extension in all drives
 Find-Item -SearchMask "*.log" -AllDrives
 
-# or in short
+        ###############################################################################or in short
 l *.log -all
 
 .EXAMPLE
-# Find all files with the .config extension and search for the pattern "connectionString" within the files
+        ###############################################################################Find all files with the .config extension and search for the pattern "connectionString" within the files
 Find-Item -SearchMask "*.config" -Pattern "connectionString"
 
-# or in short
+        ###############################################################################or in short
 l *.config connectionString
 
 .EXAMPLE
-# Find all files with the .xml extension and pass the objects through the pipeline
+        ###############################################################################Find all files with the .xml extension and pass the objects through the pipeline
 Find-Item -SearchMask "*.xml" -PassThru
 
-# or in short
+        ###############################################################################or in short
 l *.xml -PassThru
 
 .EXAMPLE
-# Find all files and also include alternate data streams
+        ###############################################################################Find all files and also include alternate data streams
 Find-Item -IncludeAlternateFileStreams
 
-# or in short
+        ###############################################################################or in short
 l -ads
 
 .EXAMPLE
-# Find only the alternate data streams (not the base files) for all .jpg files
+        ###############################################################################Find only the alternate data streams (not the base files) for all .jpg files
 Find-Item -SearchMask "*.jpg:"
 
-# This syntax automatically enables -IncludeAlternateFileStreams
+        ###############################################################################This syntax automatically enables -IncludeAlternateFileStreams
 
 .EXAMPLE
-# Find jpg files that have a stream named "Zone.Identifier"
+        ###############################################################################Find jpg files that have a stream named "Zone.Identifier"
 Find-Item -SearchMask "*.jpg:Zone.Identifier"
 
-# No need to specify -IncludeAlternateFileStreams, it's automatically enabled
+        ###############################################################################No need to specify -IncludeAlternateFileStreams, it's automatically enabled
 
 .EXAMPLE
-# Find all alternate filestreams in the current directory and beyond
-# containing "secret" text in their content
+        ###############################################################################Find all alternate filestreams in the current directory and beyond
+        ###############################################################################containing "secret" text in their content
 Find-Item -SearchMask "*:*" -Pattern "secret"
 
-# This will find all alternate streams in any file that contain the word "secret"
+        ###############################################################################This will find all alternate streams in any file that contain the word "secret"
 
 .EXAMPLE
-# Find files with Zone.Identifier streams and return them as objects
+        ###############################################################################Find files with Zone.Identifier streams and return them as objects
 Find-Item "*:Zone*" -PassThru
 
-# Returns System.IO.FileInfo.AlternateDataStream objects with full FileInfo compatibility
-#>
+        ###############################################################################Returns System.IO.FileInfo.AlternateDataStream objects with full FileInfo compatibility
+        ###############################################################################>
 function Find-Item {
 
     [CmdletBinding(DefaultParameterSetName = "Default")]
@@ -1139,4 +1139,4 @@ function Find-Item {
         Microsoft.PowerShell.Utility\Write-Information "END Find-Item: Function execution completed"
     }
 }
-################################################################################
+        ###############################################################################
