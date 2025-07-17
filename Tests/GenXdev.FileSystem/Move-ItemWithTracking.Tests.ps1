@@ -1,4 +1,4 @@
-###############################################################################
+﻿###############################################################################
 Pester\BeforeAll {
     $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
     Microsoft.PowerShell.Management\Push-Location $testRoot
@@ -13,15 +13,15 @@ Pester\AfterAll {
 
 ###############################################################################
 Pester\Describe 'Move-ItemWithTracking' {
-    Pester\It "Should pass PSScriptAnalyzer rules" {
-# get the script path for analysis
+    Pester\It 'Should pass PSScriptAnalyzer rules' {
+        # get the script path for analysis
         $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Move-ItemWithTracking.ps1"
 
-# run analyzer with explicit settings
+        # run analyzer with explicit settings
         $analyzerResults = GenXdev.Coding\Invoke-GenXdevScriptAnalyzer `
             -Path $scriptPath
 
-        [string] $message = ""
+        [string] $message = ''
         $analyzerResults | Microsoft.PowerShell.Core\ForEach-Object {
             $message = $message + @"
 --------------------------------------------------
@@ -41,7 +41,7 @@ $message
     Pester\BeforeAll {
         $sourceFile = Microsoft.PowerShell.Management\Join-Path $testRoot 'track-source.txt'
         $destFile = Microsoft.PowerShell.Management\Join-Path $testRoot 'track-dest.txt'
-        Microsoft.PowerShell.Management\Set-Content -Path $sourceFile -Value "test content"
+        Microsoft.PowerShell.Management\Set-Content -Path $sourceFile -Value 'test content'
     }
 
     Pester\It 'Moves file with link tracking' {

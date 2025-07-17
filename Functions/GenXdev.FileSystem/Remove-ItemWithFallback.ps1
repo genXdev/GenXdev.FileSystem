@@ -1,4 +1,4 @@
-###############################################################################
+﻿###############################################################################
 <#
 .SYNOPSIS
 Removes files or directories with multiple fallback mechanisms for reliable deletion.
@@ -26,12 +26,12 @@ Attempts to remove the file using all available methods.
 .EXAMPLE
 "C:\temp\mydir" | rif
 Uses the alias 'rif' to remove a directory through the pipeline.
-        ###############################################################################>
+#>
 function Remove-ItemWithFallback {
 
     [CmdletBinding(SupportsShouldProcess = $true)]
     [OutputType([bool])]
-    [Alias("rmf")]
+    [Alias('rmf')]
 
     param(
         ########################################################################
@@ -40,10 +40,10 @@ function Remove-ItemWithFallback {
             Position = 0,
             ValueFromPipeline = $true,
             ValueFromPipelineByPropertyName = $true,
-            HelpMessage = "The path to the item to remove"
+            HelpMessage = 'The path to the item to remove'
         )]
         [ValidateNotNullOrEmpty()]
-        [Alias("FullName")]
+        [Alias('FullName')]
         [string]$Path,
         ########################################################################
         [Parameter(
@@ -68,7 +68,7 @@ function Remove-ItemWithFallback {
             # handle filesystem items with direct IO methods for best performance
             if ($item.PSProvider.Name -eq 'FileSystem') {
 
-                if ($PSCmdlet.ShouldProcess($Path, "Remove item")) {
+                if ($PSCmdlet.ShouldProcess($Path, 'Remove item')) {
 
                     # try fastest method first - direct file deletion
                     if ([System.IO.File]::Exists($Path)) {
@@ -111,7 +111,7 @@ function Remove-ItemWithFallback {
             }
             else {
                 # non-filesystem items need provider-specific handling
-                if ($PSCmdlet.ShouldProcess($Path, "Remove via provider")) {
+                if ($PSCmdlet.ShouldProcess($Path, 'Remove via provider')) {
                     Microsoft.PowerShell.Management\Remove-Item -LiteralPath $Path `
                         -Force
                     Microsoft.PowerShell.Utility\Write-Verbose "Removed item via provider: $Path"
@@ -120,7 +120,7 @@ function Remove-ItemWithFallback {
             }
         }
         catch {
-            Microsoft.PowerShell.Utility\Write-Verbose "Standard deletion failed, attempting boot-time removal..."
+            Microsoft.PowerShell.Utility\Write-Verbose 'Standard deletion failed, attempting boot-time removal...'
 
             # Check if ErrorAction Stop was specified via parameter or preference variable
             if (($PSBoundParameters.ContainsKey('ErrorAction') -and $PSBoundParameters['ErrorAction'] -eq 'Stop') -or
@@ -151,4 +151,3 @@ function Remove-ItemWithFallback {
     end {
     }
 }
-        ###############################################################################

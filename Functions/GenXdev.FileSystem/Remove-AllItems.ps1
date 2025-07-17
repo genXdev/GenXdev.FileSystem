@@ -1,4 +1,4 @@
-###############################################################################
+﻿###############################################################################
 <#
 .SYNOPSIS
 Recursively removes all content from a directory with advanced error handling.
@@ -24,13 +24,13 @@ Remove-AllItems -Path "C:\Temp\BuildOutput" -DeleteFolder -Verbose
 
 .EXAMPLE
 sdel ".\temp" -DeleteFolder
-        ###############################################################################>
+#>
 function Remove-AllItems {
 
     [CmdletBinding(SupportsShouldProcess)]
-    [Alias("sdel")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseSingularNouns", "")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments", "")]
+    [Alias('sdel')]
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
 
     param(
         ###############################################################################
@@ -39,16 +39,16 @@ function Remove-AllItems {
             Position = 0,
             ValueFromPipeline = $true,
             ValueFromPipelineByPropertyName = $true,
-            HelpMessage = "The directory path to clear"
+            HelpMessage = 'The directory path to clear'
         )]
         [ValidateNotNullOrEmpty()]
-        [Alias("FullName")]
+        [Alias('FullName')]
         [string] $Path,
         ###############################################################################
         [Parameter(
             Mandatory = $false,
             Position = 1,
-            HelpMessage = "Also delete the root folder supplied with the Path parameter"
+            HelpMessage = 'Also delete the root folder supplied with the Path parameter'
         )]
         [switch] $DeleteFolder
         ###############################################################################
@@ -67,7 +67,7 @@ function Remove-AllItems {
 
             # ensure verbose output is enabled during WhatIf operations
             if ($WhatIfPreference -or $WhatIf) {
-                $VerbosePreference = "Continue"
+                $VerbosePreference = 'Continue'
             }
         }
         catch {
@@ -89,36 +89,36 @@ function Remove-AllItems {
             Microsoft.PowerShell.Utility\Write-Verbose "Processing directory: $Path"
 
             # delete files first, in reverse order to handle nested paths
-            [System.IO.Directory]::GetFiles($Path, "*.*", `
+            [System.IO.Directory]::GetFiles($Path, '*.*', `
                     [System.IO.SearchOption]::AllDirectories) |
-            Microsoft.PowerShell.Utility\Sort-Object -Descending |
-            Microsoft.PowerShell.Core\ForEach-Object {
-                $filePath = $_
-                if ($PSCmdlet.ShouldProcess($filePath, "Remove file")) {
-                    $null = GenXdev.FileSystem\Remove-ItemWithFallback -Path $filePath
+                Microsoft.PowerShell.Utility\Sort-Object -Descending |
+                Microsoft.PowerShell.Core\ForEach-Object {
+                    $filePath = $_
+                    if ($PSCmdlet.ShouldProcess($filePath, 'Remove file')) {
+                        $null = GenXdev.FileSystem\Remove-ItemWithFallback -Path $filePath
+                    }
                 }
-            }
 
             # delete directories after files, also in reverse order
-            [System.IO.Directory]::GetDirectories($Path, "*", `
+            [System.IO.Directory]::GetDirectories($Path, '*', `
                     [System.IO.SearchOption]::AllDirectories) |
-            Microsoft.PowerShell.Utility\Sort-Object -Descending |
-            Microsoft.PowerShell.Core\ForEach-Object {
-                $dirPath = $_
-                if ($PSCmdlet.ShouldProcess($dirPath, "Remove directory")) {
-                    try {
-                        [System.IO.Directory]::Delete($dirPath, $true)
-                        Microsoft.PowerShell.Utility\Write-Verbose "Removed directory: $dirPath"
-                    }
-                    catch {
-                        Microsoft.PowerShell.Utility\Write-Warning "Failed to delete directory: $dirPath"
+                Microsoft.PowerShell.Utility\Sort-Object -Descending |
+                Microsoft.PowerShell.Core\ForEach-Object {
+                    $dirPath = $_
+                    if ($PSCmdlet.ShouldProcess($dirPath, 'Remove directory')) {
+                        try {
+                            [System.IO.Directory]::Delete($dirPath, $true)
+                            Microsoft.PowerShell.Utility\Write-Verbose "Removed directory: $dirPath"
+                        }
+                        catch {
+                            Microsoft.PowerShell.Utility\Write-Warning "Failed to delete directory: $dirPath"
+                        }
                     }
                 }
-            }
 
             # optionally remove the root directory itself
             if ($DeleteFolder) {
-                if ($PSCmdlet.ShouldProcess($Path, "Remove root directory")) {
+                if ($PSCmdlet.ShouldProcess($Path, 'Remove root directory')) {
                     try {
                         [System.IO.Directory]::Delete($Path, $true)
                         Microsoft.PowerShell.Utility\Write-Verbose "Removed root directory: $Path"
@@ -144,4 +144,3 @@ function Remove-AllItems {
         $WhatIfPreference = $originalWhatIfPreference
     }
 }
-        ###############################################################################

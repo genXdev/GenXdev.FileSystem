@@ -1,4 +1,4 @@
-###############################################################################
+﻿###############################################################################
 <#
 .SYNOPSIS
 Ensures Pester testing framework is available for use.
@@ -11,8 +11,8 @@ Pester testing capabilities are available when needed.
 
 .EXAMPLE
 EnsurePester
-        ###############################################################################This ensures Pester is installed and ready for use
-        ###############################################################################>
+This ensures Pester is installed and ready for use
+#>
 function EnsurePester {
 
     [CmdletBinding()]
@@ -21,11 +21,11 @@ function EnsurePester {
     begin {
 
         # inform user that we're checking pester installation
-        Microsoft.PowerShell.Utility\Write-Verbose "Checking for Pester module installation..."
+        Microsoft.PowerShell.Utility\Write-Verbose 'Checking for Pester module installation...'
     }
 
 
-process {
+    process {
 
         # attempt silent import of pester to check if it's available
         Microsoft.PowerShell.Core\Import-Module -Name Pester -ErrorAction SilentlyContinue
@@ -36,8 +36,8 @@ process {
         if ((-not $found) -or ($found.Version -lt '5.7.0')) {
 
             # notify about installation attempt through verbose and regular output
-            Microsoft.PowerShell.Utility\Write-Verbose "Pester module not found, attempting installation..."
-            Microsoft.PowerShell.Utility\Write-Host "Pester not found. Installing Pester..."
+            Microsoft.PowerShell.Utility\Write-Verbose 'Pester module not found, attempting installation...'
+            Microsoft.PowerShell.Utility\Write-Host 'Pester not found. Installing Pester...'
 
             try {
                 # install pester module from the powershell gallery
@@ -49,22 +49,21 @@ process {
                 $null = Microsoft.PowerShell.Core\Import-Module -Name Pester -Force
 
                 # confirm successful installation
-                Microsoft.PowerShell.Utility\Write-Host "Pester installed successfully."
-                Microsoft.PowerShell.Utility\Write-Verbose "Pester module installation and import completed."
+                Microsoft.PowerShell.Utility\Write-Host 'Pester installed successfully.'
+                Microsoft.PowerShell.Utility\Write-Verbose 'Pester module installation and import completed.'
             }
             catch {
                 # report any installation failures
                 Microsoft.PowerShell.Utility\Write-Error "Failed to install Pester. Error: $PSItem"
-                Microsoft.PowerShell.Utility\Write-Verbose "Pester installation failed with error."
+                Microsoft.PowerShell.Utility\Write-Verbose 'Pester installation failed with error.'
             }
         }
         else {
             # inform that pester is already available
-            Microsoft.PowerShell.Utility\Write-Verbose "Pester module already installed and imported."
+            Microsoft.PowerShell.Utility\Write-Verbose 'Pester module already installed and imported.'
         }
     }
 
     end {
     }
 }
-        ###############################################################################

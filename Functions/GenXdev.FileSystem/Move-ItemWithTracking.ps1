@@ -1,4 +1,4 @@
-###############################################################################
+﻿###############################################################################
 <#
 .SYNOPSIS
 Moves files and directories while preserving filesystem links and references.
@@ -27,12 +27,12 @@ destination path.
 
 .EXAMPLE
 Move-ItemWithTracking -Path "C:\temp\oldfile.txt" -Destination "D:\newfile.txt"
-        ###############################################################################Moves a file while preserving any existing filesystem links
+Moves a file while preserving any existing filesystem links
 
 .EXAMPLE
 "C:\temp\olddir" | Move-ItemWithTracking -Destination "D:\newdir" -Force
-        ###############################################################################Moves a directory, overwriting destination if it exists
-        ###############################################################################>
+Moves a directory, overwriting destination if it exists
+#>
 function Move-ItemWithTracking {
 
     [CmdletBinding(SupportsShouldProcess)]
@@ -44,22 +44,22 @@ function Move-ItemWithTracking {
             Position = 0,
             ValueFromPipeline = $true,
             ValueFromPipelineByPropertyName = $true,
-            HelpMessage = "Source path of file/directory to move"
+            HelpMessage = 'Source path of file/directory to move'
         )]
         [ValidateNotNullOrEmpty()]
-        [Alias("FullName")]
+        [Alias('FullName')]
         [string]$Path,
         ########################################################################
         [Parameter(
             Mandatory = $true,
             Position = 1,
-            HelpMessage = "Destination path to move to"
+            HelpMessage = 'Destination path to move to'
         )]
         [ValidateNotNullOrEmpty()]
         [string]$Destination,
         ########################################################################
         [Parameter(
-            HelpMessage = "Overwrite destination if it exists"
+            HelpMessage = 'Overwrite destination if it exists'
         )]
         [switch]$Force
         ########################################################################
@@ -68,18 +68,18 @@ function Move-ItemWithTracking {
     begin {
 
         # define the native windows api function signature for moving files
-        $signature = @"
+        $signature = @'
 [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
 public static extern bool MoveFileEx(
     string lpExistingFileName,
     string lpNewFileName,
     int dwFlags);
-"@
+'@
 
         try {
             # load the native windows api function into the current session
             $win32 = Microsoft.PowerShell.Utility\Add-Type -MemberDefinition $signature `
-                -Name "MoveFileExUtils" `
+                -Name 'MoveFileExUtils' `
                 -Namespace Win32 `
                 -PassThru
         }
@@ -100,7 +100,7 @@ public static extern bool MoveFileEx(
     }
 
 
-process {
+    process {
         try {
             # convert relative paths to absolute filesystem paths
             $fullSourcePath = GenXdev.FileSystem\Expand-Path $Path
@@ -127,7 +127,7 @@ process {
                         "'$fullDestPath'. Error: $errorCode"
                     }
 
-                    Microsoft.PowerShell.Utility\Write-Verbose "Move completed successfully with link tracking"
+                    Microsoft.PowerShell.Utility\Write-Verbose 'Move completed successfully with link tracking'
                     return $true
                 }
             }
@@ -145,4 +145,3 @@ process {
     end {
     }
 }
-        ###############################################################################

@@ -1,4 +1,4 @@
-###############################################################################
+﻿###############################################################################
 <#
 .SYNOPSIS
 Performs case-sensitive text replacement throughout a project directory.
@@ -28,30 +28,30 @@ Rename-InProject -Source .\src\*.js -FindText "oldName" `
 
 .EXAMPLE
 rip . "MyClass" "MyNewClass" -WhatIf
-        ###############################################################################>
+#>
 function Rename-InProject {
 
     [CmdletBinding(SupportsShouldProcess = $true)]
-    [Alias("rip")]
+    [Alias('rip')]
     param(
         ########################################################################
         [Parameter(
             Mandatory = $false,
             Position = 0,
             ValueFromPipeline = $false,
-            HelpMessage = "The directory, filepath, or directory+searchmask"
+            HelpMessage = 'The directory, filepath, or directory+searchmask'
         )]
-        [Alias("src", "s")]
-        [PSDefaultValue(Value = ".\")]
+        [Alias('src', 's')]
+        [PSDefaultValue(Value = '.\')]
         [string] $Source,
         ########################################################################
         [Parameter(
             Mandatory = $true,
             Position = 1,
             ValueFromPipeline = $false,
-            HelpMessage = "The text to find (case sensitive)"
+            HelpMessage = 'The text to find (case sensitive)'
         )]
-        [Alias("find", "what", "from")]
+        [Alias('find', 'what', 'from')]
         [ValidateNotNullOrEmpty()]
         [string] $FindText,
         ########################################################################
@@ -59,9 +59,9 @@ function Rename-InProject {
             Mandatory = $true,
             Position = 2,
             ValueFromPipeline = $false,
-            HelpMessage = "The text to replace matches with"
+            HelpMessage = 'The text to replace matches with'
         )]
-        [Alias("into", "txt", "to")]
+        [Alias('into', 'txt', 'to')]
         [ValidateNotNull()]
         [string] $ReplacementText
         ########################################################################
@@ -72,7 +72,7 @@ function Rename-InProject {
         try {
             # normalize path and extract search pattern if specified
             $sourcePath = GenXdev.FileSystem\Expand-Path $Source
-            $searchPattern = "*"
+            $searchPattern = '*'
 
             # split source into path and pattern if not a directory
             if (![System.IO.Directory]::Exists($sourcePath)) {
@@ -90,11 +90,11 @@ function Rename-InProject {
 
             # extensions to skip to avoid corrupting binary files
             $skipExtensions = @(
-                ".jpg", ".jpeg", ".gif", ".bmp", ".png", ".tiff",
-                ".exe", ".dll", ".pdb", ".so",
-                ".wav", ".mp3", ".avi", ".mkv", ".wmv",
-                ".tar", ".7z", ".zip", ".rar", ".apk", ".ipa",
-                ".cer", ".crt", ".pkf", ".db", ".bin"
+                '.jpg', '.jpeg', '.gif', '.bmp', '.png', '.tiff',
+                '.exe', '.dll', '.pdb', '.so',
+                '.wav', '.mp3', '.avi', '.mkv', '.wmv',
+                '.tar', '.7z', '.zip', '.rar', '.apk', '.ipa',
+                '.cer', '.crt', '.pkf', '.db', '.bin'
             )
         }
         catch {
@@ -103,7 +103,7 @@ function Rename-InProject {
     }
 
 
-process {
+    process {
 
         try {
             # recursive function to get all project files excluding repos
@@ -112,8 +112,8 @@ process {
                 [CmdletBinding()]
                 [OutputType([System.Collections.Generic.List[string]])]
                 [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute(
-                    "PSUseSingularNouns",
-                    "Get-ProjectFiles"
+                    'PSUseSingularNouns',
+                    'Get-ProjectFiles'
                 )]
                 param(
                     [string] $Dir,
@@ -123,7 +123,7 @@ process {
                 $result = [System.Collections.Generic.List[string]]::new()
 
                 # skip version control directories
-                if ([IO.Path]::GetFileName($Dir) -in @(".svn", ".git")) {
+                if ([IO.Path]::GetFileName($Dir) -in @('.svn', '.git')) {
                     return $result
                 }
 
@@ -133,8 +133,8 @@ process {
                 }
 
                 # recursively process subdirectories
-                [IO.Directory]::GetDirectories($Dir, "*") | Microsoft.PowerShell.Core\ForEach-Object {
-                    if ([IO.Path]::GetFileName($_) -notin @(".svn", ".git")) {
+                [IO.Directory]::GetDirectories($Dir, '*') | Microsoft.PowerShell.Core\ForEach-Object {
+                    if ([IO.Path]::GetFileName($_) -notin @('.svn', '.git')) {
                         $null = Get-ProjectFiles $_ $Mask | Microsoft.PowerShell.Core\ForEach-Object {
                             $null = $result.Add($_)
                         }
@@ -146,112 +146,112 @@ process {
 
             # process files in reverse order to handle renames safely
             Get-ProjectFiles -dir $sourcePath -mask $searchPattern |
-            Microsoft.PowerShell.Utility\Sort-Object -Descending |
-            Microsoft.PowerShell.Core\ForEach-Object {
+                Microsoft.PowerShell.Utility\Sort-Object -Descending |
+                Microsoft.PowerShell.Core\ForEach-Object {
 
-                $filePath = $_
-                $extension = [IO.Path]::GetExtension($filePath).ToLower()
+                    $filePath = $_
+                    $extension = [IO.Path]::GetExtension($filePath).ToLower()
 
-                # only process text files
-                if ($extension -notin $skipExtensions) {
+                    # only process text files
+                    if ($extension -notin $skipExtensions) {
 
-                    try {
-                        Microsoft.PowerShell.Utility\Write-Verbose "Processing file: $filePath"
+                        try {
+                            Microsoft.PowerShell.Utility\Write-Verbose "Processing file: $filePath"
 
-                        # replace text in file contents
-                        $content = [IO.File]::ReadAllText($filePath,
-                            [Text.Encoding]::UTF8)
-                        $newContent = $content.Replace($FindText, $ReplacementText)
+                            # replace text in file contents
+                            $content = [IO.File]::ReadAllText($filePath,
+                                [Text.Encoding]::UTF8)
+                            $newContent = $content.Replace($FindText, $ReplacementText)
 
-                        if ($content -ne $newContent) {
-                            if ($PSCmdlet.ShouldProcess($filePath,
-                                    "Replace content")) {
+                            if ($content -ne $newContent) {
+                                if ($PSCmdlet.ShouldProcess($filePath,
+                                        'Replace content')) {
 
-                                $utf8 = [Text.UTF8Encoding]::new($false)
-                                [IO.File]::WriteAllText($filePath, $newContent,
-                                    $utf8)
+                                    $utf8 = [Text.UTF8Encoding]::new($false)
+                                    [IO.File]::WriteAllText($filePath, $newContent,
+                                        $utf8)
 
-                                Microsoft.PowerShell.Utility\Write-Verbose "Updated content in: $filePath"
+                                    Microsoft.PowerShell.Utility\Write-Verbose "Updated content in: $filePath"
+                                }
                             }
                         }
-                    }
-                    catch {
-                        Microsoft.PowerShell.Utility\Write-Warning "Failed to update content in: $filePath`n$_"
-                    }
+                        catch {
+                            Microsoft.PowerShell.Utility\Write-Warning "Failed to update content in: $filePath`n$_"
+                        }
 
-                    # handle filename changes
-                    $oldName = [IO.Path]::GetFileName($filePath)
-                    $newName = $oldName.Replace($FindText, $ReplacementText)
+                        # handle filename changes
+                        $oldName = [IO.Path]::GetFileName($filePath)
+                        $newName = $oldName.Replace($FindText, $ReplacementText)
 
-                    if ($oldName -ne $newName) {
-                        $newPath = [IO.Path]::Combine(
-                            [IO.Path]::GetDirectoryName($filePath),
-                            $newName)
+                        if ($oldName -ne $newName) {
+                            $newPath = [IO.Path]::Combine(
+                                [IO.Path]::GetDirectoryName($filePath),
+                                $newName)
 
-                        if ($PSCmdlet.ShouldProcess($filePath, "Rename file")) {
-                            try {
+                            if ($PSCmdlet.ShouldProcess($filePath, 'Rename file')) {
+                                try {
 
-                                if ("$filePath".ToLowerInvariant() -eq "$newPath".ToLowerInvariant()) {
+                                    if ("$filePath".ToLowerInvariant() -eq "$newPath".ToLowerInvariant()) {
 
-                                    $newPath = "$newPath.$([DateTime]::Now.Ticks).tmp"
+                                        $newPath = "$newPath.$([DateTime]::Now.Ticks).tmp"
+                                        $null = GenXdev.FileSystem\Move-ItemWithTracking -Path $filePath `
+                                            -Destination "$newPath.tmp12389"
+                                        Microsoft.PowerShell.Utility\Write-Verbose "Renamed file: $filePath -> $newPath"
+                                        $filePath = $newPath
+                                    }
+
                                     $null = GenXdev.FileSystem\Move-ItemWithTracking -Path $filePath `
-                                        -Destination "$newPath.tmp12389"
+                                        -Destination $newPath
                                     Microsoft.PowerShell.Utility\Write-Verbose "Renamed file: $filePath -> $newPath"
-                                    $filePath = $newPath
                                 }
-
-                                $null = GenXdev.FileSystem\Move-ItemWithTracking -Path $filePath `
-                                    -Destination $newPath
-                                Microsoft.PowerShell.Utility\Write-Verbose "Renamed file: $filePath -> $newPath"
-                            }
-                            catch {
-                                Microsoft.PowerShell.Utility\Write-Warning "Failed to rename file: $filePath`n$_"
+                                catch {
+                                    Microsoft.PowerShell.Utility\Write-Warning "Failed to rename file: $filePath`n$_"
+                                }
                             }
                         }
                     }
                 }
-            }
 
             # process directories in reverse order
             Microsoft.PowerShell.Management\Get-ChildItem -Path $sourcePath -Directory -Recurse |
-            Microsoft.PowerShell.Utility\Sort-Object -Descending |
-            Microsoft.PowerShell.Core\Where-Object {
-                $_.FullName -notlike "*\.git\*" -and
-                $_.FullName -notlike "*\.svn\*"
-            } |
-            Microsoft.PowerShell.Core\ForEach-Object {
+                Microsoft.PowerShell.Utility\Sort-Object -Descending |
+                Microsoft.PowerShell.Core\Where-Object {
+                    $_.FullName -notlike '*\.git\*' -and
+                    $_.FullName -notlike '*\.svn\*'
+                } |
+                Microsoft.PowerShell.Core\ForEach-Object {
 
-                $dir = $_
-                $oldName = $dir.Name
-                $newName = $oldName.Replace($FindText, $ReplacementText)
+                    $dir = $_
+                    $oldName = $dir.Name
+                    $newName = $oldName.Replace($FindText, $ReplacementText)
 
-                if ($oldName -ne $newName) {
-                    $newPath = GenXdev.FileSystem\Expand-Path (
-                        [IO.Path]::Combine($dir.Parent.FullName, $newName))
+                    if ($oldName -ne $newName) {
+                        $newPath = GenXdev.FileSystem\Expand-Path (
+                            [IO.Path]::Combine($dir.Parent.FullName, $newName))
 
-                    if ($PSCmdlet.ShouldProcess($dir.FullName,
-                            "Rename directory")) {
+                        if ($PSCmdlet.ShouldProcess($dir.FullName,
+                                'Rename directory')) {
 
-                        if ([IO.Directory]::Exists($newPath)) {
-                            # merge directories if target exists
-                            GenXdev.FileSystem\Start-RoboCopy -Source $dir.FullName `
-                                -DestinationDirectory $newPath -Move
-                            $null = GenXdev.FileSystem\Remove-AllItems ($dir.FullName) -DeleteFolder
-                            Microsoft.PowerShell.Utility\Write-Verbose "Merged directory: $($dir.FullName) -> $newPath"
-                        }
-                        else {
-                            try {
-                                $null = GenXdev.FileSystem\Move-ItemWithTracking -Path $dir.FullName `
-                                    -Destination $newPath
-                                Microsoft.PowerShell.Utility\Write-Verbose "Renamed directory: $($dir.FullName) -> $newPath"
+                            if ([IO.Directory]::Exists($newPath)) {
+                                # merge directories if target exists
+                                GenXdev.FileSystem\Start-RoboCopy -Source $dir.FullName `
+                                    -DestinationDirectory $newPath -Move
+                                $null = GenXdev.FileSystem\Remove-AllItems ($dir.FullName) -DeleteFolder
+                                Microsoft.PowerShell.Utility\Write-Verbose "Merged directory: $($dir.FullName) -> $newPath"
                             }
-                            catch {
-                                Microsoft.PowerShell.Utility\Write-Warning "Failed to rename directory: $($dir.FullName)`n$_"
+                            else {
+                                try {
+                                    $null = GenXdev.FileSystem\Move-ItemWithTracking -Path $dir.FullName `
+                                        -Destination $newPath
+                                    Microsoft.PowerShell.Utility\Write-Verbose "Renamed directory: $($dir.FullName) -> $newPath"
+                                }
+                                catch {
+                                    Microsoft.PowerShell.Utility\Write-Warning "Failed to rename directory: $($dir.FullName)`n$_"
+                                }
                             }
                         }
                     }
                 }
-            }
         }
         catch {
             throw
@@ -261,4 +261,3 @@ process {
     end {
     }
 }
-        ###############################################################################

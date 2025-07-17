@@ -1,4 +1,4 @@
-Pester\Describe "Start-RoboCopy" {
+﻿Pester\Describe 'Start-RoboCopy' {
     Pester\BeforeAll {
         $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
         Microsoft.PowerShell.Management\Push-Location ($Script:testRoot)
@@ -23,16 +23,16 @@ Pester\Describe "Start-RoboCopy" {
         Microsoft.PowerShell.Management\Remove-Item -Path $Script:source, $Script:dest -Recurse -Force
     }
 
-    Pester\It "Should pass PSScriptAnalyzer rules" {
+    Pester\It 'Should pass PSScriptAnalyzer rules' {
 
-# get the script path for analysis
+        # get the script path for analysis
         $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Start-RoboCopy.ps1"
 
-# run analyzer with explicit settings
+        # run analyzer with explicit settings
         $analyzerResults = GenXdev.Coding\Invoke-GenXdevScriptAnalyzer `
             -Path $scriptPath
 
-        [string] $message = ""
+        [string] $message = ''
         $analyzerResults | Microsoft.PowerShell.Core\ForEach-Object {
 
             $message = $message + @"
@@ -49,13 +49,13 @@ $message
         }
     }
 
-    Pester\It "Copies files between folders" {
+    Pester\It 'Copies files between folders' {
         GenXdev.FileSystem\Start-RoboCopy -Source $Script:source -DestinationDirectory $Script:dest
         $destFiles = Microsoft.PowerShell.Management\Get-ChildItem $Script:dest -File
         $destFiles.Count | Pester\Should -Be 3
     }
 
-    Pester\It "Moves files when specified" {
+    Pester\It 'Moves files when specified' {
         GenXdev.FileSystem\Start-RoboCopy -Source $Script:source -DestinationDirectory $Script:dest -Move
         $sourceFiles = Microsoft.PowerShell.Management\Get-ChildItem $Script:source -File
         $sourceFiles.Count | Pester\Should -Be 0
@@ -63,9 +63,9 @@ $message
         $destFiles.Count | Pester\Should -Be 3
     }
 
-    Pester\It "Mirrors directory structure" {
+    Pester\It 'Mirrors directory structure' {
         Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path "$Script:source\subfolder" -Force
-        "subtest" | Microsoft.PowerShell.Utility\Out-File "$Script:source\subfolder\subfile.txt"
+        'subtest' | Microsoft.PowerShell.Utility\Out-File "$Script:source\subfolder\subfile.txt"
 
         GenXdev.FileSystem\Start-RoboCopy -Source $Script:source -DestinationDirectory $Script:dest -Mirror
         Microsoft.PowerShell.Management\Test-Path "$Script:dest\subfolder\subfile.txt" | Pester\Should -Be $true

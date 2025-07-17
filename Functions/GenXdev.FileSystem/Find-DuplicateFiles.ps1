@@ -1,4 +1,4 @@
-###############################################################################
+﻿###############################################################################
 <#
 .SYNOPSIS
 Find duplicate files across multiple directories based on configurable criteria.
@@ -24,12 +24,12 @@ Find-DuplicateFiles -Paths "C:\Photos","D:\Backup\Photos"
 
 .EXAMPLE
 "C:\Photos","D:\Backup\Photos" | fdf -DontCompareSize
-        ###############################################################################>
+#>
 function Find-DuplicateFiles {
 
     [CmdletBinding()]
-    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseSingularNouns", "")]
-    [Alias("fdf")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
+    [Alias('fdf')]
 
     param(
         ###############################################################################
@@ -38,22 +38,21 @@ function Find-DuplicateFiles {
             Position = 0,
             ValueFromPipeline = $true,
             ValueFromPipelineByPropertyName = $true,
-            HelpMessage = "One or more directory paths to search for duplicates"
+            HelpMessage = 'One or more directory paths to search for duplicates'
         )]
-        [ValidateNotNullOrEmpty()]
         [string[]] $Paths,
         ###############################################################################
         [Parameter(
             Mandatory = $false,
             Position = 1,
-            HelpMessage = "Skip file size comparison when grouping duplicates"
+            HelpMessage = 'Skip file size comparison when grouping duplicates'
         )]
         [switch] $DontCompareSize,
         ###############################################################################
         [Parameter(
             Mandatory = $false,
             Position = 2,
-            HelpMessage = "Skip last modified date comparison when grouping duplicates"
+            HelpMessage = 'Skip last modified date comparison when grouping duplicates'
         )]
         [switch] $DontCompareModifiedDate
         ###############################################################################
@@ -90,7 +89,7 @@ function Find-DuplicateFiles {
     }
 
 
-process {
+    process {
 
         foreach ($path in $normalizedPaths) {
 
@@ -100,11 +99,11 @@ process {
                 Microsoft.PowerShell.Utility\Write-Verbose "Scanning directory for duplicates: $path"
 
                 # use direct .NET IO for faster recursive file enumeration
-                [System.IO.Directory]::GetFiles($path, "*.*",
+                [System.IO.Directory]::GetFiles($path, '*.*',
                     [System.IO.SearchOption]::AllDirectories) |
-                Microsoft.PowerShell.Core\ForEach-Object {
-                    $null = $allFiles.Add([System.IO.FileInfo]::new($_))
-                }
+                    Microsoft.PowerShell.Core\ForEach-Object {
+                        $null = $allFiles.Add([System.IO.FileInfo]::new($_))
+                    }
             }
             else {
                 Microsoft.PowerShell.Utility\Write-Warning "Skipping non-existent directory: $path"
@@ -116,15 +115,14 @@ process {
 
         # group files by composite key and return only groups with duplicates
         $allFiles |
-        Microsoft.PowerShell.Utility\Group-Object -Property { Get-FileKey $_ } |
-        Microsoft.PowerShell.Core\Where-Object { $_.Count -gt 1 } |
-        Microsoft.PowerShell.Core\ForEach-Object {
-            # create result object for each duplicate group
-            [PSCustomObject]@{
-                FileName = $_.Group[0].Name
-                Files    = $_.Group
+            Microsoft.PowerShell.Utility\Group-Object -Property { Get-FileKey $_ } |
+            Microsoft.PowerShell.Core\Where-Object { $_.Count -gt 1 } |
+            Microsoft.PowerShell.Core\ForEach-Object {
+                # create result object for each duplicate group
+                [PSCustomObject]@{
+                    FileName = $_.Group[0].Name
+                    Files    = $_.Group
+                }
             }
-        }
     }
 }
-        ###############################################################################

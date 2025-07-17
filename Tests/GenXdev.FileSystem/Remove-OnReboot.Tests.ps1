@@ -1,16 +1,16 @@
-###############################################################################
+﻿###############################################################################
 Pester\Describe 'Remove-OnReboot' {
     ###############################################################################
-    Pester\It "Should pass PSScriptAnalyzer rules" {
+    Pester\It 'Should pass PSScriptAnalyzer rules' {
 
-# get the script path for analysis
+        # get the script path for analysis
         $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Remove-OnReboot.ps1"
 
-# run analyzer with explicit settings
+        # run analyzer with explicit settings
         $analyzerResults = GenXdev.Coding\Invoke-GenXdevScriptAnalyzer `
             -Path $scriptPath
 
-        [string] $message = ""
+        [string] $message = ''
         $analyzerResults | Microsoft.PowerShell.Core\ForEach-Object {
 
             $message = $message + @"
@@ -32,7 +32,7 @@ $message
         $testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
         Microsoft.PowerShell.Management\Set-Location $testRoot
         $testFile = Microsoft.PowerShell.Management\Join-Path $testRoot 'reboot-delete.txt'
-        Microsoft.PowerShell.Management\Set-Content -Path $testFile -Value "test content"
+        Microsoft.PowerShell.Management\Set-Content -Path $testFile -Value 'test content'
     }
 
     Pester\AfterAll {

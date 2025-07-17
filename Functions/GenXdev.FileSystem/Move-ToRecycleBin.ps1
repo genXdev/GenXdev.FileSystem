@@ -1,4 +1,4 @@
-###############################################################################
+﻿###############################################################################
 <#
 .SYNOPSIS
 Moves files and directories to the Windows Recycle Bin safely.
@@ -16,17 +16,17 @@ accessible.
 
 .EXAMPLE
 Move-ToRecycleBin -Path "C:\temp\old-report.txt"
-        ###############################################################################Moves a single file to the recycle bin
+Moves a single file to the recycle bin
 
 .EXAMPLE
 "file1.txt","file2.txt" | recycle
-        ###############################################################################Moves multiple files using pipeline and alias
-        ###############################################################################>
+Moves multiple files using pipeline and alias
+#>
 function Move-ToRecycleBin {
 
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([bool])]
-    [Alias("recycle")]
+    [Alias('recycle')]
     param(
         ########################################################################
         [Parameter(
@@ -34,10 +34,10 @@ function Move-ToRecycleBin {
             Position = 0,
             ValueFromPipeline = $true,
             ValueFromPipelineByPropertyName = $true,
-            HelpMessage = "Specify the path(s) to move to the recycle bin"
+            HelpMessage = 'Specify the path(s) to move to the recycle bin'
         )]
         [ValidateNotNullOrEmpty()]
-        [Alias("FullName")]
+        [Alias('FullName')]
         [string[]]$Path
         ########################################################################
     )
@@ -50,7 +50,7 @@ function Move-ToRecycleBin {
         $shellObj = $null
         try {
             $shellObj = Microsoft.PowerShell.Utility\New-Object -ComObject Shell.Application
-            Microsoft.PowerShell.Utility\Write-Verbose "Created Shell.Application COM object for recycle operations"
+            Microsoft.PowerShell.Utility\Write-Verbose 'Created Shell.Application COM object for recycle operations'
         }
         catch {
             Microsoft.PowerShell.Utility\Write-Error "Failed to create Shell.Application COM object: $_"
@@ -59,7 +59,7 @@ function Move-ToRecycleBin {
     }
 
 
-process {
+    process {
 
         foreach ($itemPath in $Path) {
 
@@ -73,7 +73,7 @@ process {
                         [System.IO.Directory]::Exists($fullPath)) {
 
                     # confirm the recycle operation with the user
-                    if ($PSCmdlet.ShouldProcess($fullPath, "Move to Recycle Bin")) {
+                    if ($PSCmdlet.ShouldProcess($fullPath, 'Move to Recycle Bin')) {
 
                         # split the path into directory and filename for shell operation
                         $dirName = [System.IO.Path]::GetDirectoryName($fullPath)
@@ -84,7 +84,7 @@ process {
                         $fileObj = $folderObj.ParseName($fileName)
 
                         # perform the recycle operation using shell verbs
-                        $fileObj.InvokeVerb("delete")
+                        $fileObj.InvokeVerb('delete')
                         Microsoft.PowerShell.Utility\Write-Verbose "Successfully moved to recycle bin: $fullPath"
                     }
                 }
@@ -105,8 +105,8 @@ process {
         # cleanup the COM object to prevent resource leaks
         try {
             [System.Runtime.InteropServices.Marshal]::ReleaseComObject($shellObj) | `
-                Microsoft.PowerShell.Core\Out-Null
-            Microsoft.PowerShell.Utility\Write-Verbose "Released Shell.Application COM object"
+                    Microsoft.PowerShell.Core\Out-Null
+            Microsoft.PowerShell.Utility\Write-Verbose 'Released Shell.Application COM object'
         }
         catch {
             Microsoft.PowerShell.Utility\Write-Warning "Failed to release COM object: $_"
@@ -115,4 +115,3 @@ process {
         return $success
     }
 }
-        ###############################################################################

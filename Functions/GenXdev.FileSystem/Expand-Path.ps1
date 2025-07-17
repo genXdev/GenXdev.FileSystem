@@ -1,4 +1,4 @@
-###############################################################################
+﻿###############################################################################
 <#
 .SYNOPSIS
 Expands any given file reference to a full pathname.
@@ -21,11 +21,11 @@ Expand-Path -FilePath ".\myfile.txt" -CreateFile
 
 .EXAMPLE
 ep ~\documents\test.txt -CreateFile
-        ###############################################################################>
+#>
 function Expand-Path {
 
     [CmdletBinding()]
-    [Alias("ep")]
+    [Alias('ep')]
 
     param(
         ########################################################################
@@ -34,44 +34,44 @@ function Expand-Path {
             Position = 0,
             ValueFromPipeline = $true,
             ValueFromPipelineByPropertyName = $true,
-            HelpMessage = "Path to expand"
+            HelpMessage = 'Path to expand'
         )]
         [ValidateNotNullOrEmpty()]
         [string] $FilePath,
         ########################################################################
         [Parameter(
             Mandatory = $false,
-            HelpMessage = "Will create directory if it does not exist"
+            HelpMessage = 'Will create directory if it does not exist'
         )]
         [switch] $CreateDirectory,
         ########################################################################
         [Parameter(
             Mandatory = $false,
-            HelpMessage = "Will create an empty file if it does not exist"
+            HelpMessage = 'Will create an empty file if it does not exist'
         )]
         [switch] $CreateFile,
         ########################################################################
         [Parameter(
             Mandatory = $false,
-            HelpMessage = "Will delete the file if it already exists"
+            HelpMessage = 'Will delete the file if it already exists'
         )]
         [switch] $DeleteExistingFile,
         ########################################################################
         [Parameter(
             Mandatory = $false,
-            HelpMessage = "Will force the use of a specific drive"
+            HelpMessage = 'Will force the use of a specific drive'
         )]
         [char] $ForceDrive = '*',
         ########################################################################
         [Parameter(
             Mandatory = $false,
-            HelpMessage = "Will throw if file does not exist"
+            HelpMessage = 'Will throw if file does not exist'
         )]
         [switch] $FileMustExist,
         ########################################################################
         [Parameter(
             Mandatory = $false,
-            HelpMessage = "Will throw if directory does not exist"
+            HelpMessage = 'Will throw if directory does not exist'
         )]
         [switch] $DirectoryMustExist
         ########################################################################
@@ -80,8 +80,8 @@ function Expand-Path {
     begin {
 
         # normalize path separators and remove double separators
-        [string] $normalizedPath = $FilePath.Trim().Replace("\", [IO.Path]::DirectorySeparatorChar).
-        Replace("/", [IO.Path]::DirectorySeparatorChar);
+        [string] $normalizedPath = $FilePath.Trim().Replace('\', [IO.Path]::DirectorySeparatorChar).
+        Replace('/', [IO.Path]::DirectorySeparatorChar);
 
         if ($normalizedPath.StartsWith([IO.Path]::DirectorySeparatorChar + [IO.Path]::DirectorySeparatorChar)) {
 
@@ -92,10 +92,10 @@ function Expand-Path {
             )
 
             if (($ForceDrive -ne '*') -and
-                ("ABCDEFGHIJKLMNOPQRSTUVWXYZ".IndexOf(($ForceDrive -as [string]).ToUpperInvariant()) -ge 0)) {
+                ('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.IndexOf(($ForceDrive -as [string]).ToUpperInvariant()) -ge 0)) {
 
                 $i = $normalizedPath.IndexOf([IO.Path]::DirectorySeparatorChar, 2);
-                $normalizedPath = $ForceDrive + ":" + (
+                $normalizedPath = $ForceDrive + ':' + (
 
                     $i -lt 0 ? ([IO.Path]::DirectorySeparatorChar) : $normalizedPath.Substring($i)
                 )
@@ -116,18 +116,18 @@ function Expand-Path {
     }
 
 
-process {
+    process {
 
         # expand home directory if path starts with ~
-        if ($normalizedPath.StartsWith("~")) {
+        if ($normalizedPath.StartsWith('~')) {
 
             if (($ForceDrive -ne '*') -and
-                ("ABCDEFGHIJKLMNOPQRSTUVWXYZ".IndexOf(($ForceDrive -as [string]).ToUpperInvariant()) -ge 0)) {
+                ('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.IndexOf(($ForceDrive -as [string]).ToUpperInvariant()) -ge 0)) {
 
                 $i = $normalizedPath.IndexOf([IO.Path]::DirectorySeparatorChar, 1);
-                $normalizedPath = $ForceDrive + ":" + (
+                $normalizedPath = $ForceDrive + ':' + (
 
-                    $i -lt 0 ? [IO.Path]::DirectorySeparatorChar + "**" + [IO.Path]::DirectorySeparatorChar : ("\**" + $normalizedPath.Substring($i))
+                    $i -lt 0 ? [IO.Path]::DirectorySeparatorChar + '**' + [IO.Path]::DirectorySeparatorChar : ('\**' + $normalizedPath.Substring($i))
                 )
             }
             else {
@@ -138,12 +138,12 @@ process {
         }
 
         if ((($normalizedPath.Length -gt 1) -and
-                ($normalizedPath.Substring(1, 1) -eq ":"))) {
+                ($normalizedPath.Substring(1, 1) -eq ':'))) {
 
             if (($ForceDrive -ne '*') -and
-                ("ABCDEFGHIJKLMNOPQRSTUVWXYZ".IndexOf(($ForceDrive -as [string]).ToUpperInvariant()) -ge 0)) {
+                ('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.IndexOf(($ForceDrive -as [string]).ToUpperInvariant()) -ge 0)) {
                 $i = $normalizedPath.IndexOf([IO.Path]::DirectorySeparatorChar);
-                $normalizedPath = $ForceDrive + ":" + [IO.Path]::DirectorySeparatorChar + (($i -eq -1 -and $normalizedPath.Length -gt 2) -or $i -eq 2 ? "**" + [IO.Path]::DirectorySeparatorChar : "") + $normalizedPath.Substring(2)
+                $normalizedPath = $ForceDrive + ':' + [IO.Path]::DirectorySeparatorChar + (($i -eq -1 -and $normalizedPath.Length -gt 2) -or $i -eq 2 ? '**' + [IO.Path]::DirectorySeparatorChar : '') + $normalizedPath.Substring(2)
             }
             else {
 
@@ -168,24 +168,24 @@ process {
                 $normalizedPath = [System.IO.Path]::GetFullPath($normalizedPath)
             }
             catch {
-                Microsoft.PowerShell.Utility\Write-Verbose "Failed to normalize path, keeping original"
+                Microsoft.PowerShell.Utility\Write-Verbose 'Failed to normalize path, keeping original'
             }
         }
         else {
 
             if (($ForceDrive -ne '*') -and
-                ("ABCDEFGHIJKLMNOPQRSTUVWXYZ".IndexOf(($ForceDrive -as [string]).ToUpperInvariant()) -ge 0)) {
+                ('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.IndexOf(($ForceDrive -as [string]).ToUpperInvariant()) -ge 0)) {
 
-                if ($normalizedPath.Length -lt 2 -or $normalizedPath.Substring(1, 1) -ne ":") {
+                if ($normalizedPath.Length -lt 2 -or $normalizedPath.Substring(1, 1) -ne ':') {
 
-                    $newPath = $ForceDrive + ":" + [IO.Path]::DirectorySeparatorChar;
+                    $newPath = $ForceDrive + ':' + [IO.Path]::DirectorySeparatorChar;
 
-                    while ($normalizedPath.StartsWith(".")) {
+                    while ($normalizedPath.StartsWith('.')) {
 
                         $i = $normalizedPath.IndexOf([IO.Path]::DirectorySeparatorChar);
                         if ($i -lt 0) {
 
-                            $normalizedPath = ""
+                            $normalizedPath = ''
                         }
                         else {
 
@@ -199,7 +199,7 @@ process {
                     }
                     else {
 
-                        $newPath += "**" + [IO.Path]::DirectorySeparatorChar + $normalizedPath
+                        $newPath += '**' + [IO.Path]::DirectorySeparatorChar + $normalizedPath
                     }
 
                     $normalizedPath = $newPath
@@ -264,7 +264,7 @@ process {
 
             # verify path doesn't point to existing directory
             if ([IO.Directory]::Exists($normalizedPath)) {
-                throw "Cannot create file: Path refers to an existing directory"
+                throw 'Cannot create file: Path refers to an existing directory'
             }
 
             if (-not (GenXdev.FileSystem\Remove-ItemWithFallback -Path $normalizedPath)) {
@@ -287,13 +287,13 @@ process {
 
             # verify path doesn't point to existing directory
             if ([IO.Directory]::Exists($normalizedPath)) {
-                throw "Cannot create file: Path refers to an existing directory"
+                throw 'Cannot create file: Path refers to an existing directory'
             }
 
 
             # create empty file if it doesn't exist
             if (-not [IO.File]::Exists($normalizedPath)) {
-                $null = [IO.File]::WriteAllText($normalizedPath, "")
+                $null = [IO.File]::WriteAllText($normalizedPath, '')
                 Microsoft.PowerShell.Utility\Write-Verbose "Created empty file: $normalizedPath"
             }
         }
@@ -304,4 +304,3 @@ process {
     end {
     }
 }
-        ###############################################################################

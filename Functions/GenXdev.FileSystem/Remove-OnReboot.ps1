@@ -1,4 +1,4 @@
-        ###############################################################################
+﻿###############################################################################
 
 <#
 .SYNOPSIS
@@ -22,7 +22,7 @@ Remove-OnReboot -Path "C:\temp\locked-file.txt"
 
 .EXAMPLE
 "file1.txt","file2.txt" | Remove-OnReboot -MarkInPlace
-        ###############################################################################>
+#>
 function Remove-OnReboot {
 
     [CmdletBinding(SupportsShouldProcess)]
@@ -33,15 +33,15 @@ function Remove-OnReboot {
             Mandatory = $true,
             Position = 0,
             ValueFromPipeline = $true,
-            HelpMessage = "Path(s) to files/directories to mark for deletion"
+            HelpMessage = 'Path(s) to files/directories to mark for deletion'
         )]
         [ValidateNotNullOrEmpty()]
-        [Alias("FullName")]
+        [Alias('FullName')]
         [string[]]$Path,
         ###############################################################################
         [Parameter(
             Mandatory = $false,
-            HelpMessage = "Marks files for deletion without renaming"
+            HelpMessage = 'Marks files for deletion without renaming'
         )]
         [switch]$MarkInPlace
         ###############################################################################
@@ -49,8 +49,8 @@ function Remove-OnReboot {
 
     begin {
         # registry location storing pending file operations
-        $regKey = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager"
-        $regName = "PendingFileRenameOperations"
+        $regKey = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager'
+        $regName = 'PendingFileRenameOperations'
 
         # get existing pending renames or initialize empty array
         try {
@@ -67,14 +67,14 @@ function Remove-OnReboot {
     }
 
 
-process {
+    process {
 
         try {
             foreach ($item in $Path) {
                 $fullPath = GenXdev.FileSystem\Expand-Path $item
 
                 if (Microsoft.PowerShell.Management\Test-Path -LiteralPath $fullPath) {
-                    if ($PSCmdlet.ShouldProcess($fullPath, "Mark for deletion on reboot")) {
+                    if ($PSCmdlet.ShouldProcess($fullPath, 'Mark for deletion on reboot')) {
 
                         try {
                             # attempt immediate deletion first
@@ -83,11 +83,11 @@ process {
                             continue
                         }
                         catch {
-                            Microsoft.PowerShell.Utility\Write-Verbose "Direct deletion failed, attempting rename..."
+                            Microsoft.PowerShell.Utility\Write-Verbose 'Direct deletion failed, attempting rename...'
 
                             try {
                                 # create hidden temporary file name
-                                $newName = "." + [System.Guid]::NewGuid().ToString()
+                                $newName = '.' + [System.Guid]::NewGuid().ToString()
                                 $newPath = [System.IO.Path]::Combine($dir, $newName)
 
                                 # rename and hide the file
@@ -101,18 +101,18 @@ process {
                                 Microsoft.PowerShell.Utility\Write-Verbose "Renamed to hidden system file: $newPath"
 
                                 # add to pending renames with windows api path format
-                                $sourcePath = "\??\" + $newPath
+                                $sourcePath = '\??\' + $newPath
                                 $pendingRenames += $sourcePath
-                                $pendingRenames += ""
+                                $pendingRenames += ''
 
                                 Microsoft.PowerShell.Utility\Write-Verbose "Marked for deletion on reboot: $newPath"
                             }
                             catch {
                                 if ($MarkInPlace) {
-                                    Microsoft.PowerShell.Utility\Write-Verbose "Marking original file for deletion"
-                                    $sourcePath = "\??\" + $fullPath
+                                    Microsoft.PowerShell.Utility\Write-Verbose 'Marking original file for deletion'
+                                    $sourcePath = '\??\' + $fullPath
                                     $pendingRenames += $sourcePath
-                                    $pendingRenames += ""
+                                    $pendingRenames += ''
                                 }
                                 else {
                                     Microsoft.PowerShell.Utility\Write-Error "Failed to rename $($fullPath): $_"
@@ -145,4 +145,3 @@ process {
     end {
     }
 }
-        ###############################################################################
