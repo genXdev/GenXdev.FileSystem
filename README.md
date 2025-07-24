@@ -121,6 +121,7 @@ Update-Module
 | [Remove-ItemWithFallback](#Remove-ItemWithFallback) | rmf | Removes files or directories with multiple fallback mechanisms for reliable deletion. |
 | [Remove-OnReboot](#Remove-OnReboot) |  | Marks files or directories for deletion during the next system boot. |
 | [Rename-InProject](#Rename-InProject) | rip | Performs case-sensitive text replacement throughout a project directory. |
+| [ResolveInputObjectFileNames](#ResolveInputObjectFileNames) |  |  |
 | [Start-RoboCopy](#Start-RoboCopy) | xc, rc | Provides a PowerShell wrapper for Microsoft's Robust Copy (RoboCopy) utility. |
 
 <br/><hr/><hr/><br/>
@@ -1269,6 +1270,154 @@ OUTPUTS
     -------------------------- EXAMPLE 2 --------------------------
     
     PS > rip . "MyClass" "MyNewClass" -WhatIf
+    
+    
+    
+    
+    
+    
+    
+RELATED LINKS 
+
+<br/><hr/><hr/><br/>
+ 
+NAME
+    ResolveInputObjectFileNames
+    
+SYNOPSIS
+    Expands input objects into file and directory names, supporting various
+    filters and output options.
+    
+    
+SYNTAX
+    ResolveInputObjectFileNames [[-InputObject] <Object>] [-File] [[-RelativeBasePath] <String>] [-AllDrives] [-PassThru] [-IncludeAlternateFileStreams] [-NoRecurse] [<CommonParameters>]
+    
+    ResolveInputObjectFileNames [[-InputObject] <Object>] [-File] [[-Pattern] <String>] [[-RelativeBasePath] <String>] [-AllDrives] [-PassThru] [-IncludeAlternateFileStreams] [-NoRecurse] [<CommonParameters>]
+    
+    ResolveInputObjectFileNames [[-InputObject] <Object>] [-File] [[-RelativeBasePath] <String>] [-AllDrives] [-Directory] [-FilesAndDirectories] [-PassThru] [-IncludeAlternateFileStreams] [-NoRecurse] [<CommonParameters>]
+    
+    
+DESCRIPTION
+    This function processes input objects (files, directories, or collections)
+    and expands them into file and directory names. It supports filtering,
+    pattern matching, and can output results as objects. The function is
+    designed to work with pipeline input and provides options for recursion,
+    alternate data streams, and more.
+    
+
+PARAMETERS
+    -InputObject <Object>
+        
+        Required?                    false
+        Position?                    1
+        Default value                
+        Accept pipeline input?       true (ByValue, ByPropertyName)
+        Aliases                      
+        Accept wildcard characters?  false
+        
+    -File [<SwitchParameter>]
+        Return only files in the output.
+        
+        Required?                    false
+        Position?                    named
+        Default value                False
+        Accept pipeline input?       false
+        Aliases                      
+        Accept wildcard characters?  false
+        
+    -Pattern <String>
+        Regular expression pattern to search within content.
+        
+        Required?                    false
+        Position?                    2
+        Default value                
+        Accept pipeline input?       false
+        Aliases                      
+        Accept wildcard characters?  true
+        
+    -RelativeBasePath <String>
+        Base path for resolving relative paths in output.
+        
+        Required?                    false
+        Position?                    3
+        Default value                
+        Accept pipeline input?       false
+        Aliases                      
+        Accept wildcard characters?  false
+        
+    -AllDrives [<SwitchParameter>]
+        Search across all available drives.
+        
+        Required?                    false
+        Position?                    named
+        Default value                False
+        Accept pipeline input?       false
+        Aliases                      
+        Accept wildcard characters?  false
+        
+    -Directory [<SwitchParameter>]
+        Search for directories only.
+        
+        Required?                    false
+        Position?                    named
+        Default value                False
+        Accept pipeline input?       false
+        Aliases                      
+        Accept wildcard characters?  false
+        
+    -FilesAndDirectories [<SwitchParameter>]
+        Include both files and directories in the output.
+        
+        Required?                    false
+        Position?                    named
+        Default value                False
+        Accept pipeline input?       false
+        Aliases                      
+        Accept wildcard characters?  false
+        
+    -PassThru [<SwitchParameter>]
+        Output matched items as objects.
+        
+        Required?                    false
+        Position?                    named
+        Default value                False
+        Accept pipeline input?       false
+        Aliases                      
+        Accept wildcard characters?  false
+        
+    -IncludeAlternateFileStreams [<SwitchParameter>]
+        Include alternate data streams in search results.
+        
+        Required?                    false
+        Position?                    named
+        Default value                False
+        Accept pipeline input?       false
+        Aliases                      
+        Accept wildcard characters?  false
+        
+    -NoRecurse [<SwitchParameter>]
+        Do not recurse into subdirectories.
+        
+        Required?                    false
+        Position?                    named
+        Default value                False
+        Accept pipeline input?       false
+        Aliases                      
+        Accept wildcard characters?  false
+        
+    <CommonParameters>
+        This cmdlet supports the common parameters: Verbose, Debug,
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see
+        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216). 
+    
+INPUTS
+    
+OUTPUTS
+    
+    -------------------------- EXAMPLE 1 --------------------------
+    
+    PS > ResolveInputObjectFileNames -Input "C:\Temp" -File
     
     
     

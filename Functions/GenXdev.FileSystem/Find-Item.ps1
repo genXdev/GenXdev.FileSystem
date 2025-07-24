@@ -164,7 +164,7 @@ function Find-Item {
             Mandatory = $false,
             HelpMessage = 'Search across all available drives'
         )]
-        [Alias('all')]
+
         [switch] $AllDrives,
         ########################################################################
         [Parameter(

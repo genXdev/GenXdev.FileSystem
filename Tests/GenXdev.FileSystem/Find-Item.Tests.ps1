@@ -10,6 +10,9 @@ Pester\Describe 'Find-Item 1' {
         if ($found.Count -eq 0) {
             Write-Warning 'Find-Item still not working, see issue'
         }
+        else {
+            Write-Host 'Find-Item is FIXED!!' -ForegroundColor Cyan
+        }
 
         # $found.Count | Pester\Should -GT 0
     }
@@ -338,7 +341,7 @@ $message
 
     Pester\It 'Should match the pattern' {
 
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.208.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.212.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
 
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\_EnsureTypes.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\EnsurePester.ps1")
@@ -354,7 +357,8 @@ $message
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Rename-InProject.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Start-RoboCopy.ps1")
 
-        $found.Count | Pester\Should -Be 13
+        # if this is failing right here, you added files to GenXdev.FileSystem, update the number accordingly
+        $found.Count | Pester\Should -Be 14
     }
 
     Pester\It 'Should find files with certain symbols in the filename' {

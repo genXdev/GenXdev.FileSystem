@@ -22,4 +22,5 @@ if ($major -ne 10) {
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Remove-ItemWithFallback.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Remove-OnReboot.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Rename-InProject.ps1"
+. "$PSScriptRoot\Functions\GenXdev.FileSystem\ResolveInputObjectFileNames.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Start-RoboCopy.ps1"
