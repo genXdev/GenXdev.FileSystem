@@ -120,7 +120,7 @@ Update-Module
 | [Remove-AllItems](#Remove-AllItems) | sdel | Recursively removes all content from a directory with advanced error handling. |
 | [Remove-ItemWithFallback](#Remove-ItemWithFallback) | rmf | Removes files or directories with multiple fallback mechanisms for reliable deletion. |
 | [Remove-OnReboot](#Remove-OnReboot) |  | Marks files or directories for deletion during the next system boot. |
-| [Rename-InProject](#Rename-InProject) | rip | Performs case-sensitive text replacement throughout a project directory. |
+| [Rename-InProject](#Rename-InProject) | rip | Performs text replacement throughout a project directory. |
 | [ResolveInputObjectFileNames](#ResolveInputObjectFileNames) |  |  |
 | [Start-RoboCopy](#Start-RoboCopy) | xc, rc | Provides a PowerShell wrapper for Microsoft's Robust Copy (RoboCopy) utility. |
 
@@ -1182,18 +1182,19 @@ NAME
     Rename-InProject
     
 SYNOPSIS
-    Performs case-sensitive text replacement throughout a project directory.
+    Performs text replacement throughout a project directory.
     
     
 SYNTAX
-    Rename-InProject [[-Source] <String>] [-FindText] <String> [-ReplacementText] <String> [-WhatIf] [-Confirm] [<CommonParameters>]
+    Rename-InProject [[-Source] <String>] [-FindText] <String> [-ReplacementText] <String> [-CaseInsensitive] [-WhatIf] [-Confirm] [<CommonParameters>]
     
     
 DESCRIPTION
     Recursively searches through files and directories in a project to perform text
     replacements. Handles both file/directory names and file contents. Skips common
     binary files and repository folders (.git, .svn) to avoid corruption. Uses UTF-8
-    encoding without BOM for file operations.
+    encoding without BOM for file operations. Supports both case-sensitive and
+    case-insensitive replacement modes.
     
 
 PARAMETERS
@@ -1209,7 +1210,8 @@ PARAMETERS
         Accept wildcard characters?  false
         
     -FindText <String>
-        The case-sensitive text pattern to search for in filenames and content.
+        The text pattern to search for in filenames and content. Case sensitivity is
+        controlled by the CaseInsensitive parameter.
         
         Required?                    true
         Position?                    2
@@ -1224,6 +1226,17 @@ PARAMETERS
         Required?                    true
         Position?                    3
         Default value                
+        Accept pipeline input?       false
+        Aliases                      
+        Accept wildcard characters?  false
+        
+    -CaseInsensitive [<SwitchParameter>]
+        Perform case-insensitive text replacement. When specified, matching is done
+        without regard to case.
+        
+        Required?                    false
+        Position?                    named
+        Default value                False
         Accept pipeline input?       false
         Aliases                      
         Accept wildcard characters?  false
@@ -1270,6 +1283,15 @@ OUTPUTS
     -------------------------- EXAMPLE 2 --------------------------
     
     PS > rip . "MyClass" "MyNewClass" -WhatIf
+    
+    
+    
+    
+    
+    
+    -------------------------- EXAMPLE 3 --------------------------
+    
+    PS > rip . "OLDNAME" "NewName" -CaseInsensitive
     
     
     

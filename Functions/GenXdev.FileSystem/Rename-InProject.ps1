@@ -1,23 +1,29 @@
 ﻿###############################################################################
 <#
 .SYNOPSIS
-Performs case-sensitive text replacement throughout a project directory.
+Performs text replacement throughout a project directory.
 
 .DESCRIPTION
 Recursively searches through files and directories in a project to perform text
 replacements. Handles both file/directory names and file contents. Skips common
 binary files and repository folders (.git, .svn) to avoid corruption. Uses UTF-8
-encoding without BOM for file operations.
+encoding without BOM for file operations. Supports both case-sensitive and
+case-insensitive replacement modes.
 
 .PARAMETER Source
 The directory, filepath, or directory+searchmask to process. Defaults to current
 directory if not specified.
 
 .PARAMETER FindText
-The case-sensitive text pattern to search for in filenames and content.
+The text pattern to search for in filenames and content. Case sensitivity is
+controlled by the CaseInsensitive parameter.
 
 .PARAMETER ReplacementText
 The text to replace all instances of FindText with.
+
+.PARAMETER CaseInsensitive
+Perform case-insensitive text replacement. When specified, matching is done
+without regard to case.
 
 .PARAMETER WhatIf
 Shows what changes would occur without actually making them.
@@ -28,6 +34,9 @@ Rename-InProject -Source .\src\*.js -FindText "oldName" `
 
 .EXAMPLE
 rip . "MyClass" "MyNewClass" -WhatIf
+
+.EXAMPLE
+rip . "OLDNAME" "NewName" -CaseInsensitive
 #>
 function Rename-InProject {
 
@@ -49,7 +58,7 @@ function Rename-InProject {
             Mandatory = $true,
             Position = 1,
             ValueFromPipeline = $false,
-            HelpMessage = 'The text to find (case sensitive)'
+            HelpMessage = 'The text to find (case sensitivity controlled by CaseInsensitive parameter)'
         )]
         [Alias('find', 'what', 'from')]
         [ValidateNotNullOrEmpty()]
@@ -63,7 +72,14 @@ function Rename-InProject {
         )]
         [Alias('into', 'txt', 'to')]
         [ValidateNotNull()]
-        [string] $ReplacementText
+        [string] $ReplacementText,
+        ########################################################################
+        [Parameter(
+            Mandatory = $false,
+            ValueFromPipeline = $false,
+            HelpMessage = 'Perform case-insensitive text replacement'
+        )]
+        [switch] $CaseInsensitive
         ########################################################################
     )
 
@@ -161,7 +177,14 @@ function Rename-InProject {
                             # replace text in file contents
                             $content = [IO.File]::ReadAllText($filePath,
                                 [Text.Encoding]::UTF8)
-                            $newContent = $content.Replace($FindText, $ReplacementText)
+
+                            if ($CaseInsensitive) {
+                                $newContent = $content.Replace($FindText, $ReplacementText,
+                                    [StringComparison]::OrdinalIgnoreCase)
+                            }
+                            else {
+                                $newContent = $content.Replace($FindText, $ReplacementText)
+                            }
 
                             if ($content -ne $newContent) {
                                 if ($PSCmdlet.ShouldProcess($filePath,
@@ -181,7 +204,13 @@ function Rename-InProject {
 
                         # handle filename changes
                         $oldName = [IO.Path]::GetFileName($filePath)
-                        $newName = $oldName.Replace($FindText, $ReplacementText)
+                        if ($CaseInsensitive) {
+                            $newName = $oldName.Replace($FindText, $ReplacementText,
+                                [StringComparison]::OrdinalIgnoreCase)
+                        }
+                        else {
+                            $newName = $oldName.Replace($FindText, $ReplacementText)
+                        }
 
                         if ($oldName -ne $newName) {
                             $newPath = [IO.Path]::Combine(
@@ -223,7 +252,13 @@ function Rename-InProject {
 
                     $dir = $_
                     $oldName = $dir.Name
-                    $newName = $oldName.Replace($FindText, $ReplacementText)
+                    if ($CaseInsensitive) {
+                        $newName = $oldName.Replace($FindText, $ReplacementText,
+                            [StringComparison]::OrdinalIgnoreCase)
+                    }
+                    else {
+                        $newName = $oldName.Replace($FindText, $ReplacementText)
+                    }
 
                     if ($oldName -ne $newName) {
                         $newPath = GenXdev.FileSystem\Expand-Path (
