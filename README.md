@@ -107,20 +107,21 @@ Update-Module
 
 # Cmdlet Index
 ### GenXdev.FileSystem<hr/>
+### GenXdev.FileSystem
 | Command | Aliases | Description |
 | --- | --- | --- |
-| [EnsurePester](#ensurepester) |  | Ensures Pester testing framework is available for use. |
+| [EnsurePester](#ensurepester) | &nbsp; | Ensures Pester testing framework is available for use. |
 | [Expand-Path](#expand-path) | ep | Expands any given file reference to a full pathname. |
 | [Find-DuplicateFiles](#find-duplicatefiles) | fdf | Find duplicate files across multiple directories based on configurable criteria. |
 | [Find-Item](#find-item) | l | Performs advanced file and directory searches with content filtering capabilities. |
 | [Invoke-Fasti](#invoke-fasti) | fasti | Extracts archive files in the current directory and deletes the originals. |
-| [Move-ItemWithTracking](#move-itemwithtracking) |  | Moves files and directories while preserving filesystem links and references. |
+| [Move-ItemWithTracking](#move-itemwithtracking) | &nbsp; | Moves files and directories while preserving filesystem links and references. |
 | [Move-ToRecycleBin](#move-torecyclebin) | recycle | Moves files and directories to the Windows Recycle Bin safely. |
 | [Remove-AllItems](#remove-allitems) | sdel | Recursively removes all content from a directory with advanced error handling. |
 | [Remove-ItemWithFallback](#remove-itemwithfallback) | rmf | Removes files or directories with multiple fallback mechanisms for reliable deletion. |
-| [Remove-OnReboot](#remove-onreboot) |  | Marks files or directories for deletion during the next system boot. |
+| [Remove-OnReboot](#remove-onreboot) | &nbsp; | Marks files or directories for deletion during the next system boot. |
 | [Rename-InProject](#rename-inproject) | rip | Performs text replacement throughout a project directory. |
-| [ResolveInputObjectFileNames](#resolveinputobjectfilenames) |  |  |
+| [ResolveInputObjectFileNames](#resolveinputobjectfilenames) | &nbsp; |  |
 | [Start-RoboCopy](#start-robocopy) | xc, rc | Provides a PowerShell wrapper for Microsoft's Robust Copy (RoboCopy) utility. |
 
 <br/><hr/><hr/><br/>
