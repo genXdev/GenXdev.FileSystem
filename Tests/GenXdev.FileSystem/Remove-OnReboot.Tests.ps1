@@ -30,9 +30,9 @@ $message
 
     Pester\BeforeAll {
         $testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
-        Microsoft.PowerShell.Management\Set-Location $testRoot
+        Microsoft.PowerShell.Management\Set-Location -LiteralPath $testRoot
         $testFile = Microsoft.PowerShell.Management\Join-Path $testRoot 'reboot-delete.txt'
-        Microsoft.PowerShell.Management\Set-Content -Path $testFile -Value 'test content'
+        Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile -Value 'test content'
     }
 
     Pester\AfterAll {

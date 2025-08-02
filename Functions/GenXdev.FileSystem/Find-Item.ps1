@@ -952,7 +952,7 @@ function Find-Item {
                                             else {
                                                 # output relative path of the found item
                                                 Microsoft.PowerShell.Utility\Write-Information "Resolving relative path with base: $relativeBasePath"
-                                                $rp = Microsoft.PowerShell.Management\Resolve-Path -LiteralPath:($itemInfo.FullName) -Relative -RelativeBasePath:$relativeBasePath
+                                                $rp = Microsoft.PowerShell.Management\Resolve-Path -LiteralPath: ($itemInfo.FullName) -Relative -RelativeBasePath:$relativeBasePath
                                                 Microsoft.PowerShell.Utility\Write-Verbose "Microsoft.PowerShell.Management\Resolve-Path -LiteralPath '$($itemInfo.FullName)'  -Relative -RelativeBasePath:'$relativeBasePath'"
 
                                                 Microsoft.PowerShell.Utility\Write-Information "Relative path: $rp"
@@ -1075,63 +1075,63 @@ function Find-Item {
 
                             Microsoft.PowerShell.Utility\Write-Information "Directory stack processing complete - processed $stackProcessCount items"
                             Microsoft.PowerShell.Utility\Write-Verbose "Search complete: Examined $totalDirsProcessed directories and $totalFilesChecked files, found $totalMatches matches"
+                    }
+
+                    # process each search mask provided
+                    foreach ($currentSearchPhrase in $using:SearchMask) {
+
+                        Microsoft.PowerShell.Utility\Write-Information "Processing search pattern: $currentSearchPhrase"
+                        Microsoft.PowerShell.Utility\Write-Verbose "Processing search pattern: $currentSearchPhrase"
+
+                        $expandedSearchMask = GenXdev.FileSystem\Expand-Path $currentSearchPhrase
+
+                        # Check if this specific search mask should include alternate data streams
+                        # Simplified to only check the expanded search mask
+                        $hasStreamPattern = $null -ne $streamPatterns[$expandedSearchMask]
+                        $includeAds = $includeAlternateFileStreams -or $hasStreamPattern
+
+                        if ($includeAds) {
+                            Microsoft.PowerShell.Utility\Write-Information "This search mask should include ADS: $currentSearchPhrase"
                         }
 
-                        # process each search mask provided
-                        foreach ($currentSearchPhrase in $using:SearchMask) {
+                        # if not a multi-drive search or currently processing root context
+                        if ($null -eq $PSItem) {
 
-                            Microsoft.PowerShell.Utility\Write-Information "Processing search pattern: $currentSearchPhrase"
-                            Microsoft.PowerShell.Utility\Write-Verbose "Processing search pattern: $currentSearchPhrase"
+                            Microsoft.PowerShell.Utility\Write-Information 'Searching in current context (not drive-specific)'
+                            Search-DirectoryContent -SearchPhrase $currentSearchPhrase `
+                                -IncludeAds $includeAds `
+                                -HasStreamPattern $hasStreamPattern `
+                                -ExpandedSearchMask $expandedSearchMask `
+                                -StreamPatterns $streamPatterns `
+                                -PassThru $using:PassThru `
+                                -RelativeBasePath $using:RelativeBasePath `
+                                -Pattern $using:Pattern `
+                                -Directory $using:Directory `
+                                -FilesAndDirectories $using:FilesAndDirectories `
+                                -NoRecurse $using:NoRecurse
+                        }
+                        else {
+                            $expandedSearchMask = GenXdev.FileSystem\Expand-Path $currentSearchPhrase `
+                                -ForceDrive $PSItem.Name
+                            # force the search to start from the specific drive
+                            Microsoft.PowerShell.Utility\Write-Information "Searching on drive $($PSItem.Name)"
+                            Microsoft.PowerShell.Utility\Write-Verbose "Searching on drive $($PSItem.Name)"
+                            Microsoft.PowerShell.Utility\Write-Information "Expanded path for drive $($PSItem.Name): $expandedSearchMask"
 
-                            $expandedSearchMask = GenXdev.FileSystem\Expand-Path $currentSearchPhrase
-
-                            # Check if this specific search mask should include alternate data streams
-                            # Simplified to only check the expanded search mask
-                            $hasStreamPattern = $null -ne $streamPatterns[$expandedSearchMask]
-                            $includeAds = $includeAlternateFileStreams -or $hasStreamPattern
-
-                            if ($includeAds) {
-                                Microsoft.PowerShell.Utility\Write-Information "This search mask should include ADS: $currentSearchPhrase"
-                            }
-
-                            # if not a multi-drive search or currently processing root context
-                            if ($null -eq $PSItem) {
-
-                                Microsoft.PowerShell.Utility\Write-Information 'Searching in current context (not drive-specific)'
-                                Search-DirectoryContent -SearchPhrase $currentSearchPhrase `
-                                    -IncludeAds $includeAds `
-                                    -HasStreamPattern $hasStreamPattern `
-                                    -ExpandedSearchMask $expandedSearchMask `
-                                    -StreamPatterns $streamPatterns `
-                                    -PassThru $using:PassThru `
-                                    -RelativeBasePath $using:RelativeBasePath `
-                                    -Pattern $using:Pattern `
-                                    -Directory $using:Directory `
-                                    -FilesAndDirectories $using:FilesAndDirectories `
-                                    -NoRecurse $using:NoRecurse
-                            }
-                            else {
-                                $expandedSearchMask = GenXdev.FileSystem\Expand-Path $currentSearchPhrase `
-                                    -ForceDrive $PSItem.Name
-                                # force the search to start from the specific drive
-                                Microsoft.PowerShell.Utility\Write-Information "Searching on drive $($PSItem.Name)"
-                                Microsoft.PowerShell.Utility\Write-Verbose "Searching on drive $($PSItem.Name)"
-                                Microsoft.PowerShell.Utility\Write-Information "Expanded path for drive $($PSItem.Name): $expandedSearchMask"
-
-                                Search-DirectoryContent -SearchPhrase $expandedSearchMask `
-                                    -IncludeAds $includeAds `
-                                    -HasStreamPattern $hasStreamPattern `
-                                    -ExpandedSearchMask $expandedSearchMask `
-                                    -StreamPatterns $streamPatterns `
-                                    -PassThru $using:PassThru `
-                                    -RelativeBasePath $using:RelativeBasePath `
-                                    -Pattern $using:Pattern `
-                                    -Directory $using:Directory `
-                                    -FilesAndDirectories $using:FilesAndDirectories `
-                                    -NoRecurse $using:NoRecurse
-                            }
+                            Search-DirectoryContent -SearchPhrase $expandedSearchMask `
+                                -IncludeAds $includeAds `
+                                -HasStreamPattern $hasStreamPattern `
+                                -ExpandedSearchMask $expandedSearchMask `
+                                -StreamPatterns $streamPatterns `
+                                -PassThru $using:PassThru `
+                                -RelativeBasePath $using:RelativeBasePath `
+                                -Pattern $using:Pattern `
+                                -Directory $using:Directory `
+                                -FilesAndDirectories $using:FilesAndDirectories `
+                                -NoRecurse $using:NoRecurse
                         }
                     }
+                }
 
         Microsoft.PowerShell.Utility\Write-Information 'PROCESS Find-Item: Search processing completed'
         Microsoft.PowerShell.Utility\Write-Verbose 'Search completed'

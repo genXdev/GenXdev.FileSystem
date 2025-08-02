@@ -242,7 +242,7 @@ function Rename-InProject {
                 }
 
             # process directories in reverse order
-            Microsoft.PowerShell.Management\Get-ChildItem -Path $sourcePath -Directory -Recurse |
+            Microsoft.PowerShell.Management\Get-ChildItem -LiteralPath  $sourcePath -Directory -Recurse |
                 Microsoft.PowerShell.Utility\Sort-Object -Descending |
                 Microsoft.PowerShell.Core\Where-Object {
                     $_.FullName -notlike '*\.git\*' -and

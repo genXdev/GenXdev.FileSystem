@@ -54,7 +54,8 @@ function Remove-OnReboot {
 
         # get existing pending renames or initialize empty array
         try {
-            $pendingRenames = @(Microsoft.PowerShell.Management\Get-ItemProperty -Path $regKey `
+            $pendingRenames = @(Microsoft.PowerShell.Management\Get-ItemProperty `
+                    -Path $regKey `
                     -Name $regName -ErrorAction SilentlyContinue).$regName
         }
         catch {
@@ -91,7 +92,7 @@ function Remove-OnReboot {
                                 $newPath = [System.IO.Path]::Combine($dir, $newName)
 
                                 # rename and hide the file
-                                Microsoft.PowerShell.Management\Rename-Item -Path $fullPath -NewName $newName -Force `
+                                Microsoft.PowerShell.Management\Rename-Item -LiteralPath $fullPath -NewName $newName -Force `
                                     -ErrorAction Stop
                                 $file = Microsoft.PowerShell.Management\Get-Item -LiteralPath $newPath -Force
                                 $file.Attributes = $file.Attributes -bor `

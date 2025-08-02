@@ -40,7 +40,7 @@ $message
     }
 
     Pester\BeforeAll {
-        Microsoft.PowerShell.Management\Push-Location $Script:testRoot
+        Microsoft.PowerShell.Management\Push-Location -LiteralPath $Script:testRoot
     }
 
     Pester\AfterAll {
@@ -64,49 +64,49 @@ $message
             $path = Microsoft.PowerShell.Management\Join-Path $Script:testDir $file
             Microsoft.PowerShell.Management\New-Item -Path (Microsoft.PowerShell.Management\Split-Path $path) -ItemType Directory -Force
             # Use Set-Content with -NoNewline to avoid adding line endings
-            Microsoft.PowerShell.Management\Set-Content -Path $path -Value $Script:files[$file] -NoNewline
+            Microsoft.PowerShell.Management\Set-Content -LiteralPath $path -Value $Script:files[$file] -NoNewline
         }
 
-        Microsoft.PowerShell.Management\Push-Location $Script:testDir
+        Microsoft.PowerShell.Management\Push-Location -LiteralPath $Script:testDir
     }
 
     Pester\AfterEach {
         Microsoft.PowerShell.Management\Pop-Location
-        Microsoft.PowerShell.Management\Remove-Item -Path (Microsoft.PowerShell.Management\Join-Path $Script:testRoot 'rename-test') -Recurse -Force -ErrorAction SilentlyContinue
+        Microsoft.PowerShell.Management\Remove-Item -LiteralPath (Microsoft.PowerShell.Management\Join-Path $Script:testRoot 'rename-test') -Recurse -Force -ErrorAction SilentlyContinue
     }
 
     Pester\It 'Replaces text content in files' {
         GenXdev.FileSystem\Rename-InProject -Source .\ -FindText 'oldtext' -ReplacementText 'newtext'
 
         # Trim any line endings when comparing content
-        $content = (Microsoft.PowerShell.Management\Get-Content 'oldfile.txt' -Raw).TrimEnd()
+        $content = (Microsoft.PowerShell.Management\Get-Content -LiteralPath 'oldfile.txt' -Raw).TrimEnd()
         $content | Pester\Should -Be 'This is newtext in a file'
 
-        $nestedContent = (Microsoft.PowerShell.Management\Get-Content 'subdir/nested.txt' -Raw).TrimEnd()
+        $nestedContent = (Microsoft.PowerShell.Management\Get-Content -LiteralPath 'subdir/nested.txt' -Raw).TrimEnd()
         $nestedContent | Pester\Should -Be 'More newtext content'
     }
 
     Pester\It 'Renames files containing search text' {
         GenXdev.FileSystem\Rename-InProject -Source .\ -FindText 'old' -ReplacementText 'new'
 
-        Microsoft.PowerShell.Management\Test-Path 'newfile.txt' | Pester\Should -BeTrue
-        Microsoft.PowerShell.Management\Test-Path 'oldfile.txt' | Pester\Should -BeFalse
+        Microsoft.PowerShell.Management\Test-Path -LiteralPath 'newfile.txt' | Pester\Should -BeTrue
+        Microsoft.PowerShell.Management\Test-Path -LiteralPath 'oldfile.txt' | Pester\Should -BeFalse
     }
 
     Pester\It 'Renames directories containing search text' {
         GenXdev.FileSystem\Rename-InProject -Source . -FindText 'OldName' -ReplacementText 'NewName'
 
-        Microsoft.PowerShell.Management\Test-Path 'NewName' | Pester\Should -BeTrue
-        Microsoft.PowerShell.Management\Test-Path 'OldName' | Pester\Should -BeFalse
-        Microsoft.PowerShell.Management\Test-Path 'NewName/test.txt' | Pester\Should -BeTrue
+        Microsoft.PowerShell.Management\Test-Path -LiteralPath 'NewName' | Pester\Should -BeTrue
+        Microsoft.PowerShell.Management\Test-Path -LiteralPath 'OldName' | Pester\Should -BeFalse
+        Microsoft.PowerShell.Management\Test-Path -LiteralPath 'NewName/test.txt' | Pester\Should -BeTrue
     }
 
     Pester\It 'Performs no changes in WhatIf mode' {
         GenXdev.FileSystem\Rename-InProject -Source . -FindText 'oldtext' -ReplacementText 'newtext' -WhatIf
 
-        $content = (Microsoft.PowerShell.Management\Get-Content 'oldfile.txt' -Raw).TrimEnd()
+        $content = (Microsoft.PowerShell.Management\Get-Content -LiteralPath 'oldfile.txt' -Raw).TrimEnd()
         $content | Pester\Should -Be 'This is oldtext in a file'
-        Microsoft.PowerShell.Management\Test-Path 'oldfile.txt' | Pester\Should -BeTrue
+        Microsoft.PowerShell.Management\Test-Path -LiteralPath 'oldfile.txt' | Pester\Should -BeTrue
     }
 
     Pester\It 'Skips binary files' {
@@ -118,7 +118,7 @@ $message
         GenXdev.FileSystem\Rename-InProject -Source . -FindText 'old' -ReplacementText 'new'
 
         # Binary file Should remain unchanged
-        Microsoft.PowerShell.Management\Test-Path $binPath | Pester\Should -BeTrue
+        Microsoft.PowerShell.Management\Test-Path -LiteralPath $binPath | Pester\Should -BeTrue
         $newBytes = [System.IO.File]::ReadAllBytes((Microsoft.PowerShell.Management\Join-Path $Script:testDir $binPath))
         $newBytes | Pester\Should -Be $bytes
     }

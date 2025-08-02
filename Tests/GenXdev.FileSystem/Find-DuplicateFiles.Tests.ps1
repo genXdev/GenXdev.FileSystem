@@ -47,35 +47,36 @@ $message
         Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path $path1, $path2 -Force | Microsoft.PowerShell.Core\Out-Null
 
         # Create identical files with identical content
-        'test content' | Microsoft.PowerShell.Management\Set-Content -Path "$path1\file1.txt" -Encoding UTF8
-        'test content' | Microsoft.PowerShell.Management\Set-Content -Path "$path2\file1.txt" -Encoding UTF8
+        'test content' | Microsoft.PowerShell.Management\Set-Content -LiteralPath "$path1\file1.txt" -Encoding UTF8
+        'test content' | Microsoft.PowerShell.Management\Set-Content -LiteralPath "$path2\file1.txt" -Encoding UTF8
 
         # Give them the same last modified dates
         $date = Microsoft.PowerShell.Utility\Get-Date
-        Microsoft.PowerShell.Management\Set-ItemProperty -Path "$path1\file1.txt" -Name LastWriteTime -Value $date
-        Microsoft.PowerShell.Management\Set-ItemProperty -Path "$path2\file1.txt" -Name LastWriteTime -Value $date
+        Microsoft.PowerShell.Management\Set-ItemProperty -LiteralPath "$path1\file1.txt" -Name LastWriteTime -Value $date
+        Microsoft.PowerShell.Management\Set-ItemProperty -LiteralPath "$path2\file1.txt" -Name LastWriteTime -Value $date
 
         $unique1 = Microsoft.PowerShell.Management\Join-Path $testRoot 'unique1'
         $unique2 = Microsoft.PowerShell.Management\Join-Path $testRoot 'unique2'
 
         # Create unique files
-        'unique1' | Microsoft.PowerShell.Management\Set-Content -Path $unique1 -Encoding UTF8
-        'unique2' | Microsoft.PowerShell.Management\Set-Content -Path $unique2 -Encoding UTF8
+        'unique1' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $unique1 -Encoding UTF8
+        'unique2' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $unique2 -Encoding UTF8
 
     }
 
     Pester\AfterAll {
-        Microsoft.PowerShell.Management\Remove-Item -Path (Microsoft.PowerShell.Management\Join-Path $testRoot 'dup_test*') -Recurse -Force -ErrorAction SilentlyContinue
+        Microsoft.PowerShell.Management\Get-ChildItem -LiteralPath $testRoot -Filter "dup_test*" -Recurse  -ErrorAction SilentlyContinue |
+            Microsoft.PowerShell.Management\Remove-Item -Force -ErrorAction SilentlyContinue -Confirm:$False -Recurse
     }
 
     Pester\It 'Ignores size comparison when specified' {
 
-        'different content' | Microsoft.PowerShell.Management\Set-Content -Path "$path2\file1.txt" -Encoding UTF8
+        'different content' | Microsoft.PowerShell.Management\Set-Content -LiteralPath "$path2\file1.txt" -Encoding UTF8
 
         # Give them the same last modified dates
         $date = Microsoft.PowerShell.Utility\Get-Date
-        Microsoft.PowerShell.Management\Set-ItemProperty -Path "$path1\file1.txt" -Name LastWriteTime -Value $date
-        Microsoft.PowerShell.Management\Set-ItemProperty -Path "$path2\file1.txt" -Name LastWriteTime -Value $date
+        Microsoft.PowerShell.Management\Set-ItemProperty -LiteralPath "$path1\file1.txt" -Name LastWriteTime -Value $date
+        Microsoft.PowerShell.Management\Set-ItemProperty -LiteralPath "$path2\file1.txt" -Name LastWriteTime -Value $date
 
         $dups = GenXdev.FileSystem\Find-DuplicateFiles -Paths $path1, $path2 -DontCompareSize
         $dups.Count | Pester\Should -Be 1
@@ -84,7 +85,7 @@ $message
 
     Pester\It "Doesn't ignore last modified date comparison when specified" {
 
-        'different content' | Microsoft.PowerShell.Management\Set-Content -Path "$path2\file1.txt" -Encoding UTF8
+        'different content' | Microsoft.PowerShell.Management\Set-Content -LiteralPath "$path2\file1.txt" -Encoding UTF8
 
         $dups = GenXdev.FileSystem\Find-DuplicateFiles -Paths $path1, $path2 -DontCompareSize
         $dups.Count | Pester\Should -Be 0
@@ -92,7 +93,7 @@ $message
 
     Pester\It 'Finds no duplicates when files are unique' {
 
-        Microsoft.PowerShell.Management\Remove-Item "$path2\file1.txt"
+        Microsoft.PowerShell.Management\Remove-Item -LiteralPath "$path2\file1.txt"  -Confirm:$False
         $dups = GenXdev.FileSystem\Find-DuplicateFiles -Paths $path1, $path2
         $dups | Pester\Should -BeNullOrEmpty
     }

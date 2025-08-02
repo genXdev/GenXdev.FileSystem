@@ -22,11 +22,11 @@ Requires 7-Zip installation (will attempt auto-install via winget if missing).
 function Invoke-Fasti {
 
     [CmdletBinding()]
-    [Alias('fasti')]
+    [Alias("fasti")]
     param(
         [Parameter(
             Mandatory = $false,
-            HelpMessage = 'Enter the password for the encrypted archive(s)'
+            HelpMessage = "Enter the password for the encrypted archive(s)"
         )]
         [string] $Password
     )
@@ -34,25 +34,25 @@ function Invoke-Fasti {
     begin {
 
         # list of supported archive extensions
-        $extensions = @('*.7z', '*.7z.001', '*.xz', '*.bzip2', '*.gzip', '*.tar', '*.zip', '*.zip.001',
-            '*.wim', '*.ar', '*.arj', '*.cab', '*.chm', '*.cpio', '*.cramfs',
-            '*.dmg', '*.ext', '*.fat', '*.gpt', '*.hfs', '*.ihex', '*.iso',
-            '*.lzh', '*.lzma', '*.mbr', '*.msi', '*.nsis', '*.ntfs', '*.qcow2',
-            '*.rar', '*.rpm', '*.squashfs', '*.udf', '*.uefi', '*.vdi', '*.vhd',
-            '*.vmdk', '*.wim', '*.xar', '*.z')
+        $extensions = @("*.7z", "*.7z.001", "*.xz", "*.bzip2", "*.gzip", "*.tar", "*.zip", "*.zip.001",
+            "*.wim", "*.ar", "*.arj", "*.cab", "*.chm", "*.cpio", "*.cramfs",
+            "*.dmg", "*.ext", "*.fat", "*.gpt", "*.hfs", "*.ihex", "*.iso",
+            "*.lzh", "*.lzma", "*.mbr", "*.msi", "*.nsis", "*.ntfs", "*.qcow2",
+            "*.rar", "*.rpm", "*.squashfs", "*.udf", "*.uefi", "*.vdi", "*.vhd",
+            "*.vmdk", "*.wim", "*.xar", "*.z")
     }
 
 
     process {
 
         # process each archive file found in current directory
-        Microsoft.PowerShell.Management\Get-ChildItem $extensions -File -ErrorAction SilentlyContinue |
+        Microsoft.PowerShell.Management\Get-ChildItem -LiteralPath .\ -Filter $extensions -File -ErrorAction SilentlyContinue |
             Microsoft.PowerShell.Core\ForEach-Object {
 
                 Microsoft.PowerShell.Utility\Write-Verbose "Processing archive: $($PSItem.Name)"
 
                 # initialize 7zip executable path
-                $sevenZip = '7z'
+                $sevenZip = "7z"
 
                 # get archive details
                 $zipFile = $PSItem.fullname
@@ -60,7 +60,7 @@ function Invoke-Fasti {
                 $path = [System.IO.Path]::GetDirectoryName($zipFile)
                 $extractPath = [system.Io.Path]::Combine($path, $name)
 
-                # create extraction directory if it doesn't exist
+                # create extraction directory if it doesn"t exist
                 if ([System.IO.Directory]::exists($extractPath) -eq $false) {
 
                     Microsoft.PowerShell.Utility\Write-Verbose "Creating directory: $extractPath"
@@ -76,22 +76,22 @@ function Invoke-Fasti {
 
                         if ((Microsoft.PowerShell.Core\Get-Command winget -ErrorAction SilentlyContinue).Length -eq 0) {
 
-                            throw 'You need to install 7zip or winget first'
+                            throw "You need to install 7zip or winget first"
                         }
 
-                        Microsoft.PowerShell.Utility\Write-Verbose 'Installing 7-Zip via winget...'
+                        Microsoft.PowerShell.Utility\Write-Verbose "Installing 7-Zip via winget..."
                         winget install 7zip
 
                         if (![IO.File]::Exists($sevenZip)) {
 
-                            throw 'You need to install 7-zip'
+                            throw "You need to install 7-zip"
                         }
                     }
                 }
 
                 # extract archive contents
                 Microsoft.PowerShell.Utility\Write-Verbose "Extracting to: $extractPath"
-                $pwparam = if ($Password) { "-p$Password" } else { '' }
+                $pwparam = if ($Password) { "-p$Password" } else { "" }
                 if ([string]::IsNullOrWhiteSpace($Password)) {
 
                     & $sevenZip x -y "-o$extractPath" $zipFile
@@ -106,10 +106,10 @@ function Invoke-Fasti {
 
                     try {
                         Microsoft.PowerShell.Utility\Write-Verbose "Removing original archive: $zipFile"
-                        Microsoft.PowerShell.Management\Remove-Item "$zipFile" -Force -ErrorAction silentlycontinue
+                        Microsoft.PowerShell.Management\Remove-Item -LiteralPath "$zipFile" -Force -ErrorAction silentlycontinue
                     }
                     catch {
-                        Microsoft.PowerShell.Utility\Write-Verbose 'Failed to remove original archive'
+                        Microsoft.PowerShell.Utility\Write-Verbose "Failed to remove original archive"
                     }
                 }
             }

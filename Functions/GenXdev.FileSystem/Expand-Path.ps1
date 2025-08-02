@@ -149,7 +149,7 @@ function Expand-Path {
 
                 if (($normalizedPath.Length -lt 3) -or ($normalizedPath.Substring(2, 1) -ne [System.IO.Path]::DirectorySeparatorChar)) {
 
-                    Microsoft.PowerShell.Management\Push-Location $normalizedPath.Substring(0, 2)
+                    Microsoft.PowerShell.Management\Push-Location -LiteralPath $normalizedPath.Substring(0, 2)
                     try {
                         $normalizedPath = "$(Microsoft.PowerShell.Management\Get-Location)$([IO.Path]::DirectorySeparatorChar)$($normalizedPath.Substring(2))"
                         $normalizedPath = [System.IO.Path]::GetFullPath($normalizedPath)
@@ -212,7 +212,7 @@ function Expand-Path {
                     [System.IO.Path]::Combine($pwd, $normalizedPath))
             }
             catch {
-                $normalizedPath = Microsoft.PowerShell.Management\Convert-Path $normalizedPath
+                $normalizedPath = Microsoft.PowerShell.Management\Convert-Path -LiteralPath $normalizedPath
             }
         }
 

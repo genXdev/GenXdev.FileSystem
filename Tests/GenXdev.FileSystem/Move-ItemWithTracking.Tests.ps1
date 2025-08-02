@@ -15,7 +15,7 @@ Pester\AfterAll {
 Pester\Describe 'Move-ItemWithTracking' {
     Pester\It 'Should pass PSScriptAnalyzer rules' {
         # get the script path for analysis
-        $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Move-ItemWithTracking.ps1"
+        $scriptPath = GenXdev.FileSystem\Expand-Path  "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Move-ItemWithTracking.ps1"
 
         # run analyzer with explicit settings
         $analyzerResults = GenXdev.Coding\Invoke-GenXdevScriptAnalyzer `
@@ -41,7 +41,7 @@ $message
     Pester\BeforeAll {
         $sourceFile = Microsoft.PowerShell.Management\Join-Path $testRoot 'track-source.txt'
         $destFile = Microsoft.PowerShell.Management\Join-Path $testRoot 'track-dest.txt'
-        Microsoft.PowerShell.Management\Set-Content -Path $sourceFile -Value 'test content'
+        Microsoft.PowerShell.Management\Set-Content -LiteralPath $sourceFile -Value 'test content'
     }
 
     Pester\It 'Moves file with link tracking' {
@@ -52,7 +52,7 @@ $message
         }
 
         GenXdev.FileSystem\Move-ItemWithTracking -Path $sourceFile -Destination $destFile | Pester\Should -BeTrue
-        Microsoft.PowerShell.Management\Test-Path -Path $sourceFile | Pester\Should -BeFalse
-        Microsoft.PowerShell.Management\Test-Path -Path $destFile | Pester\Should -BeTrue
+        Microsoft.PowerShell.Management\Test-Path -LiteralPath  $sourceFile | Pester\Should -BeFalse
+        Microsoft.PowerShell.Management\Test-Path -LiteralPath  $destFile | Pester\Should -BeTrue
     }
 }

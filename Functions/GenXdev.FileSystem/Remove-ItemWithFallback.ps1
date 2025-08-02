@@ -135,7 +135,7 @@ function Remove-ItemWithFallback {
 
                 if ($null -ne $providerInfo -and $providerInfo.Name -eq 'FileSystem') {
                     # last resort - mark for deletion on next boot
-                    if (GenXdev.FileSystem\Remove-OnReboot -Path $Path) {
+                    if (GenXdev.FileSystem\Remove-OnRebootn$Path) {
                         Microsoft.PowerShell.Utility\Write-Verbose "Marked for deletion on next reboot: $Path"
                         return [bool]$CountRebootDeletionAsSuccess
                     }

@@ -1,7 +1,7 @@
 ﻿Pester\Describe 'Start-RoboCopy' {
     Pester\BeforeAll {
         $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
-        Microsoft.PowerShell.Management\Push-Location ($Script:testRoot)
+        Microsoft.PowerShell.Management\Push-Location -LiteralPath ($Script:testRoot)
     }
 
     Pester\AfterAll {
@@ -20,7 +20,7 @@
     }
 
     Pester\AfterEach {
-        Microsoft.PowerShell.Management\Remove-Item -Path $Script:source, $Script:dest -Recurse -Force
+        Microsoft.PowerShell.Management\Remove-Item -LiteralPath $Script:source, $Script:dest -Recurse -Force
     }
 
     Pester\It 'Should pass PSScriptAnalyzer rules' {
@@ -51,15 +51,15 @@ $message
 
     Pester\It 'Copies files between folders' {
         GenXdev.FileSystem\Start-RoboCopy -Source $Script:source -DestinationDirectory $Script:dest
-        $destFiles = Microsoft.PowerShell.Management\Get-ChildItem $Script:dest -File
+        $destFiles = Microsoft.PowerShell.Management\Get-ChildItem -LiteralPath $Script:dest -File
         $destFiles.Count | Pester\Should -Be 3
     }
 
     Pester\It 'Moves files when specified' {
         GenXdev.FileSystem\Start-RoboCopy -Source $Script:source -DestinationDirectory $Script:dest -Move
-        $sourceFiles = Microsoft.PowerShell.Management\Get-ChildItem $Script:source -File
+        $sourceFiles = Microsoft.PowerShell.Management\Get-ChildItem -LiteralPath $Script:source -File
         $sourceFiles.Count | Pester\Should -Be 0
-        $destFiles = Microsoft.PowerShell.Management\Get-ChildItem $Script:dest -File
+        $destFiles = Microsoft.PowerShell.Management\Get-ChildItem -LiteralPath $Script:dest -File
         $destFiles.Count | Pester\Should -Be 3
     }
 
@@ -68,6 +68,6 @@ $message
         'subtest' | Microsoft.PowerShell.Utility\Out-File "$Script:source\subfolder\subfile.txt"
 
         GenXdev.FileSystem\Start-RoboCopy -Source $Script:source -DestinationDirectory $Script:dest -Mirror
-        Microsoft.PowerShell.Management\Test-Path "$Script:dest\subfolder\subfile.txt" | Pester\Should -Be $true
+        Microsoft.PowerShell.Management\Test-Path -LiteralPath "$Script:dest\subfolder\subfile.txt" | Pester\Should -Be $true
     }
 }
