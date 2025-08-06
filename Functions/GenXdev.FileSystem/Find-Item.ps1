@@ -1049,7 +1049,7 @@ function Find-Item {
                                                         }
                                                         else {
                                                             # For path output format the path with stream
-                                                            $rp = Microsoft.PowerShell.Management\Resolve-Path -LiteralPath $itemInfo.FullName `
+                                                            $rp = Microsoft.PowerShell.Management\Resolve-Path -LiteralPath ($itemInfo.FullName) `
                                                                 -Relative -RelativeBasePath:$relativeBasePath
                                                             Microsoft.PowerShell.Utility\Write-Output "$rp`:$($stream.Stream)"
                                                         }
