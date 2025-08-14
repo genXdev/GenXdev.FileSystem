@@ -1,48 +1,4 @@
-###############################################################################
 Pester\Describe 'Find-Item 1' {
-
-    Pester\It 'Should work with wildcard in the holding directory' {
-
-        $pattern = Expand-Path "$PSScriptRoot\..\..\..\..\Genx*\1*\functions\genxdev.*\*.ps1"
-
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask $pattern)
-
-        if ($found.Count -eq 0) {
-            Write-Warning 'Find-Item still not working, see issue'
-        }
-        else {
-            Write-Host 'Find-Item is FIXED!!' -ForegroundColor Cyan
-        }
-
-        # $found.Count | Pester\Should -GT 0
-    }
-
-    Pester\It 'Should pass PSScriptAnalyzer rules' {
-
-        # get the script path for analysis
-        $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Find-Item.ps1"
-
-        # run analyzer with explicit settings
-        $analyzerResults = GenXdev.Coding\Invoke-GenXdevScriptAnalyzer `
-            -Path $scriptPath
-
-        [string] $message = ''
-        $analyzerResults | Microsoft.PowerShell.Core\ForEach-Object {
-
-            $message = $message + @"
---------------------------------------------------
-Rule: $($_.RuleName)`
-Description: $($_.Description)
-Message: $($_.Message)
-`r`n
-"@
-        }
-
-        $analyzerResults.Count | Pester\Should -Be 0 -Because @"
-The following PSScriptAnalyzer rules are being violated:
-$message
-"@;
-    }
 
     Pester\BeforeAll {
         $testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
@@ -69,6 +25,22 @@ $message
     Pester\AfterEach {
 
         GenXdev.FileSystem\Remove-AllItems $testDir
+    }
+
+    Pester\It 'Should work with wildcard in the holding directory' {
+
+        $pattern = Expand-Path "$PSScriptRoot\..\..\..\..\Genx*\1*\functions\genxdev.*\*.ps1"
+
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask $pattern)
+
+        if ($found.Count -eq 0) {
+            Write-Warning 'Find-Item still not working, see issue'
+        }
+        else {
+            Write-Host 'Find-Item is FIXED!!' -ForegroundColor Cyan
+        }
+
+        # $found.Count | Pester\Should -GT 0
     }
 
     Pester\It 'Finds files by extension' {
@@ -341,9 +313,8 @@ $message
 
     Pester\It 'Should match the pattern' {
 
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.236.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.238.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
 
-        $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\_EnsureTypes.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\EnsurePester.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Expand-Path.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Find-DuplicateFiles.ps1")

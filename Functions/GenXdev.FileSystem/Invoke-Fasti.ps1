@@ -46,7 +46,7 @@ function Invoke-Fasti {
     process {
 
         # process each archive file found in current directory
-        Microsoft.PowerShell.Management\Get-ChildItem -LiteralPath .\ -Filter $extensions -File -ErrorAction SilentlyContinue |
+        Microsoft.PowerShell.Management\Get-ChildItem -Path $extensions -File -ErrorAction SilentlyContinue |
             Microsoft.PowerShell.Core\ForEach-Object {
 
                 Microsoft.PowerShell.Utility\Write-Verbose "Processing archive: $($PSItem.Name)"

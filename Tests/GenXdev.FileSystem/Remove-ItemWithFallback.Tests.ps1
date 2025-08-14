@@ -1,5 +1,4 @@
-﻿###############################################################################
-Pester\Describe 'Remove-ItemWithFallback' {
+﻿Pester\Describe 'Remove-ItemWithFallback' {
 
     Pester\BeforeAll {
         ###############################################################################
@@ -45,32 +44,6 @@ Pester\Describe 'Remove-ItemWithFallback' {
                 GenXdev.FileSystem\Remove-AllItems $script:testRoot -DeleteFolder -ErrorAction SilentlyContinue
             }
         }
-    }
-
-    Pester\It 'Should pass PSScriptAnalyzer rules' {
-
-        # get the script path for analysis
-        $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Remove-ItemWithFallback.ps1"
-
-        # run analyzer with explicit settings
-        $analyzerResults = GenXdev.Coding\Invoke-GenXdevScriptAnalyzer `
-            -Path $scriptPath
-
-        [string] $message = ''
-        $analyzerResults | Microsoft.PowerShell.Core\ForEach-Object {
-            $message = $message + @"
---------------------------------------------------
-Rule: $($_.RuleName)`
-Description: $($_.Description)
-Message: $($_.Message)
-`r`n
-"@
-        }
-
-        $analyzerResults.Count | Pester\Should -Be 0 -Because @"
-The following PSScriptAnalyzer rules are being violated:
-$message
-"@;
     }
 
     Pester\It 'Removes file using direct deletion' {

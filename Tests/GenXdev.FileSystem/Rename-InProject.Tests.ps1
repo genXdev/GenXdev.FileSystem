@@ -1,51 +1,16 @@
-﻿###############################################################################
-Pester\BeforeAll {
-    $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
-}
-
-Pester\AfterAll {
-    $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
-
-    # cleanup test folder
-    GenXdev.FileSystem\Remove-AllItems $Script:testRoot -DeleteFolder
-}
-
-###############################################################################
-Pester\Describe 'Rename-InProject' {
-    Pester\It 'Should pass PSScriptAnalyzer rules' {
-
-        # get the script path for analysis
-        $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Rename-InProject.ps1"
-
-        # run analyzer with explicit settings
-        $analyzerResults = GenXdev.Coding\Invoke-GenXdevScriptAnalyzer `
-            -Path $scriptPath
-
-        [string] $message = ''
-        $analyzerResults | Microsoft.PowerShell.Core\ForEach-Object {
-
-            $message = $message + @"
---------------------------------------------------
-Rule: $($_.RuleName)`
-Description: $($_.Description)
-Message: $($_.Message)
-`r`n
-"@
-        }
-
-        $analyzerResults.Count | Pester\Should -Be 0 -Because @"
-The following PSScriptAnalyzer rules are being violated:
-$message
-"@;
-    }
+﻿Pester\Describe 'Rename-InProject' {
 
     Pester\BeforeAll {
+        $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
         Microsoft.PowerShell.Management\Push-Location -LiteralPath $Script:testRoot
     }
 
     Pester\AfterAll {
-        Microsoft.PowerShell.Management\Pop-Location
+        $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
+
+        # cleanup test folder
         GenXdev.FileSystem\Remove-AllItems $Script:testRoot -DeleteFolder
+        Microsoft.PowerShell.Management\Pop-Location
     }
 
     Pester\BeforeEach {

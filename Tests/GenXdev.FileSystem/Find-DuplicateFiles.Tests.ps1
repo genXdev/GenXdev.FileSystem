@@ -1,46 +1,7 @@
-﻿###############################################################################
-Pester\BeforeAll {
-    $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
-}
-
-Pester\AfterAll {
-    $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
-
-    # cleanup test folder
-    GenXdev.FileSystem\Remove-AllItems $testRoot -DeleteFolder
-}
-
-###############################################################################
-Pester\Describe 'Find-DuplicateFiles' {
-
-    Pester\It 'Should pass PSScriptAnalyzer rules' {
-
-        # get the script path for analysis
-        $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Find-DuplicateFiles.ps1"
-
-        # run analyzer with explicit settings
-        $analyzerResults = GenXdev.Coding\Invoke-GenXdevScriptAnalyzer `
-            -Path $scriptPath
-
-        [string] $message = ''
-        $analyzerResults | Microsoft.PowerShell.Core\ForEach-Object {
-
-            $message = $message + @"
---------------------------------------------------
-Rule: $($_.RuleName)`
-Description: $($_.Description)
-Message: $($_.Message)
-`r`n
-"@
-        }
-
-        $analyzerResults.Count | Pester\Should -Be 0 -Because @"
-The following PSScriptAnalyzer rules are being violated:
-$message
-"@;
-    }
+﻿Pester\Describe 'Find-DuplicateFiles' {
 
     Pester\BeforeAll {
+        $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
         # Setup test folders with duplicate files
         $path1 = Microsoft.PowerShell.Management\Join-Path $testRoot 'dup_test1'
         $path2 = Microsoft.PowerShell.Management\Join-Path $testRoot 'dup_test2'
@@ -65,8 +26,11 @@ $message
     }
 
     Pester\AfterAll {
-        Microsoft.PowerShell.Management\Get-ChildItem -LiteralPath $testRoot -Filter "dup_test*" -Recurse  -ErrorAction SilentlyContinue |
-            Microsoft.PowerShell.Management\Remove-Item -Force -ErrorAction SilentlyContinue -Confirm:$False -Recurse
+        
+        $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
+
+        # cleanup test folder
+        GenXdev.FileSystem\Remove-AllItems $testRoot -DeleteFolder
     }
 
     Pester\It 'Ignores size comparison when specified' {

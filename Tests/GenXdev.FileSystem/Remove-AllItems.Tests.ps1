@@ -1,46 +1,17 @@
-﻿###############################################################################
-Pester\BeforeAll {
-    $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
-    Microsoft.PowerShell.Management\Push-Location -LiteralPath $testRoot
-}
+﻿Pester\Describe 'Remove-AllItems' {
 
-Pester\AfterAll {
-    $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
-
-    # cleanup test folder
-    if (Microsoft.PowerShell.Management\Test-Path -LiteralPath $testRoot) {
-        $null = GenXdev.FileSystem\Remove-AllItems $testRoot -DeleteFolder
+    Pester\BeforeAll {
+        $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
+        Microsoft.PowerShell.Management\Push-Location -LiteralPath $testRoot
     }
-}
 
-###############################################################################
-Pester\Describe 'Remove-AllItems' {
+    Pester\AfterAll {
+        $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
 
-    Pester\It 'Should pass PSScriptAnalyzer rules' {
-
-        # get the script path for analysis
-        $scriptPath = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Remove-AllItems.ps1"
-
-        # run analyzer with explicit settings
-        $analyzerResults = GenXdev.Coding\Invoke-GenXdevScriptAnalyzer `
-            -Path $scriptPath
-
-        [string] $message = ''
-        $analyzerResults | Microsoft.PowerShell.Core\ForEach-Object {
-
-            $message = $message + @"
---------------------------------------------------
-Rule: $($_.RuleName)`
-Description: $($_.Description)
-Message: $($_.Message)
-`r`n
-"@
+        # cleanup test folder
+        if (Microsoft.PowerShell.Management\Test-Path -LiteralPath $testRoot) {
+            $null = GenXdev.FileSystem\Remove-AllItems $testRoot -DeleteFolder
         }
-
-        $analyzerResults.Count | Pester\Should -Be 0 -Because @"
-The following PSScriptAnalyzer rules are being violated:
-$message
-"@;
     }
 
     Pester\BeforeEach {

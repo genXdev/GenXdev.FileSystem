@@ -122,7 +122,7 @@ Update-Module
 | [Remove-OnReboot](#remove-onreboot) | &nbsp; | Marks files or directories for deletion during the next system boot. |
 | [Rename-InProject](#rename-inproject) | rip | Performs text replacement throughout a project directory. |
 | [ResolveInputObjectFileNames](#resolveinputobjectfilenames) | &nbsp; |  |
-| [Start-RoboCopy](#start-robocopy) | xc, rc | Provides a PowerShell wrapper for Microsoft's Robust Copy (RoboCopy) utility. |
+| [Start-RoboCopy](#start-robocopy) | rc, xc | Provides a PowerShell wrapper for Microsoft's Robust Copy (RoboCopy) utility. |
 
 <br/><hr/><hr/><br/>
 
