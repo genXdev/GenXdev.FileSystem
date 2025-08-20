@@ -1,4 +1,4 @@
-Pester\Describe 'Find-Item 1' {
+﻿Pester\Describe 'Find-Item 1' {
 
     Pester\BeforeAll {
         $testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
@@ -29,15 +29,15 @@ Pester\Describe 'Find-Item 1' {
 
     Pester\It 'Should work with wildcard in the holding directory' {
 
-        $pattern = Expand-Path "$PSScriptRoot\..\..\..\..\Genx*\1*\functions\genxdev.*\*.ps1"
+        $pattern = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\Genx*\1*\functions\genxdev.*\*.ps1"
 
         $found = @(GenXdev.FileSystem\Find-Item -SearchMask $pattern)
 
         if ($found.Count -eq 0) {
-            Write-Warning 'Find-Item still not working, see issue'
+            Microsoft.PowerShell.Utility\Write-Warning 'Find-Item still not working, see issue'
         }
         else {
-            Write-Host 'Find-Item is FIXED!!' -ForegroundColor Cyan
+            Microsoft.PowerShell.Utility\Write-Host 'Find-Item is FIXED!!' -ForegroundColor Cyan
         }
 
         # $found.Count | Pester\Should -GT 0
@@ -313,7 +313,7 @@ Pester\Describe 'Find-Item 1' {
 
     Pester\It 'Should match the pattern' {
 
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.238.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.242.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
 
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\EnsurePester.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Expand-Path.ps1")

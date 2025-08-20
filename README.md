@@ -12,7 +12,7 @@
 
 ## MIT License
 
-```text
+````text
 MIT License
 
 Copyright (c) 2025 GenXdev
@@ -67,7 +67,7 @@ SOFTWARE.
 
 ### SYNTAX
 
-````PowerShell
+```PowerShell
 Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>]
     [-Mirror] [-Move]
     [-IncludeSecurity] [-SkipDirectories]
@@ -86,30 +86,30 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
     [-MultiThreaded] [-CompressibleContent] [[-Override] <String>]
     [-Force]
     [-WhatIf] [<CommonParameters>]
-````
-````PowerShell
+```
+```PowerShell
 Rename-InProject [[-Source] <String>]
                  [-FindText] <String>
                  [-ReplacementText] <String>
                  [-WhatIf] [<CommonParameters>]
-````
+```
 
 ### INSTALLATION
-````PowerShell
+```PowerShell
 Install-Module "GenXdev.FileSystem"
 Import-Module "GenXdev.FileSystem"
-````
+```
 ### UPDATE
-````PowerShell
+```PowerShell
 Update-Module
-````
-<br/><hr/><hr/><br/>
+```
+
+<br/><hr/><br/>
 
 # Cmdlet Index
-### GenXdev.FileSystem<hr/>
 ### GenXdev.FileSystem
 | Command | Aliases | Description |
-| --- | --- | --- |
+| :--- | :--- | :--- |
 | [EnsurePester](#ensurepester) | &nbsp; | Ensures Pester testing framework is available for use. |
 | [Expand-Path](#expand-path) | ep | Expands any given file reference to a full pathname. |
 | [Find-DuplicateFiles](#find-duplicatefiles) | fdf | Find duplicate files across multiple directories based on configurable criteria. |
@@ -121,10 +121,10 @@ Update-Module
 | [Remove-ItemWithFallback](#remove-itemwithfallback) | rmf | Removes files or directories with multiple fallback mechanisms for reliable deletion. |
 | [Remove-OnReboot](#remove-onreboot) | &nbsp; | Marks files or directories for deletion during the next system boot. |
 | [Rename-InProject](#rename-inproject) | rip | Performs text replacement throughout a project directory. |
-| [ResolveInputObjectFileNames](#resolveinputobjectfilenames) | &nbsp; |  |
+| [ResolveInputObjectFileNames](#resolveinputobjectfilenames) | &nbsp; | &nbsp; |
 | [Start-RoboCopy](#start-robocopy) | rc, xc | Provides a PowerShell wrapper for Microsoft's Robust Copy (RoboCopy) utility. |
 
-<br/><hr/><hr/><br/>
+<br/><hr/><br/>
 
 
 # Cmdlets
@@ -133,7 +133,7 @@ Update-Module
 ###	GenXdev.FileSystem<hr/> 
 
 ##	EnsurePester 
-````PowerShell 
+```PowerShell 
 
    EnsurePester  
 ```` 
@@ -142,7 +142,7 @@ Update-Module
     Ensures Pester testing framework is available for use.  
 
 ### SYNTAX 
-````PowerShell 
+```PowerShell 
 EnsurePester [<CommonParameters>] 
 ```` 
 
@@ -159,11 +159,11 @@ EnsurePester [<CommonParameters>]
         OutBuffer, PipelineVariable, and OutVariable. For more information, see  
         about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 
-<br/><hr/><hr/><br/>
+<br/><hr/><br/>
  
 
 ##	Expand-Path 
-````PowerShell 
+```PowerShell 
 
    Expand-Path                          --> ep  
 ```` 
@@ -172,7 +172,7 @@ EnsurePester [<CommonParameters>]
     Expands any given file reference to a full pathname.  
 
 ### SYNTAX 
-````PowerShell 
+```PowerShell 
 Expand-Path [-FilePath] <String> [-CreateDirectory] [-CreateFile] [-DeleteExistingFile] [-ForceDrive <Char>] [-FileMustExist] [-DirectoryMustExist] [<CommonParameters>] 
 ```` 
 
@@ -239,11 +239,11 @@ Expand-Path [-FilePath] <String> [-CreateDirectory] [-CreateFile] [-DeleteExisti
         OutBuffer, PipelineVariable, and OutVariable. For more information, see  
         about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 
-<br/><hr/><hr/><br/>
+<br/><hr/><br/>
  
 
 ##	Find-DuplicateFiles 
-````PowerShell 
+```PowerShell 
 
    Find-DuplicateFiles                  --> fdf  
 ```` 
@@ -252,7 +252,7 @@ Expand-Path [-FilePath] <String> [-CreateDirectory] [-CreateFile] [-DeleteExisti
     Find duplicate files across multiple directories based on configurable criteria.  
 
 ### SYNTAX 
-````PowerShell 
+```PowerShell 
 Find-DuplicateFiles [-Paths] <String[]> [[-DontCompareSize]] [[-DontCompareModifiedDate]] [<CommonParameters>] 
 ```` 
 
@@ -294,11 +294,11 @@ Find-DuplicateFiles [-Paths] <String[]> [[-DontCompareSize]] [[-DontCompareModif
         OutBuffer, PipelineVariable, and OutVariable. For more information, see  
         about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 
-<br/><hr/><hr/><br/>
+<br/><hr/><br/>
  
 
 ##	Find-Item 
-````PowerShell 
+```PowerShell 
 
    Find-Item                            --> l  
 ```` 
@@ -307,7 +307,7 @@ Find-DuplicateFiles [-Paths] <String[]> [[-DontCompareSize]] [[-DontCompareModif
     Performs advanced file and directory searches with content filtering capabilities.  
 
 ### SYNTAX 
-````PowerShell 
+```PowerShell 
 Find-Item [[-SearchMask] <String[]>] [[-RelativeBasePath] <String>] [-AllDrives] [-PassThru] [-IncludeAlternateFileStreams] [-NoRecurse] [<CommonParameters>]  
    Find-Item [[-SearchMask] <String[]>] [[-Pattern] <String>] [[-RelativeBasePath] <String>] [-AllDrives] [-PassThru] [-IncludeAlternateFileStreams] [-NoRecurse] [<CommonParameters>]  
    Find-Item [[-SearchMask] <String[]>] [[-RelativeBasePath] <String>] [-AllDrives] [-Directory] [-FilesAndDirectories] [-PassThru] [-IncludeAlternateFileStreams] [-NoRecurse] [<CommonParameters>] 
@@ -401,11 +401,11 @@ Find-Item [[-SearchMask] <String[]>] [[-RelativeBasePath] <String>] [-AllDrives]
         OutBuffer, PipelineVariable, and OutVariable. For more information, see  
         about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 
-<br/><hr/><hr/><br/>
+<br/><hr/><br/>
  
 
 ##	Invoke-Fasti 
-````PowerShell 
+```PowerShell 
 
    Invoke-Fasti                         --> fasti  
 ```` 
@@ -414,7 +414,7 @@ Find-Item [[-SearchMask] <String[]>] [[-RelativeBasePath] <String>] [-AllDrives]
     Extracts archive files in the current directory and deletes the originals.  
 
 ### SYNTAX 
-````PowerShell 
+```PowerShell 
 Invoke-Fasti [[-Password] <String>] [<CommonParameters>] 
 ```` 
 
@@ -439,7 +439,7 @@ Invoke-Fasti [[-Password] <String>] [<CommonParameters>]
         about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 
 ### NOTES 
-````PowerShell 
+```PowerShell 
 
        Supported formats: 7z, zip, rar, tar, iso and many others.  
        Requires 7-Zip installation (will attempt auto-install via winget if missing).  
@@ -449,11 +449,11 @@ Invoke-Fasti [[-Password] <String>] [<CommonParameters>]
    PS C:\Downloads>fasti  
 ```` 
 
-<br/><hr/><hr/><br/>
+<br/><hr/><br/>
  
 
 ##	Move-ItemWithTracking 
-````PowerShell 
+```PowerShell 
 
    Move-ItemWithTracking  
 ```` 
@@ -462,7 +462,7 @@ Invoke-Fasti [[-Password] <String>] [<CommonParameters>]
     Moves files and directories while preserving filesystem links and references.  
 
 ### SYNTAX 
-````PowerShell 
+```PowerShell 
 Move-ItemWithTracking [-Path] <String> [-Destination] <String> [-Force] [-WhatIf] [-Confirm] [<CommonParameters>] 
 ```` 
 
@@ -520,11 +520,11 @@ Move-ItemWithTracking [-Path] <String> [-Destination] <String> [-Force] [-WhatIf
         OutBuffer, PipelineVariable, and OutVariable. For more information, see  
         about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 
-<br/><hr/><hr/><br/>
+<br/><hr/><br/>
  
 
 ##	Move-ToRecycleBin 
-````PowerShell 
+```PowerShell 
 
    Move-ToRecycleBin                    --> recycle  
 ```` 
@@ -533,7 +533,7 @@ Move-ItemWithTracking [-Path] <String> [-Destination] <String> [-Force] [-WhatIf
     Moves files and directories to the Windows Recycle Bin safely.  
 
 ### SYNTAX 
-````PowerShell 
+```PowerShell 
 Move-ToRecycleBin [-Path] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>] 
 ```` 
 
@@ -574,11 +574,11 @@ Move-ToRecycleBin [-Path] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
         OutBuffer, PipelineVariable, and OutVariable. For more information, see  
         about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 
-<br/><hr/><hr/><br/>
+<br/><hr/><br/>
  
 
 ##	Remove-AllItems 
-````PowerShell 
+```PowerShell 
 
    Remove-AllItems                      --> sdel  
 ```` 
@@ -587,7 +587,7 @@ Move-ToRecycleBin [-Path] <String[]> [-WhatIf] [-Confirm] [<CommonParameters>]
     Recursively removes all content from a directory with advanced error handling.  
 
 ### SYNTAX 
-````PowerShell 
+```PowerShell 
 Remove-AllItems [-Path] <String> [[-DeleteFolder]] [-WhatIf] [-Confirm] [<CommonParameters>] 
 ```` 
 
@@ -636,11 +636,11 @@ Remove-AllItems [-Path] <String> [[-DeleteFolder]] [-WhatIf] [-Confirm] [<Common
         OutBuffer, PipelineVariable, and OutVariable. For more information, see  
         about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 
-<br/><hr/><hr/><br/>
+<br/><hr/><br/>
  
 
 ##	Remove-ItemWithFallback 
-````PowerShell 
+```PowerShell 
 
    Remove-ItemWithFallback              --> rmf  
 ```` 
@@ -649,7 +649,7 @@ Remove-AllItems [-Path] <String> [[-DeleteFolder]] [-WhatIf] [-Confirm] [<Common
     Removes files or directories with multiple fallback mechanisms for reliable deletion.  
 
 ### SYNTAX 
-````PowerShell 
+```PowerShell 
 Remove-ItemWithFallback [-Path] <String> [-CountRebootDeletionAsSuccess] [-WhatIf] [-Confirm] [<CommonParameters>] 
 ```` 
 
@@ -700,11 +700,11 @@ Remove-ItemWithFallback [-Path] <String> [-CountRebootDeletionAsSuccess] [-WhatI
         OutBuffer, PipelineVariable, and OutVariable. For more information, see  
         about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 
-<br/><hr/><hr/><br/>
+<br/><hr/><br/>
  
 
 ##	Remove-OnReboot 
-````PowerShell 
+```PowerShell 
 
    Remove-OnReboot  
 ```` 
@@ -713,7 +713,7 @@ Remove-ItemWithFallback [-Path] <String> [-CountRebootDeletionAsSuccess] [-WhatI
     Marks files or directories for deletion during the next system boot.  
 
 ### SYNTAX 
-````PowerShell 
+```PowerShell 
 Remove-OnReboot [-Path] <String[]> [-MarkInPlace] [-WhatIf] [-Confirm] [<CommonParameters>] 
 ```` 
 
@@ -761,11 +761,11 @@ Remove-OnReboot [-Path] <String[]> [-MarkInPlace] [-WhatIf] [-Confirm] [<CommonP
         OutBuffer, PipelineVariable, and OutVariable. For more information, see  
         about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 
-<br/><hr/><hr/><br/>
+<br/><hr/><br/>
  
 
 ##	Rename-InProject 
-````PowerShell 
+```PowerShell 
 
    Rename-InProject                     --> rip  
 ```` 
@@ -774,7 +774,7 @@ Remove-OnReboot [-Path] <String[]> [-MarkInPlace] [-WhatIf] [-Confirm] [<CommonP
     Performs text replacement throughout a project directory.  
 
 ### SYNTAX 
-````PowerShell 
+```PowerShell 
 Rename-InProject [[-Source] <String>] [-FindText] <String> [-ReplacementText] <String> [-CaseInsensitive] [-WhatIf] [-Confirm] [<CommonParameters>] 
 ```` 
 
@@ -842,11 +842,11 @@ Rename-InProject [[-Source] <String>] [-FindText] <String> [-ReplacementText] <S
         OutBuffer, PipelineVariable, and OutVariable. For more information, see  
         about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 
-<br/><hr/><hr/><br/>
+<br/><hr/><br/>
  
 
 ##	ResolveInputObjectFileNames 
-````PowerShell 
+```PowerShell 
 
    ResolveInputObjectFileNames  
 ```` 
@@ -856,7 +856,7 @@ Rename-InProject [[-Source] <String>] [-FindText] <String> [-ReplacementText] <S
     filters and output options.  
 
 ### SYNTAX 
-````PowerShell 
+```PowerShell 
 ResolveInputObjectFileNames [[-InputObject] <Object>] [-File] [[-RelativeBasePath] <String>] [-AllDrives] [-PassThru] [-IncludeAlternateFileStreams] [-NoRecurse] [<CommonParameters>]  
    ResolveInputObjectFileNames [[-InputObject] <Object>] [-File] [[-Pattern] <String>] [[-RelativeBasePath] <String>] [-AllDrives] [-PassThru] [-IncludeAlternateFileStreams] [-NoRecurse] [<CommonParameters>]  
    ResolveInputObjectFileNames [[-InputObject] <Object>] [-File] [[-RelativeBasePath] <String>] [-AllDrives] [-Directory] [-FilesAndDirectories] [-PassThru] [-IncludeAlternateFileStreams] [-NoRecurse] [<CommonParameters>] 
@@ -955,11 +955,11 @@ ResolveInputObjectFileNames [[-InputObject] <Object>] [-File] [[-RelativeBasePat
         OutBuffer, PipelineVariable, and OutVariable. For more information, see  
         about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 
-<br/><hr/><hr/><br/>
+<br/><hr/><br/>
  
 
 ##	Start-RoboCopy 
-````PowerShell 
+```PowerShell 
 
    Start-RoboCopy                       --> rc, xc  
 ```` 
@@ -968,7 +968,7 @@ ResolveInputObjectFileNames [[-InputObject] <Object>] [-File] [[-RelativeBasePat
     Provides a PowerShell wrapper for Microsoft's Robust Copy (RoboCopy) utility.  
 
 ### SYNTAX 
-````PowerShell 
+```PowerShell 
 Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>] [-Mirror] [-Move] [-IncludeSecurity] [-SkipDirectories] [-CopyOnlyDirectoryTreeStructureAndEmptyFiles] [-SkipAllSymbolicLinks] [-SkipSymbolicFileLinks] [-CopySymbolicLinksAsLinks] [-Force] [-SkipFilesWithoutArchiveAttribute] [-ResetArchiveAttributeAfterSelection] [-FileExcludeFilter <String[]>] [-AttributeIncludeFilter <String>] [-AttributeExcludeFilter <String>] [-SetAttributesAfterCopy <String>] [-RemoveAttributesAfterCopy <String>] [-MinFileSize <Int32>] [-MaxFileSize <Int32>] [-MinFileAge <Int32>] [-MaxFileAge <Int32>] [-MinLastAccessAge <Int32>] [-MaxLastAccessAge <Int32>] [-RecoveryMode] [-MonitorMode] [-MonitorModeThresholdMinutes <Int32>] [-MonitorModeThresholdNrOfChanges <Int32>] [-MonitorModeRunHoursFrom <Int32>] [-MonitorModeRunHoursUntil <Int32>] [-LogFilePath <String>] [-LogfileOverwrite] [-LogDirectoryNames] [-LogAllFileNames] [-Unicode] [-LargeFiles] [-MultiThreaded] [-CompressibleContent] [[-Override] <String>] [-WhatIf] [-Confirm] [<CommonParameters>]  
    Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <String[]>] [-Mirror] [-Move] [-IncludeSecurity] [-SkipEmptyDirectories] [-CopyOnlyDirectoryTreeStructure] [-CopyOnlyDirectoryTreeStructureAndEmptyFiles] [-SkipAllSymbolicLinks] [-SkipSymbolicFileLinks] [-CopySymbolicLinksAsLinks] [-SkipJunctions] [-CopyJunctionsAsJunctons] [-Force] [-SkipFilesWithoutArchiveAttribute] [-ResetArchiveAttributeAfterSelection] [-FileExcludeFilter <String[]>] [-DirectoryExcludeFilter <String[]>] [-AttributeIncludeFilter <String>] [-AttributeExcludeFilter <String>] [-SetAttributesAfterCopy <String>] [-RemoveAttributesAfterCopy <String>] [-MaxSubDirTreeLevelDepth <Int32>] [-MinFileSize <Int32>] [-MaxFileSize <Int32>] [-MinFileAge <Int32>] [-MaxFileAge <Int32>] [-MinLastAccessAge <Int32>] [-MaxLastAccessAge <Int32>] [-RecoveryMode] [-MonitorMode] [-MonitorModeThresholdMinutes <Int32>] [-MonitorModeThresholdNrOfChanges <Int32>] [-MonitorModeRunHoursFrom <Int32>] [-MonitorModeRunHoursUntil <Int32>] [-LogFilePath <String>] [-LogfileOverwrite] [-LogDirectoryNames] [-LogAllFileNames] [-Unicode] [-LargeFiles] [-MultiThreaded] [-CompressibleContent] [[-Override] <String>] [-WhatIf] [-Confirm] [<CommonParameters>] 
 ```` 
@@ -1389,4 +1389,4 @@ Start-RoboCopy [-Source] <String> [[-DestinationDirectory] <String>] [[-Files] <
         OutBuffer, PipelineVariable, and OutVariable. For more information, see  
         about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 
-<br/><hr/><hr/><br/>
+<br/><hr/><br/>

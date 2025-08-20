@@ -26,7 +26,7 @@
     }
 
     Pester\AfterAll {
-        
+
         $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
 
         # cleanup test folder

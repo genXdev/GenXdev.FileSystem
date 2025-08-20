@@ -1,4 +1,4 @@
-````markdown
+```markdown
 ## Critique of the GenXdev.FileSystem PowerShell Module
 
 ![image1](powershell.jpg)
@@ -62,4 +62,4 @@
 - Better document and handle external dependencies.
 - Improve error messages and user feedback.
 - Consider cross-platform support for non-Windows users, even if partial.
-````
+```
