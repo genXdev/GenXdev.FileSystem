@@ -11,6 +11,8 @@ if ($major -ne 10) {
 }
 
 
+
+. "$PSScriptRoot\Functions\GenXdev.FileSystem\_EnsureTypes.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\EnsurePester.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Expand-Path.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Find-DuplicateFiles.ps1"

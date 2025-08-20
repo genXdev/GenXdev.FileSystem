@@ -12,7 +12,7 @@
 RootModule = 'GenXdev.FileSystem.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.246.2025'
+ModuleVersion = '1.248.2025'
 
 # Supported PSEditions
 CompatiblePSEditions = 'Core'
@@ -75,13 +75,62 @@ FunctionsToExport = 'EnsurePester', 'Expand-Path', 'Find-DuplicateFiles', 'Find-
                'Rename-InProject', 'ResolveInputObjectFileNames', 'Start-RoboCopy'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = @()
+CmdletsToExport = 'Add-Content', 'Add-Member', 'Add-Type', 'Clear-Content', 'Clear-Item', 
+               'Clear-ItemProperty', 'Clear-RecycleBin', 'Clear-Variable', 
+               'Compare-Object', 'Convert-Path', 'ConvertFrom-CliXml', 
+               'ConvertFrom-Csv', 'ConvertFrom-Json', 'ConvertFrom-Markdown', 
+               'ConvertFrom-SddlString', 'ConvertFrom-StringData', 
+               'ConvertTo-CliXml', 'ConvertTo-Csv', 'ConvertTo-Html', 'ConvertTo-Json', 
+               'ConvertTo-Xml', 'Copy-Item', 'Copy-ItemProperty', 'Debug-Process', 
+               'Debug-Runspace', 'Disable-PSBreakpoint', 'Disable-RunspaceDebug', 
+               'Enable-PSBreakpoint', 'Enable-RunspaceDebug', 'Export-Alias', 
+               'Export-Clixml', 'Export-Csv', 'Export-FormatData', 'Export-PSSession', 
+               'Format-Custom', 'Format-Hex', 'Format-List', 'Format-Table', 
+               'Format-Wide', 'Get-Alias', 'Get-ChildItem', 'Get-Clipboard', 
+               'Get-ComputerInfo', 'Get-Content', 'Get-Counter', 'Get-Culture', 
+               'Get-Date', 'Get-Error', 'Get-Event', 'Get-EventSubscriber', 
+               'Get-FileHash', 'Get-FormatData', 'Get-Host', 'Get-HotFix', 'Get-Item', 
+               'Get-ItemProperty', 'Get-ItemPropertyValue', 'Get-Location', 
+               'Get-MarkdownOption', 'Get-Member', 'Get-Process', 'Get-PSBreakpoint', 
+               'Get-PSCallStack', 'Get-PSDrive', 'Get-PSProvider', 'Get-Random', 
+               'Get-Runspace', 'Get-RunspaceDebug', 'Get-SecureRandom', 'Get-Service', 
+               'Get-TimeZone', 'Get-TraceSource', 'Get-TypeData', 'Get-UICulture', 
+               'Get-Unique', 'Get-Uptime', 'Get-Variable', 'Get-Verb', 'Get-WinEvent', 
+               'Group-Object', 'Import-Alias', 'Import-Clixml', 'Import-Csv', 
+               'Import-LocalizedData', 'Import-PowerShellDataFile', 
+               'Import-PSSession', 'Invoke-Expression', 'Invoke-Item', 
+               'Invoke-RestMethod', 'Invoke-WebRequest', 'Join-Path', 'Join-String', 
+               'Measure-Command', 'Measure-Object', 'Move-Item', 'Move-ItemProperty', 
+               'New-Alias', 'New-Event', 'New-Guid', 'New-Item', 'New-ItemProperty', 
+               'New-Object', 'New-PSDrive', 'New-Service', 'New-TemporaryFile', 
+               'New-TimeSpan', 'New-Variable', 'New-WinEvent', 'Out-File', 
+               'Out-GridView', 'Out-Printer', 'Out-String', 'Pop-Location', 
+               'Push-Location', 'Read-Host', 'Register-EngineEvent', 
+               'Register-ObjectEvent', 'Remove-Alias', 'Remove-Event', 'Remove-Item', 
+               'Remove-ItemProperty', 'Remove-PSBreakpoint', 'Remove-PSDrive', 
+               'Remove-Service', 'Remove-TypeData', 'Remove-Variable', 
+               'Rename-Computer', 'Rename-Item', 'Rename-ItemProperty', 'Resolve-Path', 
+               'Restart-Computer', 'Restart-Service', 'Resume-Service', 
+               'Select-Object', 'Select-String', 'Select-Xml', 'Send-MailMessage', 
+               'Set-Alias', 'Set-Clipboard', 'Set-Content', 'Set-Date', 'Set-Item', 
+               'Set-ItemProperty', 'Set-Location', 'Set-MarkdownOption', 
+               'Set-PSBreakpoint', 'Set-Service', 'Set-TimeZone', 'Set-TraceSource', 
+               'Set-Variable', 'Show-Command', 'Show-Markdown', 'Sort-Object', 
+               'Split-Path', 'Start-Process', 'Start-Service', 'Start-Sleep', 
+               'Stop-Computer', 'Stop-Process', 'Stop-Service', 'Suspend-Service', 
+               'Tee-Object', 'Test-Connection', 'Test-Json', 'Test-Path', 
+               'Trace-Command', 'Unblock-File', 'Unregister-Event', 
+               'Update-FormatData', 'Update-List', 'Update-TypeData', 'Wait-Debugger', 
+               'Wait-Event', 'Wait-Process', 'Write-Debug', 'Write-Error', 'Write-Host', 
+               'Write-Information', 'Write-Output', 'Write-Progress', 'Write-Verbose', 
+               'Write-Warning'
 
 # Variables to export from this module
 VariablesToExport = @()
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = 'ep', 'fasti', 'fdf', 'l', 'rc', 'recycle', 'rip', 'rmf', 'sdel', 'xc'
+AliasesToExport = 'ep', 'fasti', 'fdf', 'fhx', 'gcb', 'gin', 'gtz', 'l', 'rc', 'recycle', 'rip', 'rmf', 
+               'scb', 'sdel', 'stz', 'xc'
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()
