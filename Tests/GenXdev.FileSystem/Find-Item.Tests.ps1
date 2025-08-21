@@ -313,7 +313,7 @@ Pester\Describe 'Find-Item 1' {
 
     Pester\It 'Should match the pattern' {
 
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.250.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.252.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
 
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\EnsurePester.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Expand-Path.ps1")
@@ -344,7 +344,7 @@ Pester\Describe 'Find-Item 1' {
     Pester\It 'Should only show ADS when IncludeAlternateFileStreams is specified' {
         # Create a file with an alternate data stream
         $testFile = "$testDir\test-ads.txt"
-        'Main content' | Microsoft.PowerShell.Utility\Out-File -FilePath $testFile
+        'Main content' | Microsoft.PowerShell.Utility\Out-File  $testFile
         'Stream content' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile -Stream 'test-stream'
 
         # Without the -IncludeAlternateFileStreams switch, only the base file should be returned
@@ -362,7 +362,7 @@ Pester\Describe 'Find-Item 1' {
     Pester\It 'Should find specific named streams when using streammask' {
         # Create a file with multiple alternate data streams
         $testFile = "$testDir\stream-test.txt"
-        'Main content' | Microsoft.PowerShell.Utility\Out-File -FilePath $testFile
+        'Main content' | Microsoft.PowerShell.Utility\Out-File  $testFile
         'Stream1 content' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile -Stream 'stream1'
         'Stream2 content' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile -Stream 'stream2'
         'Zone content' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile -Stream 'Zone.Identifier'
@@ -390,7 +390,7 @@ Pester\Describe 'Find-Item 1' {
     Pester\It 'Should filter streams with pattern matching' {
         # Create a file with multiple alternate data streams with different content
         $testFile = "$testDir\pattern-stream.txt"
-        'Main content' | Microsoft.PowerShell.Utility\Out-File -FilePath $testFile
+        'Main content' | Microsoft.PowerShell.Utility\Out-File  $testFile
         'Content with password123' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile -Stream 'secret'
         'Content with no match' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile -Stream 'normal'
 
@@ -409,8 +409,8 @@ Pester\Describe 'Find-Item 1' {
         $testFile1 = "$testDir\wildcard1.dat"
         $testFile2 = "$testDir\wildcard2.dat"
 
-        'File1 content' | Microsoft.PowerShell.Utility\Out-File -FilePath $testFile1
-        'File2 content' | Microsoft.PowerShell.Utility\Out-File -FilePath $testFile2
+        'File1 content' | Microsoft.PowerShell.Utility\Out-File  $testFile1
+        'File2 content' | Microsoft.PowerShell.Utility\Out-File  $testFile2
 
         'Stream data 1' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile1 -Stream 'data'
         'Stream meta 1' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile1 -Stream 'meta'
@@ -431,7 +431,7 @@ Pester\Describe 'Find-Item 1' {
     Pester\It 'Should correctly handle -ads flag vs explicit stream masks' {
         # Create a file with streams
         $testFile = "$testDir\ads-vs-mask.txt"
-        'Main content' | Microsoft.PowerShell.Utility\Out-File -FilePath $testFile
+        'Main content' | Microsoft.PowerShell.Utility\Out-File  $testFile
         'Stream content' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile -Stream 'test1'
         'Another stream' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile -Stream 'test2'
 
@@ -458,8 +458,8 @@ Pester\Describe 'Find-Item 1' {
         $file1 = "$subDir\file1.jpg"
         $file2 = "$subDir\file2.jpg"
 
-        'File1' | Microsoft.PowerShell.Utility\Out-File -FilePath $file1
-        'File2' | Microsoft.PowerShell.Utility\Out-File -FilePath $file2
+        'File1' | Microsoft.PowerShell.Utility\Out-File  $file1
+        'File2' | Microsoft.PowerShell.Utility\Out-File  $file2
 
         'Description 1' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $file1 -Stream 'description.json'
         'Description 2' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $file2 -Stream 'description.json'
