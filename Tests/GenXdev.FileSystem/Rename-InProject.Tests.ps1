@@ -10,7 +10,6 @@
 
         # cleanup test folder
         GenXdev.FileSystem\Remove-AllItems $Script:testRoot -DeleteFolder
-        Microsoft.PowerShell.Management\Pop-Location
     }
 
     Pester\BeforeEach {

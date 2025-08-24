@@ -111,7 +111,7 @@ function Remove-AllItems {
                             Microsoft.PowerShell.Utility\Write-Verbose "Removed directory: $dirPath"
                         }
                         catch {
-                            Microsoft.PowerShell.Utility\Write-Warning "Failed to delete directory: $dirPath"
+                            # Microsoft.PowerShell.Utility\Write-Warning "Failed to delete directory: $dirPath"
                         }
                     }
                 }
