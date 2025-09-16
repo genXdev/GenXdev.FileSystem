@@ -12,7 +12,7 @@
 RootModule = 'GenXdev.FileSystem.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.268.2025'
+ModuleVersion = '1.270.2025'
 
 # Supported PSEditions
 CompatiblePSEditions = 'Core'
@@ -140,8 +140,31 @@ AliasesToExport = 'ep', 'fasti', 'fdf', 'fhx', 'gcb', 'gin', 'gtz', 'l', 'rc', '
 ModuleList = @('GenXdev.FileSystem')
 
 # List of all files packaged with this module
-FileList = 'GenXdev.FileSystem.psd1', 'GenXdev.FileSystem.psm1', 'ISSUES.md', 
-               'LICENSE', 'license.txt', 'powershell.jpg', 'README.md', 
+FileList = 'GenXdev.FileSystem.csproj', 'GenXdev.FileSystem.psd1', 
+               'GenXdev.FileSystem.psm1', 'ISSUES.md', 'LICENSE', 'license.txt', 
+               'powershell.jpg', 'README.md', 
+               'Functions\GenXdev.FileSystem\EnsurePester.ps1', 
+               'Functions\GenXdev.FileSystem\Expand-Path.ps1', 
+               'Functions\GenXdev.FileSystem\Find-DuplicateFiles.ps1', 
+               'Functions\GenXdev.FileSystem\Find-Item.Cmdlet.cs', 
+               'Functions\GenXdev.FileSystem\Find-Item.Fields.cs', 
+               'Functions\GenXdev.FileSystem\Find-Item.Initialization.cs', 
+               'Functions\GenXdev.FileSystem\Find-Item.Processing.cs', 
+               'Functions\GenXdev.FileSystem\Find-Item.Utilities.cs', 
+               'Functions\GenXdev.FileSystem\Invoke-Fasti.ps1', 
+               'Functions\GenXdev.FileSystem\Move-ItemWithTracking.ps1', 
+               'Functions\GenXdev.FileSystem\Move-ToRecycleBin.ps1', 
+               'Functions\GenXdev.FileSystem\Remove-AllItems.ps1', 
+               'Functions\GenXdev.FileSystem\Remove-ItemWithFallback.ps1', 
+               'Functions\GenXdev.FileSystem\Remove-OnReboot.ps1', 
+               'Functions\GenXdev.FileSystem\Rename-InProject.ps1', 
+               'Functions\GenXdev.FileSystem\ResolveInputObjectFileNames.ps1', 
+               'Functions\GenXdev.FileSystem\Start-RoboCopy.ps1', 
+               'Functions\GenXdev.FileSystem\UnattendedModeHelper.cs', 
+               'Functions\GenXdev.FileSystem\Write-FileOutput.ps1', 
+               'Functions\GenXdev.FileSystem\WriteFileOutput.ps1', 
+               'Functions\GenXdev.FileSystem\_EnsureTypes.ps1', 
+               'Properties\launchSettings.json', 
                'lib\GenXdev.FileSystem.deps.json', 'lib\GenXdev.FileSystem.dll', 
                'lib\getfilesiginforedist.dll', 
                'lib\getfilesiginforedistwrapper.dll', 'lib\LICENSE', 
@@ -154,22 +177,7 @@ FileList = 'GenXdev.FileSystem.psd1', 'GenXdev.FileSystem.psm1', 'ISSUES.md',
                'lib\PowerShell.Core.Instrumentation.dll', 'lib\pwrshplugin.dll', 
                'lib\StreamRegex.Extensions.dll', 
                'lib\System.Management.Automation.dll', 'lib\System.Management.dll', 
-               'lib\WinRT.Runtime.dll', 'Properties\launchSettings.json', 
-               'Functions\GenXdev.FileSystem\EnsurePester.ps1', 
-               'Functions\GenXdev.FileSystem\Expand-Path.ps1', 
-               'Functions\GenXdev.FileSystem\Find-DuplicateFiles.ps1', 
-               'Functions\GenXdev.FileSystem\Invoke-Fasti.ps1', 
-               'Functions\GenXdev.FileSystem\Move-ItemWithTracking.ps1', 
-               'Functions\GenXdev.FileSystem\Move-ToRecycleBin.ps1', 
-               'Functions\GenXdev.FileSystem\Remove-AllItems.ps1', 
-               'Functions\GenXdev.FileSystem\Remove-ItemWithFallback.ps1', 
-               'Functions\GenXdev.FileSystem\Remove-OnReboot.ps1', 
-               'Functions\GenXdev.FileSystem\Rename-InProject.ps1', 
-               'Functions\GenXdev.FileSystem\ResolveInputObjectFileNames.ps1', 
-               'Functions\GenXdev.FileSystem\Start-RoboCopy.ps1', 
-               'Functions\GenXdev.FileSystem\Write-FileOutput.ps1', 
-               'Functions\GenXdev.FileSystem\WriteFileOutput.ps1', 
-               'Functions\GenXdev.FileSystem\_EnsureTypes.ps1', 
+               'lib\WinRT.Runtime.dll', 
                'Tests\GenXdev.FileSystem\Expand-Path.Tests.ps1', 
                'Tests\GenXdev.FileSystem\Find-DuplicateFiles.Tests.ps1', 
                'Tests\GenXdev.FileSystem\Find-Item.Tests.ps1', 

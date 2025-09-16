@@ -198,7 +198,7 @@ Find-Item [[-SearchMask] <string[]>] [[-RelativeBasePath] <string>] [-Input <str
         Dynamic?                     false  
         Accept wildcard characters?  false  
     -Exclude <string[]>  
-        Exclude files or directories matching these wildcard patterns (e.g., *.tmp, bin\*).  
+        Exclude files or directories matching these wildcard patterns (e.g., *.tmp, *\bin\*).  
         Required?                    false  
         Position?                    Named  
         Accept pipeline input?       false  
@@ -302,7 +302,7 @@ Find-Item [[-SearchMask] <string[]>] [[-RelativeBasePath] <string>] [-Input <str
         Position?                    Named  
         Accept pipeline input?       false  
         Parameter set name           (All)  
-        Aliases                      since, ma  
+        Aliases                      ma, after  
         Dynamic?                     false  
         Accept wildcard characters?  false  
     -ModifiedBefore <datetime>  
