@@ -10,7 +10,7 @@
     Pester\It 'expands relative path to absolute path' {
         # arrange
         $relativePath = '.\test.txt'
-        Microsoft.PowerShell.Management\Push-Location $Script:testPath
+        Microsoft.PowerShell.Management\Push-Location -LiteralPath $Script:testPath
 
         # act
         $result = GenXdev.FileSystem\Expand-Path $relativePath

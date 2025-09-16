@@ -16,7 +16,6 @@ if ($major -ne 10) {
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\EnsurePester.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Expand-Path.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Find-DuplicateFiles.ps1"
-. "$PSScriptRoot\Functions\GenXdev.FileSystem\Find-Item.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Invoke-Fasti.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Move-ItemWithTracking.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Move-ToRecycleBin.ps1"
@@ -26,3 +25,4 @@ if ($major -ne 10) {
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Rename-InProject.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\ResolveInputObjectFileNames.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Start-RoboCopy.ps1"
+. "$PSScriptRoot\Functions\GenXdev.FileSystem\WriteFileOutput.ps1"

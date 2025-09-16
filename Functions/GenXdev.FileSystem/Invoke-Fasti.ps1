@@ -1,7 +1,35 @@
-﻿###############################################################################
+<##############################################################################
+Part of PowerShell module : GenXdev.FileSystem
+Original cmdlet filename  : Invoke-Fasti.ps1
+Original author           : René Vaessen / GenXdev
+Version                   : 1.264.2025
+################################################################################
+MIT License
+
+Copyright 2021-2025 GenXdev
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+################################################################################>
+###############################################################################
 <#
 .SYNOPSIS
-Extracts archive files in the current directory and deletes the originals.
+Extracts archive files in the current directory to their own folders and deletes the afterwards.
 
 .DESCRIPTION
 Automatically extracts common archive formats (zip, 7z, tar, etc.) found in the
@@ -24,11 +52,19 @@ function Invoke-Fasti {
     [CmdletBinding()]
     [Alias("fasti")]
     param(
+        ###############################################################################
         [Parameter(
             Mandatory = $false,
             HelpMessage = "Enter the password for the encrypted archive(s)"
         )]
-        [string] $Password
+        [string] $Password,
+
+        ###############################################################################
+        [Parameter(
+            Mandatory = $false,
+            HelpMessage = "Recursively extract archives found within extracted folders"
+        )]
+        [switch] $ExtractOutputToo
     )
 
     begin {
@@ -110,6 +146,54 @@ function Invoke-Fasti {
                     }
                     catch {
                         Microsoft.PowerShell.Utility\Write-Verbose "Failed to remove original archive"
+                    }
+
+                    # if ExtractOutputToo is enabled, recursively extract archives in the output folder
+                    if ($ExtractOutputToo) {
+                        Microsoft.PowerShell.Utility\Write-Verbose "Checking for nested archives in: $extractPath"
+
+                        do {
+                            # find all archives recursively in the extraction path
+                            $nestedArchives = Microsoft.PowerShell.Management\Get-ChildItem -Recurse -File "${extractPath}\*" -ErrorAction SilentlyContinue |
+                                Microsoft.PowerShell.Core\Where-Object {
+                                    $extensions -contains "*$($_.Extension)"
+                                }
+
+                            if ($nestedArchives.Count -eq 0) {
+                                Microsoft.PowerShell.Utility\Write-Verbose "No more nested archives found"
+                                break
+                            }
+
+                            Microsoft.PowerShell.Utility\Write-Verbose "Found $($nestedArchives.Count) nested archive(s)"
+
+                            $nestedDirectories = $nestedArchives | Microsoft.PowerShell.Core\ForEach-Object {
+                                [System.IO.Path]::GetDirectoryName($_.FullName)
+                            } | Microsoft.PowerShell.Utility\Select-Object -Unique
+
+                            $errorOccured = $false
+
+                            # process each nested archive in its own directory
+                            foreach ($nestedDirectory in $nestedDirectories) {
+
+                                Microsoft.PowerShell.Utility\Write-Verbose "Processing nested archive in: $nestedDirectory"
+
+                                try {
+                                    Microsoft.PowerShell.Management\Push-Location -LiteralPath $nestedDirectory
+                                    if ($Password) {
+                                        GenXdev.FileSystem\Invoke-Fasti -Password $Password -ExtractOutputToo
+                                    } else {
+                                        GenXdev.FileSystem\Invoke-Fasti -ExtractOutputToo
+                                    }
+                                }
+                                catch {
+                                    $errorOccured = $true
+                                    Microsoft.PowerShell.Utility\Write-Verbose "Error occurred while processing nested archive in: $nestedDirectory"
+                                }
+                                finally {
+                                    Microsoft.PowerShell.Management\Pop-Location
+                                }
+                            }
+                        } while (-not $errorOccured)
                     }
                 }
             }

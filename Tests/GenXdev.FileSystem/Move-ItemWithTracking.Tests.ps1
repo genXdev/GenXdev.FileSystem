@@ -2,7 +2,7 @@
 
     Pester\BeforeAll {
         $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
-        Microsoft.PowerShell.Management\Push-Location $testRoot
+        Microsoft.PowerShell.Management\Push-Location -LiteralPath $testRoot
 
         $sourceFile = Microsoft.PowerShell.Management\Join-Path $testRoot 'track-source.txt'
         $destFile = Microsoft.PowerShell.Management\Join-Path $testRoot 'track-dest.txt'

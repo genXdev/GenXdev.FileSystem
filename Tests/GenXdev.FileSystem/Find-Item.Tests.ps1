@@ -1,12 +1,12 @@
 Pester\Describe 'Find-Item 1' {
 
     Pester\BeforeAll {
-        $testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
-        $testDir = Microsoft.PowerShell.Management\Join-Path $testRoot 'find-item-tests'
-        Microsoft.PowerShell.Management\New-Item -Path $testDir -ItemType Directory
+        $testRoot = GenXdev.FileSystem\Expand-Path ([System.IO.Path]::GetTempPath()+"\$([DateTime]::UtcNow.Ticks.ToString())\") -CreateDirectory
+        $testDir = Microsoft.PowerShell.Management\Join-Path $testRoot ([DateTime]::UtcNow.Ticks.ToString()) 'Find-Item-tests'
+        $testDir = GenXdev.FileSystem\Expand-Path "$testDir\tests\" -CreateDirectory
         Microsoft.PowerShell.Management\Set-Content -LiteralPath "$testDir\test1.txt" -Value 'test content'
         Microsoft.PowerShell.Management\Set-Content -LiteralPath "$testDir\test2.txt" -Value 'different content'
-        Microsoft.PowerShell.Management\New-Item -Path "$testDir\subdir" -ItemType Directory
+        Microsoft.PowerShell.Management\New-Item -Path "$testDir\subdir" -ItemType Directory -ErrorAction SilentlyContinue
         Microsoft.PowerShell.Management\Set-Content -LiteralPath "$testDir\subdir\test3.txt" -Value 'test content'
     }
 
@@ -30,24 +30,16 @@ Pester\Describe 'Find-Item 1' {
     Pester\It 'Should work with wildcard in the holding directory' {
 
         $pattern = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\Genx*\1*\functions\genxdev.*\*.ps1"
-
         $found = @(GenXdev.FileSystem\Find-Item -SearchMask $pattern)
 
-        if ($found.Count -eq 0) {
-            Microsoft.PowerShell.Utility\Write-Warning 'Find-Item still not working, see issue'
-        }
-        else {
-            Microsoft.PowerShell.Utility\Write-Host 'Find-Item is FIXED!!' -ForegroundColor Cyan
-        }
-
-        # $found.Count | Pester\Should -GT 0
+        $found.Count | Pester\Should -GT 0
     }
 
     Pester\It 'Finds files by extension' {
         # setup test folder structure
-        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\find-item-test\" -CreateDirectory
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\Find-Item-test\" -CreateDirectory
         Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
-        Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path 'dir1', 'dir2/subdir' -Force
+        Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path 'dir1', 'dir2/subdir' -Force -ErrorAction SilentlyContinue
         'test1' | Microsoft.PowerShell.Utility\Out-File 'dir1/file1.txt'
         'test2' | Microsoft.PowerShell.Utility\Out-File 'dir2/file2.txt'
         'test3' | Microsoft.PowerShell.Utility\Out-File 'dir2/subdir/file3.txt'
@@ -59,9 +51,9 @@ Pester\Describe 'Find-Item 1' {
 
     Pester\It 'Finds files by content pattern' {
         # setup test folder structure
-        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\find-item-test\" -CreateDirectory
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\Find-Item-test\" -CreateDirectory
         Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
-        Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path 'dir1', 'dir2/subdir' -Force
+        Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path 'dir1', 'dir2/subdir' -Force -ErrorAction SilentlyContinue
         'test1' | Microsoft.PowerShell.Utility\Out-File 'dir1/file1.txt'
         'test2' | Microsoft.PowerShell.Utility\Out-File 'dir2/file2.txt'
         'test3' | Microsoft.PowerShell.Utility\Out-File 'dir2/subdir/file3.txt'
@@ -73,9 +65,9 @@ Pester\Describe 'Find-Item 1' {
 
     Pester\It 'Finds only directories' {
         # setup test folder structure
-        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\find-item-test\" -CreateDirectory
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\Find-Item-test\" -CreateDirectory
         Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
-        Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path 'dir1', 'dir2/subdir' -Force
+        Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path 'dir1', 'dir2/subdir' -Force -ErrorAction SilentlyContinue
         'test1' | Microsoft.PowerShell.Utility\Out-File 'dir1/file1.txt'
         'test2' | Microsoft.PowerShell.Utility\Out-File 'dir2/file2.txt'
         'test3' | Microsoft.PowerShell.Utility\Out-File 'dir2/subdir/file3.txt'
@@ -88,6 +80,7 @@ Pester\Describe 'Find-Item 1' {
 
     Pester\It 'Handles wildcards correctly' {
 
+        Microsoft.PowerShell.Utility\Write-Host "GenXdev.FileSystem\Find-Item '$PSScriptRoot\..\..\..\..\..\mod*es\genX*'  -dir -NoRecurse -PassThru"
         $results = GenXdev.FileSystem\Find-Item "$PSScriptRoot\..\..\..\..\..\mod*es\genX*" -dir -NoRecurse -PassThru | Microsoft.PowerShell.Core\ForEach-Object FullName
 
         $results | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\..\Modules\GenXdev")
@@ -104,9 +97,9 @@ Pester\Describe 'Find-Item 1' {
     Pester\It 'Finds files by name pattern' {
 
         # setup test folder structure
-        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\find-item-test\" -CreateDirectory
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\Find-Item-test\" -CreateDirectory
         Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
-        Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path 'dir1', 'dir2/subdir' -Force
+        Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path 'dir1', 'dir2/subdir' -Force -ErrorAction SilentlyContinue
         'test1' | Microsoft.PowerShell.Utility\Out-File 'dir1/file1.txt'
         'test2' | Microsoft.PowerShell.Utility\Out-File 'dir2/file2.txt'
         'test3' | Microsoft.PowerShell.Utility\Out-File 'dir2/subdir/file3.txt'
@@ -125,7 +118,7 @@ Pester\Describe 'Find-Item 1' {
         $found.Count | Pester\Should -Be 2
     }
 
-    Pester\It 'Finds only directories when specified' {
+    Pester\It 'Finds only directories when specified 1' {
 
         Microsoft.PowerShell.Management\Set-Content -LiteralPath "$testDir\test1.txt" -Value 'test content'
         Microsoft.PowerShell.Management\Set-Content -LiteralPath "$testDir\test2.txt" -Value 'different content'
@@ -135,9 +128,23 @@ Pester\Describe 'Find-Item 1' {
         $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$testDir" -Directory -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
         $found.Count | Pester\Should -Be 1
         $found | Pester\Should -Contain $testDir
+        $found | Pester\Should -Not -Contain "$testDir\subdir"
     }
 
-    Pester\It 'With backslash at the end, finds only undelaying directories, not itself' {
+    Pester\It 'Finds only directories when specified 2' {
+
+        Microsoft.PowerShell.Management\Set-Content -LiteralPath "$testDir\test1.txt" -Value 'test content'
+        Microsoft.PowerShell.Management\Set-Content -LiteralPath "$testDir\test2.txt" -Value 'different content'
+        Microsoft.PowerShell.Management\New-Item -Path "$testDir\subdir" -ItemType Directory -ErrorAction SilentlyContinue
+        Microsoft.PowerShell.Management\Set-Content -LiteralPath "$testDir\subdir\test3.txt" -Value 'test content'
+
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$testDir\" -Directory -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
+        $found.Count | Pester\Should -Be 1
+        $found | Pester\Should -Not -Contain $testDir
+        $found | Pester\Should -Contain "$testDir\subdir"
+    }
+
+    Pester\It 'With backslash at the end, finds only underlaying directories, not itself' {
 
         Microsoft.PowerShell.Management\Set-Content -LiteralPath "$testDir\test1.txt" -Value 'test content'
         Microsoft.PowerShell.Management\Set-Content -LiteralPath "$testDir\test2.txt" -Value 'different content'
@@ -201,15 +208,21 @@ Pester\Describe 'Find-Item 1' {
         $null = GenXdev.FileSystem\Expand-Path .\other\something\here\and\there\aap\boom\ -CreateDirectory
 
         $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$testDir\**\boom" -Directory -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
+
         $found | Pester\Should -Contain "$testDir\subdir2\aap\boom"
-        $found | Pester\Should -Contain "$testDir\subdir3\vis\vuur3\boom"
-        $found | Pester\Should -Contain "$testDir\subdir\arend\boom"
+        $found | Pester\Should -Contain "$testDir\subdir2\aap\boom\vuur2"
         $found | Pester\Should -Contain "$testDir\subdir\aap\boom"
+        $found | Pester\Should -Contain "$testDir\subdir\arend\boom"
+        $found | Pester\Should -Contain "$testDir\subdir\aap\boom\vuur1"
+        $found | Pester\Should -Contain "$testDir\subdir\aap\boom\vuur6"
+        $found | Pester\Should -Contain "$testDir\subdir3\vis\vuur3\boom"
+        $found | Pester\Should -Contain "$testDir\subdir\arend\boom\vuur4"
         $found | Pester\Should -Contain "$testDir\other\something\here\and\there\aap\boom"
-        $found.Count | Pester\Should -Be 5
+
+        $found.Count | Pester\Should -Be 9
     }
 
-    Pester\It "Should work with pattern: `"`$testRoot\**\aap\boom`" -Directory -PassThru" {
+    Pester\It "Should work with pattern: `"`$testDir\**\boom\`" -Directory -PassThru (with slash)" {
 
         $null = GenXdev.FileSystem\Expand-Path .\subdir\aap\boom\vuur1\ -CreateDirectory
         $null = GenXdev.FileSystem\Expand-Path .\subdir2\aap\boom\vuur2\ -CreateDirectory
@@ -219,21 +232,47 @@ Pester\Describe 'Find-Item 1' {
         $null = GenXdev.FileSystem\Expand-Path .\subdir\aap\boom\vuur6\ -CreateDirectory
         $null = GenXdev.FileSystem\Expand-Path .\other\something\here\and\there\aap\boom\ -CreateDirectory
 
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$testDir\**\boom\" -Directory -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
+
+        $found | Pester\Should -Not -Contain "$testDir\subdir2\aap\boom"
+        $found | Pester\Should -Contain "$testDir\subdir2\aap\boom\vuur2"
+        $found | Pester\Should -Not -Contain "$testDir\subdir\aap\boom"
+        $found | Pester\Should -Not -Contain "$testDir\subdir\arend\boom"
+        $found | Pester\Should -Contain "$testDir\subdir\aap\boom\vuur1"
+        $found | Pester\Should -Contain "$testDir\subdir\aap\boom\vuur6"
+        $found | Pester\Should -Not -Contain "$testDir\subdir3\vis\vuur3\boom"
+        $found | Pester\Should -Contain "$testDir\subdir\arend\boom\vuur4"
+        $found | Pester\Should -Not -Contain "$testDir\other\something\here\and\there\aap\boom"
+
+        $found.Count | Pester\Should -Be 4
+    }
+
+    Pester\It "Should work with pattern: `"`$testRoot\**\aap\boom`" -Directory -PassThru" {
+
+        $null = GenXdev.FileSystem\Expand-Path .\subdir\aap\boom\vuur1\ -CreateDirectory
+        $null = GenXdev.FileSystem\Expand-Path .\subdir\aap\boom\vuur6\ -CreateDirectory
+        $null = GenXdev.FileSystem\Expand-Path .\subdir\aap\test\vuur5\ -CreateDirectory
+        $null = GenXdev.FileSystem\Expand-Path .\subdir\arend\boom\vuur4\ -CreateDirectory
+        $null = GenXdev.FileSystem\Expand-Path .\subdir2\aap\boom\vuur2\ -CreateDirectory
+        $null = GenXdev.FileSystem\Expand-Path .\subdir3\vis\vuur3\boom\ -CreateDirectory
+        $null = GenXdev.FileSystem\Expand-Path .\other\something\here\and\there\aap\boom\ -CreateDirectory
+
         $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$testRoot\**\aap\boom" -Directory -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
-        $found | Pester\Should -Contain "$testDir\subdir2\aap\boom"
         $found | Pester\Should -Contain "$testDir\subdir\aap\boom"
+        $found | Pester\Should -Contain "$testDir\subdir2\aap\boom"
         $found | Pester\Should -Contain "$testDir\other\something\here\and\there\aap\boom"
+
         $found.Count | Pester\Should -Be 3
     }
 
     Pester\It "Should work with pattern: `"`$testRoot\**\aap\boom\`" -Directory -PassThru" {
 
         $null = GenXdev.FileSystem\Expand-Path .\subdir\aap\boom\vuur1\ -CreateDirectory
+        $null = GenXdev.FileSystem\Expand-Path .\subdir\aap\boom\vuur6\ -CreateDirectory
+        $null = GenXdev.FileSystem\Expand-Path .\subdir\aap\test\vuur5\ -CreateDirectory
+        $null = GenXdev.FileSystem\Expand-Path .\subdir\arend\boom\vuur4\ -CreateDirectory
         $null = GenXdev.FileSystem\Expand-Path .\subdir2\aap\boom\vuur2\ -CreateDirectory
         $null = GenXdev.FileSystem\Expand-Path .\subdir3\vis\vuur3\boom\ -CreateDirectory
-        $null = GenXdev.FileSystem\Expand-Path .\subdir\arend\boom\vuur4\ -CreateDirectory
-        $null = GenXdev.FileSystem\Expand-Path .\subdir\aap\test\vuur5\ -CreateDirectory
-        $null = GenXdev.FileSystem\Expand-Path .\subdir\aap\boom\vuur6\ -CreateDirectory
         $null = GenXdev.FileSystem\Expand-Path .\other\something\here\and\there\aap\boom\ -CreateDirectory
 
         'testA123' > "$testDir\subdir\aap\boom\vuur1\fileA123.txt"
@@ -241,9 +280,12 @@ Pester\Describe 'Find-Item 1' {
         'testB890' > "$testDir\subdir\aap\boom\vuur1\fileB890.txt"
 
         $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$testRoot\**\aap\boom\" -Directory -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
-        $found | Pester\Should -Contain "$testDir\subdir\aap\boom\vuur1"
-        $found | Pester\Should -Contain "$testDir\subdir2\aap\boom\vuur2"
+        $found | Pester\Should -Not -Contain "$testDir\subdir\aap\boom"
         $found | Pester\Should -Contain "$testDir\subdir\aap\boom\vuur6"
+        $found | Pester\Should -Contain "$testDir\subdir\aap\boom\vuur1"
+        $found | Pester\Should -Not -Contain "$testDir\subdir2\aap\boom"
+        $found | Pester\Should -Contain "$testDir\subdir2\aap\boom\vuur2"
+        $found | Pester\Should -Not -Contain "$testDir\other\something\here\and\there\aap\boom"
         $found.Count | Pester\Should -Be 3
     }
 
@@ -313,12 +355,11 @@ Pester\Describe 'Find-Item 1' {
 
     Pester\It 'Should match the pattern' {
 
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.260.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.264.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
 
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\EnsurePester.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Expand-Path.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Find-DuplicateFiles.ps1")
-        $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Find-Item.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Invoke-Fasti.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Move-ItemWithTracking.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Move-ToRecycleBin.ps1")
@@ -327,9 +368,11 @@ Pester\Describe 'Find-Item 1' {
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Remove-OnReboot.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Rename-InProject.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Start-RoboCopy.ps1")
+        $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\WriteFileOutput.ps1")
+        $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\_EnsureTypes.ps1")
 
         # if this is failing right here, you added files to GenXdev.FileSystem, update the number accordingly
-        $found.Count | Pester\Should -Be 14
+        $found.Count | Pester\Should -Be 15
     }
 
     Pester\It 'Should find files with certain symbols in the filename' {
@@ -350,7 +393,7 @@ Pester\Describe 'Find-Item 1' {
         # Without the -IncludeAlternateFileStreams switch, only the base file should be returned
         $found1 = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile)
         $found1.Count | Pester\Should -Be 1
-        $found1[0] | Pester\Should -Be (Microsoft.PowerShell.Management\Resolve-Path -LiteralPath $testFile -Relative)
+        $found1[0] | Pester\Should -BeExactly (Microsoft.PowerShell.Management\Resolve-Path -LiteralPath $testFile -Relative)
 
         # With the -IncludeAlternateFileStreams switch, both the base file and the stream should be returned
         $found2 = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -IncludeAlternateFileStreams)
@@ -379,12 +422,12 @@ Pester\Describe 'Find-Item 1' {
         $found2 | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -LiteralPath $testFile -Relative)):stream2"
 
         # Test colon at end means all streams (implicit wildcard)
-        $found4 = @(GenXdev.FileSystem\Find-Item -SearchMask "${testFile}:")
-        $found4.Count | Pester\Should -Be 4
-        $found4 | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -LiteralPath $testFile -Relative))::`$DATA"
-        $found4 | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -LiteralPath $testFile -Relative)):stream1"
-        $found4 | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -LiteralPath $testFile -Relative)):stream2"
-        $found4 | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -LiteralPath $testFile -Relative)):Zone.Identifier"
+        $found3 = @(GenXdev.FileSystem\Find-Item -SearchMask "${testFile}:")
+        $found3.Count | Pester\Should -Be 3
+        $found3 | Pester\Should -Not -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -LiteralPath $testFile -Relative))::`$DATA"
+        $found3 | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -LiteralPath $testFile -Relative)):stream1"
+        $found3 | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -LiteralPath $testFile -Relative)):stream2"
+        $found3 | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -LiteralPath $testFile -Relative)):Zone.Identifier"
     }
 
     Pester\It 'Should filter streams with pattern matching' {
@@ -395,12 +438,12 @@ Pester\Describe 'Find-Item 1' {
         'Content with no match' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile -Stream 'normal'
 
         # Test pattern matching within streams
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "${testFile}:*" -Pattern 'password\d+')
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "${testFile}:*" -SearchADSContent -Pattern 'password\d+')
         $found.Count | Pester\Should -Be 1
         $found[0] | Pester\Should -Be '.\pattern-stream.txt:secret'
 
         # Verify no match returns empty
-        $noMatch = @(GenXdev.FileSystem\Find-Item -SearchMask "${testFile}:*" -Pattern 'nonexistent')
+        $noMatch = @(GenXdev.FileSystem\Find-Item -SearchMask "${testFile}:*" -SearchADSContent -Pattern 'nonexistent')
         $noMatch.Count | Pester\Should -Be 0
     }
 
@@ -453,7 +496,7 @@ Pester\Describe 'Find-Item 1' {
     Pester\It 'Should work with wildcard file paths and combined with stream masks' {
         # Create multiple files in subdirectories with streams
         $subDir = "$testDir\adstest"
-        Microsoft.PowerShell.Management\New-Item -Path $subDir -ItemType Directory -Force | Microsoft.PowerShell.Core\Out-Null
+        Microsoft.PowerShell.Management\New-Item -Path $subDir -ItemType Directory -Force -ErrorAction SilentlyContinue | Microsoft.PowerShell.Core\Out-Null
 
         $file1 = "$subDir\file1.jpg"
         $file2 = "$subDir\file2.jpg"
@@ -475,7 +518,9 @@ Pester\Describe 'Find-Item 1' {
         'Metadata with secret key' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $file1 -Stream 'metadata'
         'Regular metadata' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $file2 -Stream 'metadata'
 
-        $foundWithPattern = @(GenXdev.FileSystem\Find-Item -SearchMask "$subDir\*.jpg:metadata" -Pattern 'secret')
+        $foundWithPattern = @(
+            GenXdev.FileSystem\Find-Item -SearchMask "$subDir\file*.jpg:metadata" -Pattern 'secret' -SearchADSContent -NoLinks
+        )
         $foundWithPattern.Count | Pester\Should -Be 1
         $foundWithPattern[0] | Pester\Should -Be "$((Microsoft.PowerShell.Management\Resolve-Path -LiteralPath $file1 -Relative)):metadata"
     }
