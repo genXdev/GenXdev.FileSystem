@@ -1,6 +1,6 @@
 <##############################################################################
 Part of PowerShell module : GenXdev.FileSystem
-Original cmdlet filename  : WriteFileOutput.ps1
+Original cmdlet filename  : Write-FileOutput.ps1
 Original author           : René Vaessen / GenXdev
 Version                   : 1.268.2025
 ################################################################################
@@ -59,12 +59,12 @@ An optional string prefix to prepend to the output display for additional
 context.
 
 .EXAMPLE
-WriteFileOutput -CallerInvocation $MyInvocation -Input "C:\temp\file.txt"
+Write-FileOutput -CallerInvocation $MyInvocation -Input "C:\temp\file.txt"
 
 .EXAMPLE
-Get-ChildItem | WriteFileOutput -CallerInvocation $MyInvocation -Input $_
+Get-ChildItem | Write-FileOutput -CallerInvocation $MyInvocation -Input $_
 #>
-function WriteFileOutput {
+function Write-FileOutput {
 
     param(
         ###################################################################

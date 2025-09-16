@@ -2,7 +2,7 @@
 Part of PowerShell module : GenXdev.FileSystem
 Original cmdlet filename  : ResolveInputObjectFileNames.ps1
 Original author           : René Vaessen / GenXdev
-Version                   : 1.264.2025
+Version                   : 1.268.2025
 ################################################################################
 MIT License
 

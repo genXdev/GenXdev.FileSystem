@@ -12,7 +12,7 @@
 RootModule = 'GenXdev.FileSystem.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.264.2025'
+ModuleVersion = '1.268.2025'
 
 # Supported PSEditions
 CompatiblePSEditions = 'Core'
@@ -72,7 +72,8 @@ NestedModules = @('lib\GenXdev.FileSystem.dll')
 FunctionsToExport = 'EnsurePester', 'Expand-Path', 'Find-DuplicateFiles', 'Invoke-Fasti', 
                'Move-ItemWithTracking', 'Move-ToRecycleBin', 'Remove-AllItems', 
                'Remove-ItemWithFallback', 'Remove-OnReboot', 'Rename-InProject', 
-               'ResolveInputObjectFileNames', 'Start-RoboCopy', 'WriteFileOutput'
+               'ResolveInputObjectFileNames', 'Start-RoboCopy', 'Write-FileOutput', 
+               'WriteFileOutput'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = 'Add-Content', 'Add-Member', 'Add-Type', 'Clear-Content', 'Clear-Item', 
@@ -166,6 +167,7 @@ FileList = 'GenXdev.FileSystem.psd1', 'GenXdev.FileSystem.psm1', 'ISSUES.md',
                'Functions\GenXdev.FileSystem\Rename-InProject.ps1', 
                'Functions\GenXdev.FileSystem\ResolveInputObjectFileNames.ps1', 
                'Functions\GenXdev.FileSystem\Start-RoboCopy.ps1', 
+               'Functions\GenXdev.FileSystem\Write-FileOutput.ps1', 
                'Functions\GenXdev.FileSystem\WriteFileOutput.ps1', 
                'Functions\GenXdev.FileSystem\_EnsureTypes.ps1', 
                'Tests\GenXdev.FileSystem\Expand-Path.Tests.ps1', 
