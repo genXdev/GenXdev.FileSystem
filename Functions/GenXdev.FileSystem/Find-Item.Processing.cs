@@ -1599,7 +1599,6 @@ public partial class FindItem : PSCmdlet
                             if (wildcardPattern != null &&
                                 !wildcardPattern.IsMatch(streamName))
                             {
-                                // continue
                                 continue;
                             }
 
@@ -1638,7 +1637,6 @@ public partial class FindItem : PSCmdlet
                                         ));
                                     }
 
-                                    // continue
                                     continue;
                                 }
 
