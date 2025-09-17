@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Processing.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.270.2025
+// Version                   : 1.272.2025
 // ################################################################################
 // MIT License
 //
@@ -56,7 +56,7 @@ public partial class FindItem : PSCmdlet
     {
 
         // add initial worker tasks if needed to start processing
-        AddWorkerTasksIfNeeded();
+        AddWorkerTasksIfNeeded(cts.Token);
 
         /*
          * main loop to consume outputs while workers are active or queues
@@ -73,7 +73,7 @@ public partial class FindItem : PSCmdlet
             // yield cpu time to other threads
 
             // short sleep to avoid high cpu usage in tight loop
-            Thread.Sleep(0);
+            Thread.Sleep(25);
 
             // process all queues to handle outputs and messages
             EmptyQueues();
@@ -89,11 +89,8 @@ public partial class FindItem : PSCmdlet
         // process verbose queue for messages
 
         // dequeue and write verbose messages
-        while (VerboseQueue.TryDequeue(out string? msg))
+        while (VerboseQueue.TryDequeue(out string msg))
         {
-
-            // check progress queue for updates
-            checkProgoressQueue();
 
             // write the dequeued message as verbose output
             WriteVerbose(msg);
@@ -102,7 +99,7 @@ public partial class FindItem : PSCmdlet
         // process output queue for results
 
         // process output items such as files or directories
-        while (OutputQueue.TryDequeue(out object? result))
+        while (OutputQueue.TryDequeue(out object result))
         {
 
             // try handling the output item
@@ -187,76 +184,115 @@ public partial class FindItem : PSCmdlet
                 WriteError(new ErrorRecord(ex, "QueManager",
                     ErrorCategory.WriteError, result));
             }
-
-            // check progress queue after handling output
-            checkProgoressQueue();
         }
 
         // check all progress items in queue
-        checkProgoressQueue(true);
+        updateProgressStatus(true);
+    }
+
+    private string formatStat(long nr, bool left)
+    {
+        var s = nr.ToString();
+
+        // snap to sizes of 4
+        int steps = 3;
+        int length = s.Length + (steps - (s.Length % steps));
+
+        return left ? (s.PadLeft(length)) :
+            (s.PadRight(length));
     }
 
     /// <summary>
     /// Handles progress queue dequeuing.
     /// </summary>
     /// <param name="all">If to process all.</param>
-    private void checkProgoressQueue(bool all = false)
+    private void updateProgressStatus(bool force = false)
     {
 
-        // force processing of all items
-        all = true;
+        // get and convert last timestamp
+        var now = DateTime.UtcNow;
+        long lastProgress = Interlocked.Read(ref this.lastProgress);
+        var time = DateTime.FromBinary(lastProgress);
+
+        // too soon/frequent?
+        if (!force && now - time < TimeSpan.FromMilliseconds(250)) return;
+
+        // set current timestamp as the new checkpoint
+        lastProgress = now.ToBinary();
+        Interlocked.Exchange(ref lastProgress, lastProgress);
+
+        // get output kind
+        bool outputtingFiles = FilesAndDirectories.IsPresent || !Directory.IsPresent;
+
+        // get processing actions
+        bool matchingContent = Pattern != ".*" && !string.IsNullOrWhiteSpace(Pattern);
 
         // determine if including files based on switches and pattern
-        bool andFiles = (!Directory.IsPresent || FilesAndDirectories.IsPresent)
-            && Pattern != ".*";
+        bool andFiles = outputtingFiles && matchingContent;
 
-        // process progress updates
+        // get counters
+        long fileMatchesCount = Interlocked.Read(ref this.fileMatchesActive);
+        long dirsDone = Interlocked.Read(ref dirsUnQueued);
+        long dirsLeft = DirQueue.Count;
+        long fileOutputCount = Interlocked.Read(ref filesFound);
 
-        // dequeue and write progress updates
-        while (ProgressQueue.TryDequeue(out string? msg) && all)
+        long directoryProcessorsCount = Interlocked.Read(ref directoryProcessors);
+        long matchProcessorsCount = Interlocked.Read(ref matchProcessors);
+        long fileMatchesStartedCount = Interlocked.Read(ref fileMatchesStarted);
+        long queuedMatchesCount = FileContentMatchQueue.Count;
+
+        // calculate percent complete
+
+        // calculate completion percentage for progress
+        int progressPercent = (int)Math.Round(
+
+            Math.Min(100,
+                Math.Max(0,
+                    dirsDone /
+                    Math.Max(1d, dirsLeft)
+                )) * 100d, 0
+            );
+
+        // create progress record
+        var record = new ProgressRecord(0, "Find-Item", (
+            "Scanning directories" + (andFiles ?
+            " and found file contents" : "")
+        ))
         {
 
-            // get count of directories done
-            long dirsDone = Interlocked.Read(ref dirsUnQueued);
+            // set percent complete
+            PercentComplete = progressPercent,
 
-            // get count of directories left
-            long dirsLeft = Interlocked.Read(ref dirsQueued);
+            // set status description with counts
+            StatusDescription = (
+                "Directories: " + formatStat(dirsDone, true) + "/" + formatStat(dirsLeft, false) +
+                " [" + formatStat(directoryProcessorsCount, false) + "] | Found: " + formatStat(fileOutputCount, true) +
+                (matchingContent ? " | Matched: " + formatStat(fileMatchesStartedCount, true) +"/" + formatStat(queuedMatchesCount, false) + " [" + formatStat(matchProcessors, false) + "]" :
+                string.Empty)
+            ),
 
-            // calculate percent complete
+            // set current operation message
+            CurrentOperation = (
+                outputtingFiles && matchingContent ? (
+                    dirsLeft - dirsDone == 0 ?
+                    "Searching for more files and matching file content" :
+                    dirsLeft == 0 ?
+                    "Searching for files to match" :
+                    "Matching file contents"
+                )
+                : (
+                    outputtingFiles ? (
+                        filesFound == 0 ?
+                            "Searching for files" :
+                            "Searching for more files"
+                    ) :
+                    "Searching for matching directories"
+                )
+            )
+        };
 
-            // calculate completion percentage for progress
-            int progressPercent = (int)Math.Round(
-
-                Math.Min(100,
-                    Math.Max(0,
-                        dirsDone /
-                        Math.Max(1d, dirsLeft)
-                    )) * 100d, 0
-                );
-
-            // create progress record
-            var record = new ProgressRecord(0, "Find-Item", (
-                "Scanning directories" + (andFiles ?
-                " and found file contents" : "")
-            ))
-            {
-
-                // set percent complete
-                PercentComplete = progressPercent,
-
-                // set status description with counts
-                StatusDescription = (
-                    "Directories: " + dirsDone + "/" + dirsLeft +
-                    " | Found: " + Interlocked.Read(ref filesFound)
-                ),
-
-                // set current operation message
-                CurrentOperation = msg
-            };
-
-            // write the progress record
-            WriteProgress(record);
-        }
+        // write the progress record
+        WriteProgress(record);
     }
 
     /// <summary>
@@ -269,7 +305,6 @@ public partial class FindItem : PSCmdlet
     /// - It consumes directories from the DirQueue
     /// - It produces both files (OutputQueue) and subdirectories (back to
     ///   DirQueue)
-    /// - It updates progress via ProgressQueue
     ///
     /// The search logic handles:
     /// - Complex path patterns with wildcards
@@ -279,7 +314,7 @@ public partial class FindItem : PSCmdlet
     /// </remarks>
     /// <param name="token">Cancellation token to support stopping the search
     /// operation</param>
-    protected async Task DirectoryProcessor(CancellationToken token)
+    protected void DirectoryProcessor(CancellationToken token)
     {
 
         /*
@@ -290,7 +325,7 @@ public partial class FindItem : PSCmdlet
 
         // loop while not canceled and dequeue succeeds
         while (!token.IsCancellationRequested && DirQueue.TryDequeue(
-            out string? fullSearchMaskPositionedPath))
+            out string fullSearchMaskPositionedPath))
         {
 
             // increment count of unqueued directories
@@ -385,7 +420,7 @@ public partial class FindItem : PSCmdlet
                 {
 
                     // call file enumeration asynchronously
-                    await EnumerateDirectoryFiles(
+                    EnumerateDirectoryFiles(
 
                         currentLocation,
                         currentFileSearchMask,
@@ -441,12 +476,6 @@ public partial class FindItem : PSCmdlet
                         fullSearchMaskPositionedPath + ": " + e.Message
                     ));
                 }
-
-                // queue progress message with error for access denied
-                ProgressQueue.Enqueue((
-                    "Access denied: " + fullSearchMaskPositionedPath + " - " +
-                    e.Message
-                ));
             }
             catch (IOException e)
             {
@@ -462,12 +491,6 @@ public partial class FindItem : PSCmdlet
                         ": " + e.Message
                     ));
                 }
-
-                // queue progress message with io error
-                ProgressQueue.Enqueue((
-                    "I/O error: " + fullSearchMaskPositionedPath + " - " +
-                    e.Message
-                ));
             }
             catch (Exception e)
             {
@@ -494,12 +517,6 @@ public partial class FindItem : PSCmdlet
                         ));
                     }
                 }
-
-                // queue progress message with general error
-                ProgressQueue.Enqueue((
-                    "Error processing " + fullSearchMaskPositionedPath +
-                    " - " + e.Message
-                ));
             }
 
             // check for cancellation after processing
@@ -1240,7 +1257,7 @@ public partial class FindItem : PSCmdlet
     /// <param name="NoMoreCustomWildcards">No more custom wildcards.</param>
     /// <param name="IsUncPath">Is UNC path.</param>
     /// <param name="token">Cancellation token.</param>
-    protected async Task EnumerateDirectoryFiles(
+    protected void EnumerateDirectoryFiles(
 
         string StartLocation,
         string CurrentFileSearchMask,
@@ -1461,10 +1478,8 @@ public partial class FindItem : PSCmdlet
                             Path.GetExtension(normalizedFilePath)
                         ))
                     {
-
-                        // process content
-                        await FileContentProcessor(normalizedFilePath,
-                            cts!.Token);
+                        FileContentMatchQueue.Enqueue(normalizedFilePath);
+                        AddWorkerTasksIfNeeded(token);
                     }
                 }
                 else
@@ -1482,11 +1497,6 @@ public partial class FindItem : PSCmdlet
 
                     // output file info if no content pattern
                     OutputQueue.Enqueue(new FileInfo(normalizedFilePath));
-
-                    // progress
-                    ProgressQueue.Enqueue((
-                        "Found file: " + normalizedFilePath
-                    ));
                 }
             }
 
@@ -1497,7 +1507,7 @@ public partial class FindItem : PSCmdlet
             {
 
                 // get streams
-                await GetFileAlternateFileStreams(normalizedFilePath,
+                GetFileAlternateFileStreams(normalizedFilePath,
                     cts!.Token, streamName);
             }
         }
@@ -1509,7 +1519,7 @@ public partial class FindItem : PSCmdlet
     /// <param name="FilePath">File path.</param>
     /// <param name="token">Cancellation token.</param>
     /// <param name="StreamName">Stream name optional.</param>
-    protected async Task GetFileAlternateFileStreams(string FilePath,
+    protected void GetFileAlternateFileStreams(string FilePath,
         CancellationToken token, string StreamName = null)
     {
 
@@ -1556,12 +1566,6 @@ public partial class FindItem : PSCmdlet
                                 ": Win32 error " + error
                             ));
                         }
-
-                        // progress error
-                        ProgressQueue.Enqueue((
-                            "Error retrieving ADS for " + FilePath +
-                            ": Win32 error " + error
-                        ));
                     }
                 }
                 else
@@ -1621,10 +1625,8 @@ public partial class FindItem : PSCmdlet
                                             Path.GetExtension(streamName)
                                         ))
                                     {
-
-                                        // process content
-                                        await FileContentProcessor(adsPath,
-                                            cts!.Token);
+                                        FileContentMatchQueue.Enqueue(adsPath);
+                                        AddWorkerTasksIfNeeded(token);
                                     }
                                     else if (UseVerboseOutput)
                                     {
@@ -1652,11 +1654,6 @@ public partial class FindItem : PSCmdlet
 
                                 // output ads info
                                 OutputQueue.Enqueue(new FileInfo(adsPath));
-
-                                // progress
-                                ProgressQueue.Enqueue((
-                                    "Found ADS: " + adsPath
-                                ));
                             }
                         }
                     }
@@ -1696,11 +1693,6 @@ public partial class FindItem : PSCmdlet
                     ));
                 }
             }
-
-            // progress error
-            ProgressQueue.Enqueue((
-                "Error retrieving ADS for " + FilePath + ": " + ex.Message
-            ));
         }
 
         // check cancel
@@ -1728,12 +1720,14 @@ public partial class FindItem : PSCmdlet
         // try reading
         try
         {
+            // update counter
+            Interlocked.Increment(ref fileMatchesActive);
+            Interlocked.Increment(ref fileMatchesStarted);
 
             // open file stream for reading content
             using (var stream = new FileStream(filePath, FileMode.Open,
                 FileAccess.Read, FileShare.Read, 4096, true))
             {
-
                 // get matches using stream regex for large files
                 var matchCollection = await PatternMatcher.GetMatchCollectionAsync(
                     stream,
@@ -1773,6 +1767,12 @@ public partial class FindItem : PSCmdlet
             // return
             return;
         }
+        finally
+        {
+            // update counter
+            Interlocked.Decrement(ref fileMatchesActive);
+            Interlocked.Increment(ref fileMatchesCompleted);
+        }
 
         // log match if verbose
         if (UseVerboseOutput)
@@ -1791,11 +1791,6 @@ public partial class FindItem : PSCmdlet
 
         // enqueue output
         OutputQueue.Enqueue(fileInfo);
-
-        // queue progress
-        ProgressQueue.Enqueue((
-            "Found file: " + filePath
-        ));
 
         // check cancel
         token.ThrowIfCancellationRequested();
@@ -1825,9 +1820,8 @@ public partial class FindItem : PSCmdlet
     bool HasLongPathPrefix,
     bool IsUncPath,
     CancellationToken token
-)
+    )
     {
-
         // adjust wildcards flag based on mask
         NoMoreCustomWildcards &= CurrentFileSearchMask == "*";
 
@@ -1975,7 +1969,7 @@ public partial class FindItem : PSCmdlet
                 Interlocked.Increment(ref dirsQueued);
 
                 // add worker tasks if needed
-                AddWorkerTasksIfNeeded();
+                AddWorkerTasksIfNeeded(token);
             }
         }
         // enumerate directories matching the pattern
@@ -2068,7 +2062,7 @@ public partial class FindItem : PSCmdlet
                     Interlocked.Increment(ref dirsQueued);
 
                     // add workers if needed
-                    AddWorkerTasksIfNeeded();
+                    AddWorkerTasksIfNeeded(token);
                 }
 
                 // check full pattern match
@@ -2147,11 +2141,6 @@ public partial class FindItem : PSCmdlet
 
                     // enqueue directory info
                     OutputQueue.Enqueue(new DirectoryInfo(normalizedSubDir));
-
-                    // queue progress found directory
-                    ProgressQueue.Enqueue((
-                        "Found directory: " + normalizedSubDir
-                    ));
                 }
             }
         }

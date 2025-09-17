@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Cmdlet.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.270.2025
+// Version                   : 1.272.2025
 // ################################################################################
 // MIT License
 //
@@ -635,14 +635,16 @@ public partial class FindItem : PSCmdlet
     /// </summary>
     [Parameter(Mandatory = false, HelpMessage = "Exclude files or directories matching these wildcard patterns (e.g., *.tmp, *\\bin\\*).")]
     [Alias("skiplike")]
-    public string[] Exclude { get; set; } = new string[1] { "\\.git\\*" };
+    public string[] Exclude { get; set; } = new string[1] { "*\\.git\\*" };
 
     // Cmdlet lifecycle methods
     protected override void BeginProcessing()
     {
 
         // set default parallelism if not provided by user
-        MaxDegreeOfParallelism = MaxDegreeOfParallelism <= 0 ? GetCoreCount() * 2 : MaxDegreeOfParallelism;
+        MaxDegreeOfParallelism = MaxDegreeOfParallelism <= 0 ? GetCoreCount() : MaxDegreeOfParallelism;
+        ThreadPool.GetMaxThreads(out this.oldMaxWorkerThread, out this.oldMaxCompletionPorts);
+        ThreadPool.SetMaxThreads(MaxDegreeOfParallelism, MaxDegreeOfParallelism);
 
         // detect if running in unattended mode for output formatting
         UnattendedMode = NoLinks.IsPresent || UnattendedModeHelper.IsUnattendedMode(MyInvocation);
@@ -741,6 +743,9 @@ public partial class FindItem : PSCmdlet
 
         // output completion progress
         WriteProgress(completeRecord);
+
+        // restore configuration
+        ThreadPool.SetMaxThreads(this.oldMaxWorkerThread, this.oldMaxCompletionPorts);
 
         // clean up cancellation source
         cts?.Dispose();

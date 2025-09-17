@@ -25,5 +25,4 @@ if ($major -ne 10) {
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Rename-InProject.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\ResolveInputObjectFileNames.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Start-RoboCopy.ps1"
-. "$PSScriptRoot\Functions\GenXdev.FileSystem\Write-FileOutput.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\WriteFileOutput.ps1"

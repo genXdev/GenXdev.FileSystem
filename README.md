@@ -127,7 +127,6 @@ Update-Module
 | [Rename-InProject](#rename-inproject) | rip | Performs text replacement throughout a project directory. |
 | [ResolveInputObjectFileNames](#resolveinputobjectfilenames) | &nbsp; | &nbsp; |
 | [Start-RoboCopy](#start-robocopy) | rc, xc | Provides a PowerShell wrapper for Microsoft's Robust Copy (RoboCopy) utility. |
-| [Write-FileOutput](#write-fileoutput) | &nbsp; | &nbsp; |
 | [WriteFileOutput](#writefileoutput) | &nbsp; | &nbsp; |
 
 <br/><hr/><br/>
@@ -1514,72 +1513,6 @@ Start-RoboCopy [-Source] <string> [[-DestinationDirectory] <string>] [[-Files] <
         Accept pipeline input?       false  
         Parameter set name           (All)  
         Aliases                      wi  
-        Dynamic?                     false  
-        Accept wildcard characters?  false  
-    <CommonParameters>  
-        This cmdlet supports the common parameters: Verbose, Debug,  
-        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
-        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
-        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
-
-<br/><hr/><br/>
- 
-
-##	Write-FileOutput 
-```PowerShell 
-
-   Write-FileOutput  
-```` 
-
-### SYNTAX 
-```PowerShell 
-Write-FileOutput [-CallerInvocation] <Object> [-Input] <Object> [-Prefix <string>] [-RelativeBasePath <string>] [-FullPaths] [<CommonParameters>] 
-```` 
-
-### PARAMETERS 
-    -CallerInvocation <Object>  
-        The invocation information from the calling function  
-        Required?                    true  
-        Position?                    0  
-        Accept pipeline input?       true (ByValue)  
-        Parameter set name           (All)  
-        Aliases                      None  
-        Dynamic?                     false  
-        Accept wildcard characters?  false  
-    -FullPaths  
-        Forces output to use full absolute paths instead of relative paths  
-        Required?                    false  
-        Position?                    Named  
-        Accept pipeline input?       false  
-        Parameter set name           (All)  
-        Aliases                      None  
-        Dynamic?                     false  
-        Accept wildcard characters?  false  
-    -Input <Object>  
-        The input object to process, which can be a file path or object  
-        Required?                    true  
-        Position?                    1  
-        Accept pipeline input?       true (ByValue)  
-        Parameter set name           (All)  
-        Aliases                      None  
-        Dynamic?                     false  
-        Accept wildcard characters?  false  
-    -Prefix <string>  
-        An optional string prefix to prepend to the output display for additional context  
-        Required?                    false  
-        Position?                    Named  
-        Accept pipeline input?       false  
-        Parameter set name           (All)  
-        Aliases                      None  
-        Dynamic?                     false  
-        Accept wildcard characters?  false  
-    -RelativeBasePath <string>  
-        Base path for generating relative file paths in output  
-        Required?                    false  
-        Position?                    Named  
-        Accept pipeline input?       false  
-        Parameter set name           (All)  
-        Aliases                      None  
         Dynamic?                     false  
         Accept wildcard characters?  false  
     <CommonParameters>  

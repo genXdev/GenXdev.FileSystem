@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Fields.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.270.2025
+// Version                   : 1.272.2025
 // ################################################################################
 // MIT License
 //
@@ -191,25 +191,27 @@ public partial class FindItem : PSCmdlet
      */
     protected readonly ConcurrentQueue<string> DirQueue = new();
     protected readonly ConcurrentQueue<object> OutputQueue = new();
-    protected readonly ConcurrentQueue<string> ProgressQueue = new();
     protected readonly ConcurrentQueue<string> VerboseQueue = new();
+    protected readonly ConcurrentQueue<string> FileContentMatchQueue = new();
     protected readonly List<Task> Workers = new List<Task>();
     protected readonly object WorkersLock = new object();
 
     // Cancellation source to handle timeouts and user interruptions gracefully
-    protected CancellationTokenSource? cts;
+    protected CancellationTokenSource cts;
 
     // Counters for tracking progress: number of files found and directories
     // queued
-    protected long filesFound = 0;
-    protected long dirsQueued = 0;
-    protected long dirsUnQueued = 0;
-
-    /// <summary>
-    /// Maximum file size to process for content search, calculated based on
-    /// available RAM
-    /// </summary>
-    protected long MaxFilesizeToProcess = 1024 * 1024 * 50;
+    protected long directoryProcessors;
+    protected long matchProcessors;
+    protected long filesFound;
+    protected long fileMatchesActive;
+    protected long fileMatchesStarted;
+    protected long fileMatchesCompleted;
+    protected long dirsQueued;
+    protected long dirsUnQueued;
+    protected long lastProgress;
+    protected int oldMaxWorkerThread;
+    protected int oldMaxCompletionPorts;
 
     /// <summary>
     /// Flag for enabling verbose output based on user preferences

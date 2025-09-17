@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Utilities.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.270.2025
+// Version                   : 1.272.2025
 // ################################################################################
 // MIT License
 //
@@ -199,7 +199,7 @@ public partial class FindItem : PSCmdlet
             // return as array
             return uncPaths.ToArray<string>();
         }
-        catch (Exception ex)
+        catch
         {
 
             // silent error handling
@@ -225,7 +225,7 @@ public partial class FindItem : PSCmdlet
         Interlocked.Increment(ref dirsQueued);
 
         // add workers if needed
-        AddWorkerTasksIfNeeded();
+        AddWorkerTasksIfNeeded(cts.Token);
     }
 
     /// <summary>
@@ -272,33 +272,58 @@ public partial class FindItem : PSCmdlet
     /// <summary>
     /// Adds worker tasks if below parallelism limit.
     /// </summary>
-    protected void AddWorkerTasksIfNeeded()
+    protected void AddWorkerTasksIfNeeded(CancellationToken ctx)
     {
+        // get count of active matches
+        long fileMatchesCount = Interlocked.Read(ref this.fileMatchesActive);
+
+        // get count of directories left
+        long dirsLeft = Interlocked.Read(ref dirsQueued);
+
+        // get count of files found
+        long fileOutputCount = Interlocked.Read(ref filesFound);
 
         // lock for worker management
         lock (WorkersLock)
         {
-
             // remove completed workers
             Workers.RemoveAll(w => w.IsCompleted);
 
             // count active workers
-            var current = Workers.Where(w => !w.IsCompleted).Count();
+            var currentNrOfDirectoryProcessors = Interlocked.Read(ref this.directoryProcessors);
 
-            // calculate needed workers
-            var requested = Math.Min(MaxDegreeOfParallelism, Interlocked.Read(ref dirsQueued));
+            // calculate needed matching workers
+            var requestedDirectoryProcessors = Math.Min(MaxDegreeOfParallelism, DirQueue.Count);
 
             // determine missing workers
-            var missing = requested - current;
+            var missingDirectoryProcessors = requestedDirectoryProcessors - currentNrOfDirectoryProcessors;
 
             // add missing workers
             // List to hold worker tasks
-            while (missing-- > 0)
+            while (missingDirectoryProcessors-- > 0)
             {
 
                 // Start worker tasks for parallel directory processing
-                AddWorkerTask(Workers);
+                AddWorkerTask(Workers, false, ctx);
             }
+
+            // count active workers
+            var currentNrOfMatchingProcessors = Interlocked.Read(ref this.matchProcessors);
+
+            // calculate needed matching workers
+            var requestedMatchingProcessors = Math.Min(MaxDegreeOfParallelism, FileContentMatchQueue.Count);
+
+            // determine missing workers
+            var missingMatchingProcessors = requestedMatchingProcessors - currentNrOfMatchingProcessors;
+
+            // add missing workers
+            // List to hold worker tasks
+            while (missingMatchingProcessors-- > 0)
+            {
+
+                // Start worker tasks for parallel directory processing
+                AddWorkerTask(Workers, true, ctx);
+            }                        
         }
     }
 
@@ -306,11 +331,53 @@ public partial class FindItem : PSCmdlet
     /// Adds a single worker task to the list.
     /// </summary>
     /// <param name="workers">The list of workers.</param>
-    protected void AddWorkerTask(List<Task> workers)
+    protected void AddWorkerTask(List<Task> workers, bool contentMatcher, CancellationToken ctx)
     {
 
+        // need to add a content matcher task?
+        if (contentMatcher)
+        {
+            // update counters
+            Interlocked.Increment(ref matchProcessors);
+
+            // add worker
+            workers.Add(Task.Run(async () =>
+            {
+                try
+                {
+                    string filePath;
+
+                    while (FileContentMatchQueue.TryDequeue(out filePath) && !ctx.IsCancellationRequested)
+                    {
+                        // try processing
+                        try
+                        {
+                            await FileContentProcessor(filePath, ctx);
+                        }
+                        catch (Exception ex)
+                        {
+                            // log failure if verbose
+                            if (UseVerboseOutput)
+                            {
+                                VerboseQueue.Enqueue($"Worker task failed: {ex.Message}");
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref matchProcessors);
+                }
+            }, ctx));
+
+            return;
+        }
+
+
+        Interlocked.Increment(ref directoryProcessors);
+
         // add new task
-        workers.Add(Task.Run(async () =>
+        workers.Add(Task.Run(() =>
         {
 
             // try processing
@@ -318,7 +385,7 @@ public partial class FindItem : PSCmdlet
             {
 
                 // run directory processor
-                await DirectoryProcessor(cts!.Token);
+                DirectoryProcessor(cts!.Token);
             }
             catch (Exception ex)
             {
@@ -328,6 +395,10 @@ public partial class FindItem : PSCmdlet
                 {
                     VerboseQueue.Enqueue($"Worker task failed: {ex.Message}");
                 }
+            }
+            finally
+            {
+                Interlocked.Decrement(ref directoryProcessors);
             }
         }));
     }

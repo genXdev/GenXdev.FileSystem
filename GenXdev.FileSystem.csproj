@@ -11,8 +11,8 @@
     <PackageLicenseFile>license.txt</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <NeutralLanguage>en</NeutralLanguage>
-    <AssemblyVersion>1.270.2025</AssemblyVersion>
-    <FileVersion>1.270.2025</FileVersion>
+    <AssemblyVersion>1.272.2025</AssemblyVersion>
+    <FileVersion>1.272.2025</FileVersion>
     <Description>A Windows PowerShell module for basic and advanced file management tasks</Description>
     <Copyright>Copyright (c) 2024 GenXdev</Copyright>
     <PackageProjectUrl>https://github.com/genXdev/GenXdev.Helpers</PackageProjectUrl>
@@ -35,11 +35,18 @@
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <SupportedOSPlatformVersion>10.0.18362.0</SupportedOSPlatformVersion>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DebugType>none</DebugType>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <DebugType>none</DebugType>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <DebugType>none</DebugType>
   </PropertyGroup>
   <ItemGroup>

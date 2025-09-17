@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Initialization.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.270.2025
+// Version                   : 1.272.2025
 // ################################################################################
 // MIT License
 //
@@ -108,10 +108,10 @@ public partial class FindItem : PSCmdlet
         // calculate max file size from ram
         // Calculate max file size based on available RAM to prevent memory
         // issues
-        MaxFilesizeToProcess = Math.Max(1024 * 1024, Math.Min(Int32.MaxValue - 1, Convert.ToInt64(Math.Round((GetFreeRamInBytes() / 10d) / Convert.ToDouble(MaxDegreeOfParallelism), 0))));
+        var baseBufferLength = Math.Max(1024 * 1024, Math.Min(Int32.MaxValue - 1, Convert.ToInt64(Math.Round((GetFreeRamInBytes() / 10d) / Convert.ToDouble(MaxDegreeOfParallelism), 0))));
 
         // set overlap size
-        int overlapSize = (int)Math.Max(1024 * 1024 * 5, Math.Min(MaxFilesizeToProcess / 3, 1024 * 1024 * 2));
+        int overlapSize = (int)Math.Max(1024 * 1024 * 5, Math.Min(baseBufferLength / 3, 1024 * 1024 * 2));
 
         // set buffer size
         PatternMatcherOptions.BufferSize = overlapSize * 3;
@@ -125,7 +125,6 @@ public partial class FindItem : PSCmdlet
         // log sizes if verbose
         if (UseVerboseOutput)
         {
-            VerboseQueue.Enqueue($"MaxFilesizeToProcess: {MaxFilesizeToProcess:N0} bytes");
             VerboseQueue.Enqueue($"Pattern matcher buffer size: {PatternMatcherOptions.BufferSize:N0} bytes");
             VerboseQueue.Enqueue($"Pattern matcher overlap size: {PatternMatcherOptions.OverlapSize:N0} bytes");
         }
@@ -530,9 +529,6 @@ public partial class FindItem : PSCmdlet
         }
         catch
         {
-
-            // queue progress skip
-            ProgressQueue.Enqueue($"Skipping drive {drive.Name} due to access issues.");
 
             // queue verbose skip
             VerboseQueue.Enqueue($"Skipping drive {drive.Name} due to access issues.");
