@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Processing.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.272.2025
+// Version                   : 1.274.2025
 // ################################################################################
 // MIT License
 //
@@ -225,33 +225,36 @@ public partial class FindItem : PSCmdlet
         bool outputtingFiles = FilesAndDirectories.IsPresent || !Directory.IsPresent;
 
         // get processing actions
-        bool matchingContent = Pattern != ".*" && !string.IsNullOrWhiteSpace(Pattern);
+        bool matchingContent = outputtingFiles && (Pattern != ".*" && !string.IsNullOrWhiteSpace(Pattern));
 
         // determine if including files based on switches and pattern
         bool andFiles = outputtingFiles && matchingContent;
 
         // get counters
         long fileMatchesCount = Interlocked.Read(ref this.fileMatchesActive);
-        long dirsDone = Interlocked.Read(ref dirsUnQueued);
-        long dirsLeft = DirQueue.Count;
+        long dirsDone = Interlocked.Read(ref dirsCompleted);
+        long dirsLeft = Interlocked.Read(ref dirsQueued);
+        long fileMatchesLeft = Interlocked.Read(ref matchesQueued);
         long fileOutputCount = Interlocked.Read(ref filesFound);
 
         long directoryProcessorsCount = Interlocked.Read(ref directoryProcessors);
         long matchProcessorsCount = Interlocked.Read(ref matchProcessors);
         long fileMatchesStartedCount = Interlocked.Read(ref fileMatchesStarted);
+        long fileMatchesCompletedCount = Interlocked.Read(ref fileMatchesCompleted);
         long queuedMatchesCount = FileContentMatchQueue.Count;
 
         // calculate percent complete
-
+        double ratio = (dirsDone + fileMatchesCompletedCount) / Math.Max(1d, (dirsLeft + fileMatchesLeft));
+        
         // calculate completion percentage for progress
         int progressPercent = (int)Math.Round(
 
             Math.Min(100,
                 Math.Max(0,
-                    dirsDone /
-                    Math.Max(1d, dirsLeft)
-                )) * 100d, 0
-            );
+                    ratio
+                ) * 100d
+            ), 0
+        );
 
         // create progress record
         var record = new ProgressRecord(0, "Find-Item", (
@@ -265,9 +268,9 @@ public partial class FindItem : PSCmdlet
 
             // set status description with counts
             StatusDescription = (
-                "Directories: " + formatStat(dirsDone, true) + "/" + formatStat(dirsLeft, false) +
+                "Directories: " + formatStat(dirsDone, true) + "/" + formatStat(DirQueue.Count, false) +
                 " [" + formatStat(directoryProcessorsCount, false) + "] | Found: " + formatStat(fileOutputCount, true) +
-                (matchingContent ? " | Matched: " + formatStat(fileMatchesStartedCount, true) +"/" + formatStat(queuedMatchesCount, false) + " [" + formatStat(matchProcessors, false) + "]" :
+                (matchingContent ? " | Matched: " + formatStat(fileMatchesStartedCount, true) + "/" + formatStat(queuedMatchesCount, false) + " [" + formatStat(matchProcessors, false) + "]" :
                 string.Empty)
             ),
 
@@ -327,196 +330,200 @@ public partial class FindItem : PSCmdlet
         while (!token.IsCancellationRequested && DirQueue.TryDequeue(
             out string fullSearchMaskPositionedPath))
         {
-
-            // increment count of unqueued directories
-            Interlocked.Increment(ref dirsUnQueued);
-
-            // check for cancellation request
-            token.ThrowIfCancellationRequested();
-
-            // log processing directory if verbose mode enabled, providing
-            // details on current path for user to track search progress
-            if (UseVerboseOutput)
-            {
-
-                // enqueue verbose message with path details
-                VerboseQueue.Enqueue((
-                    "Processing directory: " + fullSearchMaskPositionedPath
-                ));
-            }
-
-            // try processing the directory
             try
             {
+                // check for cancellation request
+                token.ThrowIfCancellationRequested();
 
-                // declare workload variables
-                string remainingSearchMask, remainingSearchMaskToRepeatWhenFound,
-                    currentLocation, currentFileSearchMask,
-                    uncMachineNameToEnumerate;
-
-                // more workload variables
-                bool isUncPath, hasLongPathPrefix, recurseSubDirectories,
-                    noMoreCustomWildcards, shouldEnumerateFiles,
-                    shouldEnumerateDirectories;
-
-                // depth variables
-                int currentRecursionDepth, currentRecursionLimit;
-
-                // get parameters for current workload
-                GetCurrentWorkloadParameters(
-
-                    fullSearchMaskPositionedPath,
-
-                    out currentRecursionDepth,
-                    out currentRecursionLimit,
-                    out recurseSubDirectories,
-                    out shouldEnumerateFiles,
-                    out shouldEnumerateDirectories,
-                    out isUncPath,
-                    out noMoreCustomWildcards,
-                    out hasLongPathPrefix,
-                    out remainingSearchMask,
-                    out remainingSearchMaskToRepeatWhenFound,
-                    out currentLocation,
-                    out currentFileSearchMask,
-                    out uncMachineNameToEnumerate
-                );
-
-                // check if this search mask position has already been visited
-                if (SearchMaskPositionAlreadyVisited(currentLocation,
-                    currentFileSearchMask, token))
+                // log processing directory if verbose mode enabled, providing
+                // details on current path for user to track search progress
+                if (UseVerboseOutput)
                 {
 
-                    // skip to next if already visited
-                    continue;
+                    // enqueue verbose message with path details
+                    VerboseQueue.Enqueue((
+                        "Processing directory: " + fullSearchMaskPositionedPath
+                    ));
                 }
 
-                // check recursion depth limit
-
-                // enforce maximum recursion depth if specified to prevent stack
-                // overflows in deep directories
-                if (currentRecursionLimit > 0 && currentRecursionDepth >
-                    currentRecursionLimit)
+                // try processing the directory
+                try
                 {
 
-                    // log skip due to depth if verbose, informing user why
-                    // certain deep paths are not searched
+                    // declare workload variables
+                    string remainingSearchMask, remainingSearchMaskToRepeatWhenFound,
+                        currentLocation, currentFileSearchMask,
+                        uncMachineNameToEnumerate;
+
+                    // more workload variables
+                    bool isUncPath, hasLongPathPrefix, recurseSubDirectories,
+                        noMoreCustomWildcards, shouldEnumerateFiles,
+                        shouldEnumerateDirectories;
+
+                    // depth variables
+                    int currentRecursionDepth, currentRecursionLimit;
+
+                    // get parameters for current workload
+                    GetCurrentWorkloadParameters(
+
+                        fullSearchMaskPositionedPath,
+
+                        out currentRecursionDepth,
+                        out currentRecursionLimit,
+                        out recurseSubDirectories,
+                        out shouldEnumerateFiles,
+                        out shouldEnumerateDirectories,
+                        out isUncPath,
+                        out noMoreCustomWildcards,
+                        out hasLongPathPrefix,
+                        out remainingSearchMask,
+                        out remainingSearchMaskToRepeatWhenFound,
+                        out currentLocation,
+                        out currentFileSearchMask,
+                        out uncMachineNameToEnumerate
+                    );
+
+                    // check if this search mask position has already been visited
+                    if (SearchMaskPositionAlreadyVisited(currentLocation,
+                        currentFileSearchMask, token))
+                    {
+
+                        // skip to next if already visited
+                        continue;
+                    }
+
+                    // check recursion depth limit
+
+                    // enforce maximum recursion depth if specified to prevent stack
+                    // overflows in deep directories
+                    if (currentRecursionLimit > 0 && currentRecursionDepth >
+                        currentRecursionLimit)
+                    {
+
+                        // log skip due to depth if verbose, informing user why
+                        // certain deep paths are not searched
+                        if (UseVerboseOutput)
+                        {
+
+                            // enqueue verbose message with depth and path
+                            VerboseQueue.Enqueue((
+                                "Skipping path due to max recursion depth (" +
+                                MaxRecursionDepth + "): " + currentLocation
+                            ));
+                        }
+
+                        // skip this path
+                        continue;
+                    }
+
+                    // enumerate files if needed
+                    if (shouldEnumerateFiles)
+                    {
+
+                        // call file enumeration asynchronously
+                        EnumerateDirectoryFiles(
+
+                            currentLocation,
+                            currentFileSearchMask,
+                            hasLongPathPrefix,
+                            noMoreCustomWildcards,
+                            isUncPath,
+                            token
+                        );
+                    }
+
+                    // enumerate directories if needed
+                    if (shouldEnumerateDirectories)
+                    {
+
+                        // log enumerating subdirectories if verbose, showing user
+                        // where subfolder scanning occurs
+                        if (UseVerboseOutput)
+                        {
+
+                            // enqueue verbose message with location
+                            VerboseQueue.Enqueue((
+                                "Enumerating subdirectories in: " + currentLocation
+                            ));
+                        }
+
+                        // call subdirectory enumeration
+                        EnumerateSubDirectories(
+
+                            currentLocation,
+                            currentFileSearchMask,
+                            remainingSearchMask,
+                            remainingSearchMaskToRepeatWhenFound,
+                            uncMachineNameToEnumerate,
+                            recurseSubDirectories,
+                            noMoreCustomWildcards,
+                            hasLongPathPrefix,
+                            isUncPath,
+                            token
+                        );
+                    }
+                }
+                catch (UnauthorizedAccessException e)
+                {
+
+                    // log access denied if verbose, helping user identify
+                    // permission issues in paths
                     if (UseVerboseOutput)
                     {
 
-                        // enqueue verbose message with depth and path
+                        // enqueue verbose message with path and error
                         VerboseQueue.Enqueue((
-                            "Skipping path due to max recursion depth (" +
-                            MaxRecursionDepth + "): " + currentLocation
+                            "Access denied for path " +
+                            fullSearchMaskPositionedPath + ": " + e.Message
                         ));
                     }
-
-                    // skip this path
-                    continue;
                 }
-
-                // enumerate files if needed
-                if (shouldEnumerateFiles)
+                catch (IOException e)
                 {
 
-                    // call file enumeration asynchronously
-                    EnumerateDirectoryFiles(
-
-                        currentLocation,
-                        currentFileSearchMask,
-                        hasLongPathPrefix,
-                        noMoreCustomWildcards,
-                        isUncPath,
-                        token
-                    );
-                }
-
-                // enumerate directories if needed
-                if (shouldEnumerateDirectories)
-                {
-
-                    // log enumerating subdirectories if verbose, showing user
-                    // where subfolder scanning occurs
+                    // log io error if verbose, informing user of file system
+                    // issues encountered
                     if (UseVerboseOutput)
                     {
 
-                        // enqueue verbose message with location
+                        // enqueue verbose message with path and error
                         VerboseQueue.Enqueue((
-                            "Enumerating subdirectories in: " + currentLocation
+                            "I/O error for path " + fullSearchMaskPositionedPath +
+                            ": " + e.Message
                         ));
                     }
-
-                    // call subdirectory enumeration
-                    EnumerateSubDirectories(
-
-                        currentLocation,
-                        currentFileSearchMask,
-                        remainingSearchMask,
-                        remainingSearchMaskToRepeatWhenFound,
-                        uncMachineNameToEnumerate,
-                        recurseSubDirectories,
-                        noMoreCustomWildcards,
-                        hasLongPathPrefix,
-                        isUncPath,
-                        token
-                    );
                 }
-            }
-            catch (UnauthorizedAccessException e)
-            {
-
-                // log access denied if verbose, helping user identify
-                // permission issues in paths
-                if (UseVerboseOutput)
+                catch (Exception e)
                 {
 
-                    // enqueue verbose message with path and error
-                    VerboseQueue.Enqueue((
-                        "Access denied for path " +
-                        fullSearchMaskPositionedPath + ": " + e.Message
-                    ));
-                }
-            }
-            catch (IOException e)
-            {
-
-                // log io error if verbose, informing user of file system
-                // issues encountered
-                if (UseVerboseOutput)
-                {
-
-                    // enqueue verbose message with path and error
-                    VerboseQueue.Enqueue((
-                        "I/O error for path " + fullSearchMaskPositionedPath +
-                        ": " + e.Message
-                    ));
-                }
-            }
-            catch (Exception e)
-            {
-
-                // log unexpected error if verbose, providing full details for
-                // debugging unexpected issues
-                if (UseVerboseOutput)
-                {
-
-                    // enqueue verbose message with path, message, and stack
-                    VerboseQueue.Enqueue((
-                        "Unexpected error processing " +
-                        fullSearchMaskPositionedPath + ": \r\n" + e.Message +
-                        "\r\n" + e.StackTrace.ToString()
-                    ));
-
-                    // log inner exception if present
-                    if (e.InnerException != null)
+                    // log unexpected error if verbose, providing full details for
+                    // debugging unexpected issues
+                    if (UseVerboseOutput)
                     {
 
-                        // enqueue inner exception message
+                        // enqueue verbose message with path, message, and stack
                         VerboseQueue.Enqueue((
-                            "Inner exception: " + e.InnerException.Message
+                            "Unexpected error processing " +
+                            fullSearchMaskPositionedPath + ": \r\n" + e.Message +
+                            "\r\n" + e.StackTrace.ToString()
                         ));
+
+                        // log inner exception if present
+                        if (e.InnerException != null)
+                        {
+
+                            // enqueue inner exception message
+                            VerboseQueue.Enqueue((
+                                "Inner exception: " + e.InnerException.Message
+                            ));
+                        }
                     }
                 }
+            }
+            finally
+            {
+                // increment count of unqueued directories
+                Interlocked.Increment(ref dirsCompleted);
             }
 
             // check for cancellation after processing
@@ -1479,6 +1486,7 @@ public partial class FindItem : PSCmdlet
                         ))
                     {
                         FileContentMatchQueue.Enqueue(normalizedFilePath);
+                        Interlocked.Increment(ref matchesQueued);
                         AddWorkerTasksIfNeeded(token);
                     }
                 }
@@ -1626,6 +1634,7 @@ public partial class FindItem : PSCmdlet
                                         ))
                                     {
                                         FileContentMatchQueue.Enqueue(adsPath);
+                                        Interlocked.Increment(ref matchesQueued);
                                         AddWorkerTasksIfNeeded(token);
                                     }
                                     else if (UseVerboseOutput)

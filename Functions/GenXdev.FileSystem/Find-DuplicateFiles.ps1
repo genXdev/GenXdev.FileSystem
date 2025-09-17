@@ -2,7 +2,7 @@
 Part of PowerShell module : GenXdev.FileSystem
 Original cmdlet filename  : Find-DuplicateFiles.ps1
 Original author           : René Vaessen / GenXdev
-Version                   : 1.272.2025
+Version                   : 1.274.2025
 ################################################################################
 MIT License
 

@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Fields.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.272.2025
+// Version                   : 1.274.2025
 // ################################################################################
 // MIT License
 //
@@ -208,7 +208,8 @@ public partial class FindItem : PSCmdlet
     protected long fileMatchesStarted;
     protected long fileMatchesCompleted;
     protected long dirsQueued;
-    protected long dirsUnQueued;
+    protected long matchesQueued;
+    protected long dirsCompleted;
     protected long lastProgress;
     protected int oldMaxWorkerThread;
     protected int oldMaxCompletionPorts;
