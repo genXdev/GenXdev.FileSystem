@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Processing.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.274.2025
+// Version                   : 1.276.2025
 // ################################################################################
 // MIT License
 //
@@ -44,7 +44,9 @@ using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using Windows.ApplicationModel.Calls;
+using Windows.Devices.Power;
 
 public partial class FindItem : PSCmdlet
 {
@@ -77,6 +79,381 @@ public partial class FindItem : PSCmdlet
 
             // process all queues to handle outputs and messages
             EmptyQueues();
+        }
+    }
+
+    /// <summary>
+    /// Worker task that processes directories from the work queue, performing
+    /// file and directory
+    /// enumeration according to search criteria.
+    /// </summary>
+    /// <remarks>
+    /// The method implements a producer/consumer pattern where:
+    /// - It consumes directories from the DirQueue
+    /// - It produces both files (OutputQueue) and subdirectories (back to
+    ///   DirQueue)
+    ///
+    /// The search logic handles:
+    /// - Complex path patterns with wildcards
+    /// - UNC and local paths differently
+    /// - Directory-only or file-only searches
+    /// - Pattern-based recursion
+    /// </remarks>
+    /// <param name="token">Cancellation token to support stopping the search
+    /// operation</param>
+
+    protected void DirectoryProcessor(CancellationToken token)
+    {
+
+        /*
+         * process each directory from the queue until cancellation is requested
+         * or queue is empty.
+         * this loop enables parallel processing of multiple directories.
+         */
+
+        // loop while not canceled and dequeue succeeds
+        while ((FileContentMatchQueue.Count <= PatternMatcherOptions.BufferSize / 100) &&
+                !token.IsCancellationRequested && DirQueue.TryDequeue(out string name))
+        {
+            try
+            {
+                // check for cancellation request
+                token.ThrowIfCancellationRequested();
+
+                // log processing directory if verbose mode enabled, providing
+                // details on current path for user to track search progress
+                if (UseVerboseOutput)
+                {
+
+                    // enqueue verbose message with path details
+                    VerboseQueue.Enqueue((
+                        "Processing directory: " + name
+                    ));
+                }
+
+                // try processing the directory
+                try
+                {
+
+                    // declare workload variables
+                    string remainingNameInput, remainingNameToRepeatWhenFound,
+                        currentLocation, currentFileName,
+                        uncMachineNameToEnumerate;
+
+                    // more workload variables
+                    bool isUncPath, hasLongPathPrefix, recurseSubDirectories,
+                        noMoreCustomWildcards, shouldEnumerateFiles,
+                        shouldEnumerateDirectories;
+
+                    // depth variables
+                    int currentRecursionDepth, currentRecursionLimit;
+
+                    // get parameters for current workload
+                    GetCurrentWorkloadParameters(
+
+                        name,
+
+                        out currentRecursionDepth,
+                        out currentRecursionLimit,
+                        out recurseSubDirectories,
+                        out shouldEnumerateFiles,
+                        out shouldEnumerateDirectories,
+                        out isUncPath,
+                        out noMoreCustomWildcards,
+                        out hasLongPathPrefix,
+                        out remainingNameInput,
+                        out remainingNameToRepeatWhenFound,
+                        out currentLocation,
+                        out currentFileName,
+                        out uncMachineNameToEnumerate
+                    );
+
+                    // check if this location + name has already been visited
+                    if (LocationAreadyVisited(currentLocation,
+                        currentFileName, token))
+                    {
+
+                        // skip to next if already visited
+                        continue;
+                    }
+
+                    // check recursion depth limit
+
+                    // enforce maximum recursion depth if specified to prevent stack
+                    // overflows in deep directories
+                    if (currentRecursionLimit > 0 && currentRecursionDepth >
+                        currentRecursionLimit)
+                    {
+
+                        // log skip due to depth if verbose, informing user why
+                        // certain deep paths are not searched
+                        if (UseVerboseOutput)
+                        {
+
+                            // enqueue verbose message with depth and path
+                            VerboseQueue.Enqueue((
+                                "Skipping path due to max recursion depth (" +
+                                MaxRecursionDepth + "): " + currentLocation
+                            ));
+                        }
+
+                        // skip this path
+                        continue;
+                    }
+
+                    // enumerate files if needed
+                    if (shouldEnumerateFiles)
+                    {
+
+                        // call file enumeration asynchronously
+                        EnumerateDirectoryFiles(
+
+                            currentLocation,
+                            currentFileName,
+                            hasLongPathPrefix,
+                            noMoreCustomWildcards,
+                            isUncPath,
+                            token
+                        );
+                    }
+
+                    // enumerate directories if needed
+                    if (shouldEnumerateDirectories)
+                    {
+
+                        // log enumerating subdirectories if verbose, showing user
+                        // where subfolder scanning occurs
+                        if (UseVerboseOutput)
+                        {
+
+                            // enqueue verbose message with location
+                            VerboseQueue.Enqueue((
+                                "Enumerating subdirectories in: " + currentLocation
+                            ));
+                        }
+
+                        // call subdirectory enumeration
+                        EnumerateSubDirectories(
+
+                            currentLocation,
+                            currentFileName,
+                            remainingNameInput,
+                            remainingNameToRepeatWhenFound,
+                            uncMachineNameToEnumerate,
+                            recurseSubDirectories,
+                            noMoreCustomWildcards,
+                            hasLongPathPrefix,
+                            isUncPath,
+                            token
+                        );
+                    }
+                }
+                catch (UnauthorizedAccessException e)
+                {
+
+                    // log access denied if verbose, helping user identify
+                    // permission issues in paths
+                    if (UseVerboseOutput)
+                    {
+
+                        // enqueue verbose message with path and error
+                        VerboseQueue.Enqueue((
+                            "Access denied for path " +
+                            name + ": " + e.Message
+                        ));
+                    }
+                }
+                catch (IOException e)
+                {
+
+                    // log io error if verbose, informing user of file system
+                    // issues encountered
+                    if (UseVerboseOutput)
+                    {
+
+                        // enqueue verbose message with path and error
+                        VerboseQueue.Enqueue((
+                            "I/O error for path " + name +
+                            ": " + e.Message
+                        ));
+                    }
+                }
+                catch (Exception e)
+                {
+
+                    // log unexpected error if verbose, providing full details for
+                    // debugging unexpected issues
+                    if (UseVerboseOutput)
+                    {
+
+                        // enqueue verbose message with path, message, and stack
+                        VerboseQueue.Enqueue((
+                            "Unexpected error processing " +
+                            name + ": \r\n" + e.Message +
+                            "\r\n" + e.StackTrace.ToString()
+                        ));
+
+                        // log inner exception if present
+                        if (e.InnerException != null)
+                        {
+
+                            // enqueue inner exception message
+                            VerboseQueue.Enqueue((
+                                "Inner exception: " + e.InnerException.Message
+                            ));
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                // increment count of unqueued directories
+                Interlocked.Increment(ref dirsCompleted);
+            }
+
+            // check for cancellation after processing
+            token.ThrowIfCancellationRequested();
+        }
+    }
+
+    /// <summary>
+    /// Gets parameters for current workload.
+    /// </summary>
+    /// <param name="ProvidedLocation">The provided location string.</param>
+    /// <param name="CurrentRecursionDepth">Outputs the current recursion
+    /// depth.</param>
+    /// <param name="CurrentRecursionLimit">Outputs the current recursion
+    /// limit.</param>
+    /// <param name="RecurseSubDirectories">Outputs whether to recurse
+    /// subdirectories.</param>
+    /// <param name="ShouldEnumerateFiles">Outputs whether to enumerate
+    /// files.</param>
+    /// <param name="ShouldEnumerateDirectories">Outputs whether to enumerate
+    /// directories.</param>
+    /// <param name="IsUncPath">Outputs if it's a UNC path.</param>
+    /// <param name="NoMoreCustomWildcards">Outputs if no more custom
+    /// wildcards.</param>
+    /// <param name="HasLongPathPrefix">Outputs if has long path
+    /// prefix.</param>
+    /// <param name="RemainingNamePart">Outputs the remaining search
+    /// mask.</param>
+    /// <param name="RemainingNameToRepeatWhenFound">Outputs the repeat
+    /// mask when found.</param>
+    /// <param name="CurrentLocation">Outputs the current location.</param>
+    /// <param name="CurrentFileName">Outputs the current file search
+    /// mask.</param>
+    /// <param name="UncMachineNameToEnumerate">Outputs the UNC machine name
+    /// to enumerate.</param>
+    void GetCurrentWorkloadParameters(
+
+        string ProvidedLocation,
+
+        out int CurrentRecursionDepth,
+        out int CurrentRecursionLimit,
+        out bool RecurseSubDirectories,
+        out bool ShouldEnumerateFiles,
+        out bool ShouldEnumerateDirectories,
+        out bool IsUncPath,
+        out bool NoMoreCustomWildcards,
+        out bool HasLongPathPrefix,
+        out string RemainingNamePart,
+        out string remainingNameToRepeatWhenFound,
+        out string CurrentLocation,
+        out string CurrentFileName,
+        out string UncMachineNameToEnumerate
+    )
+    {
+
+        // split the input into location and remaining namePart for
+        // processing
+
+        // handle long path prefixes and tilde expansion
+        EnsureFullProvidedLocationAndNamePart(
+
+            ref ProvidedLocation,
+
+            out HasLongPathPrefix,
+            out IsUncPath,
+            out UncMachineNameToEnumerate
+        );
+
+        // separate the fixed path prefix from the wildcard-containing parts
+
+        // advance to the next search location based on wildcards in the path
+
+        // this sets up the current location and file namePart for
+        // enumeration
+        AdvanceNamePartToNextSearchLocation(
+            ProvidedLocation,
+
+            IsUncPath,
+            out RecurseSubDirectories,
+            out NoMoreCustomWildcards,
+            out RemainingNamePart,
+            out remainingNameToRepeatWhenFound,
+            out CurrentLocation,
+            out CurrentFileName
+        );
+
+        // get depth parameters
+        GetCurrentDepthParameters(
+            CurrentLocation,
+            IsUncPath,
+            out CurrentRecursionDepth,
+            out CurrentRecursionLimit
+        );
+
+        // determine if enumerating unc shares
+        bool enumUncShares = !string.IsNullOrEmpty(UncMachineNameToEnumerate);
+
+        // set if should enumerate files
+        ShouldEnumerateFiles = !enumUncShares &&
+            (RemainingNamePart.IndexOf("\\") < 0) && (
+                FilesAndDirectories.IsPresent ||
+                !Directory.IsPresent
+            );
+
+        // set if should enumerate directories
+        ShouldEnumerateDirectories = CurrentFileName.IndexOf(':') < 0 && (
+            enumUncShares || RecurseSubDirectories || Directory.IsPresent ||
+            FilesAndDirectories.IsPresent
+        );
+
+        // get full path for current location
+        CurrentLocation = Path.GetFullPath(CurrentLocation);
+
+        // adjust repeat mask if ends with *
+        if (RemainingNamePart.EndsWith('*') &&
+            !remainingNameToRepeatWhenFound.EndsWith("*"))
+        {
+
+            // append *
+            remainingNameToRepeatWhenFound += "*";
+        }
+
+        // log exit parameters if verbose, summarizing all outputs for
+        // complete overview
+        if (UseVerboseOutput)
+        {
+
+            // enqueue verbose out message with all params
+            VerboseQueue.Enqueue((
+                "GetCurrentWorkloadParameters\r\n" +
+                "RecurseSubDirectories: '" + RecurseSubDirectories + "'\r\n" +
+                "IsUncPath: '" + IsUncPath + "'\r\n" +
+                "NoMoreCustomWildcards: '" + NoMoreCustomWildcards + "'\r\n" +
+                "HasLongPathPrefix: '" + HasLongPathPrefix + "'\r\n" +
+                "RemainingNamePart: '" + RemainingNamePart + "'\r\n" +
+                "remainingNameToRepeatWhenFound: '" +
+                remainingNameToRepeatWhenFound + "'\r\n" +
+                "CurrentLocation: '" + CurrentLocation + "'\r\n" +
+                "CurrentFileName: '" + CurrentFileName + "'\r\n" +
+                "CurrentRecursionDepth: '" + CurrentRecursionDepth + "'\r\n" +
+                "CurrentRecursionLimit: '" + CurrentRecursionLimit + "'\t\n" +
+                "ShouldEnumerateFiles : '" + ShouldEnumerateFiles + "'\r\n" +
+                "ShouldEnumerateDirectories: '" +
+                ShouldEnumerateDirectories + "'\r\n---\r\n"
+            ));
         }
     }
 
@@ -187,493 +564,11 @@ public partial class FindItem : PSCmdlet
         }
 
         // check all progress items in queue
-        updateProgressStatus(true);
-    }
-
-    private string formatStat(long nr, bool left)
-    {
-        var s = nr.ToString();
-
-        // snap to sizes of 4
-        int steps = 3;
-        int length = s.Length + (steps - (s.Length % steps));
-
-        return left ? (s.PadLeft(length)) :
-            (s.PadRight(length));
+        UpdateProgressStatus(true);
     }
 
     /// <summary>
-    /// Handles progress queue dequeuing.
-    /// </summary>
-    /// <param name="all">If to process all.</param>
-    private void updateProgressStatus(bool force = false)
-    {
-
-        // get and convert last timestamp
-        var now = DateTime.UtcNow;
-        long lastProgress = Interlocked.Read(ref this.lastProgress);
-        var time = DateTime.FromBinary(lastProgress);
-
-        // too soon/frequent?
-        if (!force && now - time < TimeSpan.FromMilliseconds(250)) return;
-
-        // set current timestamp as the new checkpoint
-        lastProgress = now.ToBinary();
-        Interlocked.Exchange(ref lastProgress, lastProgress);
-
-        // get output kind
-        bool outputtingFiles = FilesAndDirectories.IsPresent || !Directory.IsPresent;
-
-        // get processing actions
-        bool matchingContent = outputtingFiles && (Pattern != ".*" && !string.IsNullOrWhiteSpace(Pattern));
-
-        // determine if including files based on switches and pattern
-        bool andFiles = outputtingFiles && matchingContent;
-
-        // get counters
-        long fileMatchesCount = Interlocked.Read(ref this.fileMatchesActive);
-        long dirsDone = Interlocked.Read(ref dirsCompleted);
-        long dirsLeft = Interlocked.Read(ref dirsQueued);
-        long fileMatchesLeft = Interlocked.Read(ref matchesQueued);
-        long fileOutputCount = Interlocked.Read(ref filesFound);
-
-        long directoryProcessorsCount = Interlocked.Read(ref directoryProcessors);
-        long matchProcessorsCount = Interlocked.Read(ref matchProcessors);
-        long fileMatchesStartedCount = Interlocked.Read(ref fileMatchesStarted);
-        long fileMatchesCompletedCount = Interlocked.Read(ref fileMatchesCompleted);
-        long queuedMatchesCount = FileContentMatchQueue.Count;
-
-        // calculate percent complete
-        double ratio = (dirsDone + fileMatchesCompletedCount) / Math.Max(1d, (dirsLeft + fileMatchesLeft));
-        
-        // calculate completion percentage for progress
-        int progressPercent = (int)Math.Round(
-
-            Math.Min(100,
-                Math.Max(0,
-                    ratio
-                ) * 100d
-            ), 0
-        );
-
-        // create progress record
-        var record = new ProgressRecord(0, "Find-Item", (
-            "Scanning directories" + (andFiles ?
-            " and found file contents" : "")
-        ))
-        {
-
-            // set percent complete
-            PercentComplete = progressPercent,
-
-            // set status description with counts
-            StatusDescription = (
-                "Directories: " + formatStat(dirsDone, true) + "/" + formatStat(DirQueue.Count, false) +
-                " [" + formatStat(directoryProcessorsCount, false) + "] | Found: " + formatStat(fileOutputCount, true) +
-                (matchingContent ? " | Matched: " + formatStat(fileMatchesStartedCount, true) + "/" + formatStat(queuedMatchesCount, false) + " [" + formatStat(matchProcessors, false) + "]" :
-                string.Empty)
-            ),
-
-            // set current operation message
-            CurrentOperation = (
-                outputtingFiles && matchingContent ? (
-                    dirsLeft - dirsDone == 0 ?
-                    "Searching for more files and matching file content" :
-                    dirsLeft == 0 ?
-                    "Searching for files to match" :
-                    "Matching file contents"
-                )
-                : (
-                    outputtingFiles ? (
-                        filesFound == 0 ?
-                            "Searching for files" :
-                            "Searching for more files"
-                    ) :
-                    "Searching for matching directories"
-                )
-            )
-        };
-
-        // write the progress record
-        WriteProgress(record);
-    }
-
-    /// <summary>
-    /// Worker task that processes directories from the work queue, performing
-    /// file and directory
-    /// enumeration according to search criteria.
-    /// </summary>
-    /// <remarks>
-    /// The method implements a producer/consumer pattern where:
-    /// - It consumes directories from the DirQueue
-    /// - It produces both files (OutputQueue) and subdirectories (back to
-    ///   DirQueue)
-    ///
-    /// The search logic handles:
-    /// - Complex path patterns with wildcards
-    /// - UNC and local paths differently
-    /// - Directory-only or file-only searches
-    /// - Pattern-based recursion
-    /// </remarks>
-    /// <param name="token">Cancellation token to support stopping the search
-    /// operation</param>
-    protected void DirectoryProcessor(CancellationToken token)
-    {
-
-        /*
-         * process each directory from the queue until cancellation is requested
-         * or queue is empty.
-         * this loop enables parallel processing of multiple directories.
-         */
-
-        // loop while not canceled and dequeue succeeds
-        while (!token.IsCancellationRequested && DirQueue.TryDequeue(
-            out string fullSearchMaskPositionedPath))
-        {
-            try
-            {
-                // check for cancellation request
-                token.ThrowIfCancellationRequested();
-
-                // log processing directory if verbose mode enabled, providing
-                // details on current path for user to track search progress
-                if (UseVerboseOutput)
-                {
-
-                    // enqueue verbose message with path details
-                    VerboseQueue.Enqueue((
-                        "Processing directory: " + fullSearchMaskPositionedPath
-                    ));
-                }
-
-                // try processing the directory
-                try
-                {
-
-                    // declare workload variables
-                    string remainingSearchMask, remainingSearchMaskToRepeatWhenFound,
-                        currentLocation, currentFileSearchMask,
-                        uncMachineNameToEnumerate;
-
-                    // more workload variables
-                    bool isUncPath, hasLongPathPrefix, recurseSubDirectories,
-                        noMoreCustomWildcards, shouldEnumerateFiles,
-                        shouldEnumerateDirectories;
-
-                    // depth variables
-                    int currentRecursionDepth, currentRecursionLimit;
-
-                    // get parameters for current workload
-                    GetCurrentWorkloadParameters(
-
-                        fullSearchMaskPositionedPath,
-
-                        out currentRecursionDepth,
-                        out currentRecursionLimit,
-                        out recurseSubDirectories,
-                        out shouldEnumerateFiles,
-                        out shouldEnumerateDirectories,
-                        out isUncPath,
-                        out noMoreCustomWildcards,
-                        out hasLongPathPrefix,
-                        out remainingSearchMask,
-                        out remainingSearchMaskToRepeatWhenFound,
-                        out currentLocation,
-                        out currentFileSearchMask,
-                        out uncMachineNameToEnumerate
-                    );
-
-                    // check if this search mask position has already been visited
-                    if (SearchMaskPositionAlreadyVisited(currentLocation,
-                        currentFileSearchMask, token))
-                    {
-
-                        // skip to next if already visited
-                        continue;
-                    }
-
-                    // check recursion depth limit
-
-                    // enforce maximum recursion depth if specified to prevent stack
-                    // overflows in deep directories
-                    if (currentRecursionLimit > 0 && currentRecursionDepth >
-                        currentRecursionLimit)
-                    {
-
-                        // log skip due to depth if verbose, informing user why
-                        // certain deep paths are not searched
-                        if (UseVerboseOutput)
-                        {
-
-                            // enqueue verbose message with depth and path
-                            VerboseQueue.Enqueue((
-                                "Skipping path due to max recursion depth (" +
-                                MaxRecursionDepth + "): " + currentLocation
-                            ));
-                        }
-
-                        // skip this path
-                        continue;
-                    }
-
-                    // enumerate files if needed
-                    if (shouldEnumerateFiles)
-                    {
-
-                        // call file enumeration asynchronously
-                        EnumerateDirectoryFiles(
-
-                            currentLocation,
-                            currentFileSearchMask,
-                            hasLongPathPrefix,
-                            noMoreCustomWildcards,
-                            isUncPath,
-                            token
-                        );
-                    }
-
-                    // enumerate directories if needed
-                    if (shouldEnumerateDirectories)
-                    {
-
-                        // log enumerating subdirectories if verbose, showing user
-                        // where subfolder scanning occurs
-                        if (UseVerboseOutput)
-                        {
-
-                            // enqueue verbose message with location
-                            VerboseQueue.Enqueue((
-                                "Enumerating subdirectories in: " + currentLocation
-                            ));
-                        }
-
-                        // call subdirectory enumeration
-                        EnumerateSubDirectories(
-
-                            currentLocation,
-                            currentFileSearchMask,
-                            remainingSearchMask,
-                            remainingSearchMaskToRepeatWhenFound,
-                            uncMachineNameToEnumerate,
-                            recurseSubDirectories,
-                            noMoreCustomWildcards,
-                            hasLongPathPrefix,
-                            isUncPath,
-                            token
-                        );
-                    }
-                }
-                catch (UnauthorizedAccessException e)
-                {
-
-                    // log access denied if verbose, helping user identify
-                    // permission issues in paths
-                    if (UseVerboseOutput)
-                    {
-
-                        // enqueue verbose message with path and error
-                        VerboseQueue.Enqueue((
-                            "Access denied for path " +
-                            fullSearchMaskPositionedPath + ": " + e.Message
-                        ));
-                    }
-                }
-                catch (IOException e)
-                {
-
-                    // log io error if verbose, informing user of file system
-                    // issues encountered
-                    if (UseVerboseOutput)
-                    {
-
-                        // enqueue verbose message with path and error
-                        VerboseQueue.Enqueue((
-                            "I/O error for path " + fullSearchMaskPositionedPath +
-                            ": " + e.Message
-                        ));
-                    }
-                }
-                catch (Exception e)
-                {
-
-                    // log unexpected error if verbose, providing full details for
-                    // debugging unexpected issues
-                    if (UseVerboseOutput)
-                    {
-
-                        // enqueue verbose message with path, message, and stack
-                        VerboseQueue.Enqueue((
-                            "Unexpected error processing " +
-                            fullSearchMaskPositionedPath + ": \r\n" + e.Message +
-                            "\r\n" + e.StackTrace.ToString()
-                        ));
-
-                        // log inner exception if present
-                        if (e.InnerException != null)
-                        {
-
-                            // enqueue inner exception message
-                            VerboseQueue.Enqueue((
-                                "Inner exception: " + e.InnerException.Message
-                            ));
-                        }
-                    }
-                }
-            }
-            finally
-            {
-                // increment count of unqueued directories
-                Interlocked.Increment(ref dirsCompleted);
-            }
-
-            // check for cancellation after processing
-            token.ThrowIfCancellationRequested();
-        }
-    }
-    /// <summary>
-    /// Gets parameters for current workload.
-    /// </summary>
-    /// <param name="ProvidedLocation">The provided location string.</param>
-    /// <param name="CurrentRecursionDepth">Outputs the current recursion
-    /// depth.</param>
-    /// <param name="CurrentRecursionLimit">Outputs the current recursion
-    /// limit.</param>
-    /// <param name="RecurseSubDirectories">Outputs whether to recurse
-    /// subdirectories.</param>
-    /// <param name="ShouldEnumerateFiles">Outputs whether to enumerate
-    /// files.</param>
-    /// <param name="ShouldEnumerateDirectories">Outputs whether to enumerate
-    /// directories.</param>
-    /// <param name="IsUncPath">Outputs if it's a UNC path.</param>
-    /// <param name="NoMoreCustomWildcards">Outputs if no more custom
-    /// wildcards.</param>
-    /// <param name="HasLongPathPrefix">Outputs if has long path
-    /// prefix.</param>
-    /// <param name="RemainingSearchMask">Outputs the remaining search
-    /// mask.</param>
-    /// <param name="RemainingSearchMaskToRepeatWhenFound">Outputs the repeat
-    /// mask when found.</param>
-    /// <param name="CurrentLocation">Outputs the current location.</param>
-    /// <param name="CurrentFileSearchMask">Outputs the current file search
-    /// mask.</param>
-    /// <param name="UncMachineNameToEnumerate">Outputs the UNC machine name
-    /// to enumerate.</param>
-    void GetCurrentWorkloadParameters(
-        string ProvidedLocation,
-
-        out int CurrentRecursionDepth,
-        out int CurrentRecursionLimit,
-        out bool RecurseSubDirectories,
-        out bool ShouldEnumerateFiles,
-        out bool ShouldEnumerateDirectories,
-        out bool IsUncPath,
-        out bool NoMoreCustomWildcards,
-        out bool HasLongPathPrefix,
-        out string RemainingSearchMask,
-        out string RemainingSearchMaskToRepeatWhenFound,
-        out string CurrentLocation,
-        out string CurrentFileSearchMask,
-        out string UncMachineNameToEnumerate
-    )
-    {
-
-        // split the input into location and remaining search mask for
-        // processing
-
-        // handle long path prefixes and tilde expansion
-        EnsureFullProvidedLocationAndSearchMask(
-
-            ref ProvidedLocation,
-
-            out HasLongPathPrefix,
-            out IsUncPath,
-            out UncMachineNameToEnumerate
-
-        );
-
-        // separate the fixed path prefix from the wildcard-containing parts
-
-        // advance to the next search location based on wildcards in the path
-
-        // this sets up the current location and file search mask for
-        // enumeration
-        AdvanceSearchMaskToNextSearchLocation(
-            ProvidedLocation,
-
-            IsUncPath,
-            out RecurseSubDirectories,
-            out NoMoreCustomWildcards,
-            out RemainingSearchMask,
-            out RemainingSearchMaskToRepeatWhenFound,
-            out CurrentLocation,
-            out CurrentFileSearchMask
-
-        );
-
-        // get depth parameters
-        GetCurrentDepthParameters(
-            CurrentLocation,
-            IsUncPath,
-            out CurrentRecursionDepth,
-            out CurrentRecursionLimit
-        );
-
-        // determine if enumerating unc shares
-        bool enumUncShares = !string.IsNullOrEmpty(UncMachineNameToEnumerate);
-
-        // set if should enumerate files
-        ShouldEnumerateFiles = !enumUncShares &&
-            (RemainingSearchMask.IndexOf("\\") < 0) && (
-                FilesAndDirectories.IsPresent ||
-                !Directory.IsPresent
-            );
-
-        // set if should enumerate directories
-        ShouldEnumerateDirectories = CurrentFileSearchMask.IndexOf(':') < 0 && (
-            enumUncShares || RecurseSubDirectories || Directory.IsPresent ||
-            FilesAndDirectories.IsPresent
-        );
-
-        // get full path for current location
-        CurrentLocation = Path.GetFullPath(CurrentLocation);
-
-        // adjust repeat mask if ends with *
-        if (RemainingSearchMask.EndsWith('*') &&
-            !RemainingSearchMaskToRepeatWhenFound.EndsWith("*"))
-        {
-
-            // append *
-            RemainingSearchMaskToRepeatWhenFound += "*";
-        }
-
-        // log exit parameters if verbose, summarizing all outputs for
-        // complete overview
-        if (UseVerboseOutput)
-        {
-
-            // enqueue verbose out message with all params
-            VerboseQueue.Enqueue((
-                "GetCurrentWorkloadParameters\r\n" +
-                "RecurseSubDirectories: '" + RecurseSubDirectories + "'\r\n" +
-                "IsUncPath: '" + IsUncPath + "'\r\n" +
-                "NoMoreCustomWildcards: '" + NoMoreCustomWildcards + "'\r\n" +
-                "HasLongPathPrefix: '" + HasLongPathPrefix + "'\r\n" +
-                "RemainingSearchMask: '" + RemainingSearchMask + "'\r\n" +
-                "RemainingSearchMaskToRepeatWhenFound: '" +
-                RemainingSearchMaskToRepeatWhenFound + "'\r\n" +
-                "CurrentLocation: '" + CurrentLocation + "'\r\n" +
-                "CurrentFileSearchMask: '" + CurrentFileSearchMask + "'\r\n" +
-                "CurrentRecursionDepth: '" + CurrentRecursionDepth + "'\r\n" +
-                "CurrentRecursionLimit: '" + CurrentRecursionLimit + "'\t\n" +
-                "ShouldEnumerateFiles : '" + ShouldEnumerateFiles + "'\r\n" +
-                "ShouldEnumerateDirectories: '" +
-                ShouldEnumerateDirectories + "'\r\n---\r\n"
-            ));
-        }
-    }
-
-    /// <summary>
-    /// Ensures full provided location and search mask, handling prefixes and
+    /// Ensures full provided location and name, handling prefixes and
     /// expansions.
     /// </summary>
     /// <param name="ProvidedLocation">The provided location, passed by
@@ -683,15 +578,36 @@ public partial class FindItem : PSCmdlet
     /// <param name="IsUncPath">Outputs if it's a UNC path.</param>
     /// <param name="UncMachineNameToEnumerate">Outputs the UNC machine name
     /// to enumerate.</param>
-    protected void EnsureFullProvidedLocationAndSearchMask(
+    protected void EnsureFullProvidedLocationAndNamePart(
 
         ref string ProvidedLocation,
-        out bool HasLongPathPrefix,
 
+        out bool HasLongPathPrefix,
         out bool IsUncPath,
         out string UncMachineNameToEnumerate
     )
     {
+
+        // normalize separators
+        // Normalize separators to backslashes for consistency
+        ProvidedLocation = ProvidedLocation.Replace("/", "\\");
+
+        // normalize path
+        // Normalize the path part for processing
+        // var normPath = NormalizePathForNonFileSystemUse(ProvidedLocation);
+
+        // adjust trailing recurse
+        // Adjust for trailing recursive patterns
+        if (RecurseEndPatternWithSlashAtStartMatcher.IsMatch(ProvidedLocation))
+        {
+            ProvidedLocation += "\\";
+        }
+
+        // Remove leading .\ for clean path
+        if (ProvidedLocation.StartsWith(".\\"))
+        {
+            ProvidedLocation = ProvidedLocation.Substring(2);
+        }
 
         // split the input string to separate location and search pattern for
         // independent processing
@@ -754,6 +670,37 @@ public partial class FindItem : PSCmdlet
 
             // check unc start
             IsUncPath = ProvidedLocation.StartsWith(@"\\");
+        }
+
+        // detect type and needs        
+        bool endsWithSeperator = ProvidedLocation.EndsWith("\\");
+        bool isRooted = Path.IsPathRooted(ProvidedLocation);
+        bool isRelative = !isRooted && !IsUncPath;
+        bool needsCurrentDir = !IsUncPath && isRooted && (ProvidedLocation.Length < 3 || ProvidedLocation[2] != '\\');
+
+        // handle relative
+        if (isRelative)
+        {
+
+            // combine with current
+            // Combine with current directory for relative paths
+            ProvidedLocation = Path.Combine(CurrentDirectory, ProvidedLocation);
+        }
+        else if (needsCurrentDir)
+        {
+
+            // get drive current path
+            // Get current path for the drive
+            var currentPath = InvokeScript<string>($@"(Microsoft.PowerShell.Management\Get-Location -PSDrive {ProvidedLocation.Substring(0, 1)}).Path");
+
+            // combine
+            ProvidedLocation = Path.Combine(currentPath, ProvidedLocation.Substring(2));
+        }
+
+        // add separator if needed
+        if (endsWithSeperator && !ProvidedLocation.EndsWith("\\"))
+        {
+            ProvidedLocation += "\\";
         }
 
         // init unc machine
@@ -864,20 +811,19 @@ public partial class FindItem : PSCmdlet
     /// <summary>
     /// Determines and strips recurse pattern.
     /// </summary>
-    /// <param name="RemainingSearchMask">Remaining search mask by
+    /// <param name="RemainingNamePart">Remaining namePart by
     /// ref.</param>
-    /// <param name="CurrentFileSearchMask">Current file search mask by
+    /// <param name="CurrentFileName">Current filename by
     /// ref.</param>
     /// <returns>Whether it was a recurse pattern.</returns>
     bool DetermineAndStripRecursePattern(
 
-        ref string RemainingSearchMask,
-        ref string CurrentFileSearchMask
+        ref string RemainingNamePart,
+        ref string CurrentFileName
     )
     {
-
         // check if recurse pattern
-        bool result = RecursePatternMatcher.IsMatch(CurrentFileSearchMask);
+        bool result = RecursePatternMatcher.IsMatch(CurrentFileName);
 
         // init recurse flag
         bool isRecursePattern = result;
@@ -887,19 +833,19 @@ public partial class FindItem : PSCmdlet
         {
 
             // find first slash
-            int firstSlash = RemainingSearchMask.IndexOf('\\');
+            int firstSlash = RemainingNamePart.IndexOf('\\');
 
             // handle if slash and mask not empty
-            if (!string.IsNullOrEmpty(CurrentFileSearchMask) &&
+            if (!string.IsNullOrEmpty(CurrentFileName) &&
                 firstSlash >= 0)
             {
 
                 // set current mask
-                CurrentFileSearchMask = RemainingSearchMask.Substring(0,
+                CurrentFileName = RemainingNamePart.Substring(0,
                     firstSlash);
 
                 // update remaining
-                RemainingSearchMask = RemainingSearchMask.Substring(
+                RemainingNamePart = RemainingNamePart.Substring(
                     firstSlash + 1
                 );
             }
@@ -907,15 +853,15 @@ public partial class FindItem : PSCmdlet
             {
 
                 // set current to remaining
-                CurrentFileSearchMask = RemainingSearchMask;
+                CurrentFileName = RemainingNamePart;
 
                 // clear remaining
-                RemainingSearchMask = string.Empty;
+                RemainingNamePart = string.Empty;
             }
 
             // check again
             isRecursePattern = RecursePatternMatcher.IsMatch(
-                CurrentFileSearchMask
+                CurrentFileName
             );
         }
 
@@ -924,7 +870,7 @@ public partial class FindItem : PSCmdlet
     }
 
     /// <summary>
-    /// Advances search mask to next search location.
+    /// Advances namePart to next search location.
     /// </summary>
     /// <param name="ProvidedLocation">Provided location.</param>
     /// <param name="IsUncPath">If UNC path.</param>
@@ -932,63 +878,62 @@ public partial class FindItem : PSCmdlet
     /// subdirectories.</param>
     /// <param name="NoMoreCustomWildcards">Outputs no more custom
     /// wildcards.</param>
-    /// <param name="RemainingSearchMask">Outputs remaining search
+    /// <param name="RemainingNamePart">Outputs remaining search
     /// mask.</param>
-    /// <param name="RemainingSearchMaskToRepeatWhenFound">Outputs repeat mask
+    /// <param name="RemainingNameToRepeatWhenFound">Outputs repeat mask
     /// when found.</param>
     /// <param name="CurrentLocation">Outputs current location.</param>
-    /// <param name="CurrentFileSearchMask">Outputs current file search
+    /// <param name="CurrentFileName">Outputs current file search
     /// mask.</param>
-    protected void AdvanceSearchMaskToNextSearchLocation(
+    protected void AdvanceNamePartToNextSearchLocation(
 
         string ProvidedLocation,
-
         bool IsUncPath,
 
         out bool RecurseSubDirectories,
         out bool NoMoreCustomWildcards,
 
-        out string RemainingSearchMask,
-        out string RemainingSearchMaskToRepeatWhenFound,
+        out string RemainingNamePart,
+        out string RemainingNameToRepeatWhenFound,
         out string CurrentLocation,
-        out string CurrentFileSearchMask
+        out string CurrentFileName
     )
     {
         // determine remaining mask
-        DetermineRemainingSearchMask(
+        DetermineRemainingNamePart(
             ProvidedLocation,
             IsUncPath,
 
-            out RemainingSearchMask,
+            out RemainingNamePart,
             out CurrentLocation
         );
 
         // determine current mask
-        DetermineCurrentSearchMask(
+        DetermineCurrentNamePart(
 
-            ref RemainingSearchMask,
-            out RemainingSearchMaskToRepeatWhenFound,
+            ref RemainingNamePart,
+            out RemainingNameToRepeatWhenFound,
 
             out RecurseSubDirectories,
             out NoMoreCustomWildcards,
-            out CurrentFileSearchMask
+            out CurrentFileName
         );
     }
 
     /// <summary>
-    /// Determines remaining search mask.
+    /// Determines remaining namePart.
     /// </summary>
     /// <param name="ProvidedLocation">Provided location.</param>
     /// <param name="IsUncPath">If UNC path.</param>
-    /// <param name="RemainingSearchMask">Outputs remaining search
+    /// <param name="RemainingNamePart">Outputs remaining search
     /// mask.</param>
     /// <param name="CurrentLocation">Outputs current location.</param>
-    protected void DetermineRemainingSearchMask(
+    protected void DetermineRemainingNamePart(
 
        string ProvidedLocation,
        bool IsUncPath,
 
-       out string RemainingSearchMask,
+       out string RemainingNamePart,
        out string CurrentLocation
     )
     {
@@ -1030,7 +975,7 @@ public partial class FindItem : PSCmdlet
         }
 
         // init remaining
-        RemainingSearchMask = string.Empty;
+        RemainingNamePart = string.Empty;
 
         // separate the fixed path prefix from the wildcard-containing parts
 
@@ -1075,162 +1020,163 @@ public partial class FindItem : PSCmdlet
         }
 
         // join remaining parts that may contain wildcards
-        RemainingSearchMask = string.Join('\\',
+        RemainingNamePart = string.Join('\\',
             remainingDeterminedParts.Skip(iSkipped).ToList<string>()
         );
     }
 
     /// <summary>
-    /// Determines current search mask.
+    /// Determines current namePart.
     /// </summary>
-    /// <param name="RemainingSearchMask">Remaining search mask by
+    /// <param name="RemainingNamePart">Remaining namePart by
     /// ref.</param>
-    /// <param name="RemainingSearchMaskToRepeatWhenFound">Outputs repeat mask
+    /// <param name="RemainingNameToRepeatWhenFound">Outputs repeat mask
     /// when found.</param>
     /// <param name="RecurseSubDirectories">Outputs recurse
     /// subdirectories.</param>
     /// <param name="NoMoreCustomWildcards">Outputs no more custom
     /// wildcards.</param>
-    /// <param name="CurrentFileSearchMask">Outputs current file search
+    /// <param name="CurrentFileName">Outputs current file search
     /// mask.</param>
-    protected void DetermineCurrentSearchMask(
+    protected void DetermineCurrentNamePart(
 
-        ref string RemainingSearchMask,
-        out string RemainingSearchMaskToRepeatWhenFound,
+        ref string RemainingNamePart,
+        out string RemainingNameToRepeatWhenFound,
 
         out bool RecurseSubDirectories,
         out bool NoMoreCustomWildcards,
-        out string CurrentFileSearchMask)
+        out string CurrentFileName)
     {
-
         // init recurse pattern flag
         bool wasRecursePattern = false;
 
         // set no more wildcards
         NoMoreCustomWildcards = true;
+        bool moreCustomWildcards = false;
 
         // default current mask
-        CurrentFileSearchMask = "*";
+        CurrentFileName = "*";
 
         // set recurse based on switch
         RecurseSubDirectories = !(NoRecurse.IsPresent);
 
         // set repeat to remaining
-        RemainingSearchMaskToRepeatWhenFound = RemainingSearchMask;
+        RemainingNameToRepeatWhenFound = RemainingNamePart;
 
         // extract the pattern for the current directory level
 
         // find first slash
-        int firstSlash = RemainingSearchMask.IndexOf('\\');
+        int firstSlash = RemainingNamePart.IndexOf('\\');
 
         // handle if slash found
         if (firstSlash >= 0)
         {
-
             // set current mask
-            CurrentFileSearchMask = RemainingSearchMask.Substring(0,
+            CurrentFileName = RemainingNamePart.Substring(0,
                 firstSlash);
 
             // update remaining
-            RemainingSearchMask = RemainingSearchMask.Substring(
+            RemainingNamePart = RemainingNamePart.Substring(
                 firstSlash + 1
             );
 
             // strip recurse
             wasRecursePattern = DetermineAndStripRecursePattern(
 
-                ref RemainingSearchMask,
-                ref CurrentFileSearchMask
+                ref RemainingNamePart,
+                ref CurrentFileName
             );
 
             // find next slash
-            firstSlash = RemainingSearchMask.IndexOf('\\');
+            firstSlash = RemainingNamePart.IndexOf('\\');
 
             // set repeat
-            RemainingSearchMaskToRepeatWhenFound = RemainingSearchMask;
+            RemainingNameToRepeatWhenFound = RemainingNamePart;
 
             // check no more wildcards
-            NoMoreCustomWildcards = RemainingSearchMask == string.Empty ||
-                RemainingSearchMask == "*";
+            NoMoreCustomWildcards = RemainingNamePart == string.Empty ||
+                RemainingNamePart == "*";
 
             // more wildcards flag
-            bool MoreCustomWildcards = !NoMoreCustomWildcards;
+            moreCustomWildcards = !NoMoreCustomWildcards;
 
             // update recurse
-            RecurseSubDirectories |= wasRecursePattern | MoreCustomWildcards;
+            RecurseSubDirectories |= wasRecursePattern | moreCustomWildcards;
 
             // build repeated
-            var repeatedMask = string.IsNullOrEmpty(RemainingSearchMask) ?
-                        CurrentFileSearchMask :
-                        (CurrentFileSearchMask + "\\" + RemainingSearchMask);
+            var repeatedMask = string.IsNullOrEmpty(RemainingNamePart) ?
+                        CurrentFileName :
+                        (CurrentFileName + "\\" + RemainingNamePart);
 
             // handle recurse pattern
             if (wasRecursePattern)
             {
 
                 // prepend **
-                RemainingSearchMask = "**\\" + repeatedMask;
+                RemainingNamePart = "**\\" + repeatedMask;
             }
             else
             {
-
                 // set if recurse
                 if (RecurseSubDirectories)
                 {
 
                     // set to repeated
-                    RemainingSearchMask = repeatedMask;
+                    RemainingNamePart = repeatedMask;
                 }
             }
+
+            // found slash
+            return;
         }
-        else if (!string.IsNullOrEmpty(RemainingSearchMask))
+
+        // done?
+        if (string.IsNullOrEmpty(RemainingNamePart))
         {
-
-            // check recurse
-            wasRecursePattern = RecursePatternMatcher.IsMatch(
-                RemainingSearchMask
-            );
-
-            // update recurse
-            RecurseSubDirectories |= wasRecursePattern;
-
-            // check no more
-            NoMoreCustomWildcards = RemainingSearchMask == string.Empty ||
-                RemainingSearchMask == "*";
-
-            // more flag
-            bool MoreCustomWildcards = !NoMoreCustomWildcards;
-
-            // set current
-            CurrentFileSearchMask = RemainingSearchMask;
-
-            // set remaining based on recurse
-            RemainingSearchMask = wasRecursePattern ? "**" :
-                CurrentFileSearchMask;
-
-            // set repeat
-            RemainingSearchMaskToRepeatWhenFound = CurrentFileSearchMask;
+            return;
         }
+
+        // check recurse
+        wasRecursePattern = RecursePatternMatcher.IsMatch(
+            RemainingNamePart
+        );
+
+        // update recurse
+        RecurseSubDirectories |= wasRecursePattern;
+
+        // check no more
+        NoMoreCustomWildcards = RemainingNamePart == string.Empty ||
+            RemainingNamePart == "*";
+        moreCustomWildcards = !NoMoreCustomWildcards;
+
+        // set current
+        CurrentFileName = RemainingNamePart;
+
+        // set remaining based on recurse
+        RemainingNamePart = wasRecursePattern ? "**" :
+            CurrentFileName;
+
+        // set repeat
+        RemainingNameToRepeatWhenFound = CurrentFileName;
     }
 
     /// <summary>
-    /// Checks if search mask position already visited.
+    /// Checks if currentlocation + name already visited.
     /// </summary>
     /// <param name="CurrentLocation">Current location.</param>
-    /// <param name="CurrentFileSearchMask">Current file search mask.</param>
+    /// <param name="CurrentFileName">Current filename.</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>If already visited.</returns>
-    private bool SearchMaskPositionAlreadyVisited(
+    private bool LocationAreadyVisited(
         string CurrentLocation,
-        string CurrentFileSearchMask,
+        string CurrentFileName,
         CancellationToken token)
     {
 
         // try add to visited
         if (!VisitedNodes.TryAdd(Path.Combine(CurrentLocation,
-            CurrentFileSearchMask), true))
+            CurrentFileName), true))
         {
-
             // log skip if verbose
             if (UseVerboseOutput)
             {
@@ -1238,7 +1184,7 @@ public partial class FindItem : PSCmdlet
                 // enqueue skip
                 VerboseQueue.Enqueue((
                     "Skipping already processed path: " + CurrentLocation +
-                    " with pattern " + CurrentFileSearchMask
+                    " with pattern " + CurrentFileName
                 ));
             }
 
@@ -1259,7 +1205,7 @@ public partial class FindItem : PSCmdlet
     /// Enumerates directory files.
     /// </summary>
     /// <param name="StartLocation">Start location.</param>
-    /// <param name="CurrentFileSearchMask">Current file search mask.</param>
+    /// <param name="CurrentFileName">Current filename.</param>
     /// <param name="HasLongPathPrefix">Has long path prefix.</param>
     /// <param name="NoMoreCustomWildcards">No more custom wildcards.</param>
     /// <param name="IsUncPath">Is UNC path.</param>
@@ -1267,7 +1213,7 @@ public partial class FindItem : PSCmdlet
     protected void EnumerateDirectoryFiles(
 
         string StartLocation,
-        string CurrentFileSearchMask,
+        string CurrentFileName,
         bool HasLongPathPrefix,
         bool NoMoreCustomWildcards,
         bool IsUncPath,
@@ -1290,7 +1236,7 @@ public partial class FindItem : PSCmdlet
                 IgnoreInaccessible = true,
 
                 // set casing
-                MatchCasing = CaseSearchMaskMatching,
+                MatchCasing = CaseNameMatching,
 
                 // set buffer
                 BufferSize = 163840,
@@ -1308,7 +1254,7 @@ public partial class FindItem : PSCmdlet
         }
 
         // find stream index
-        int idp = CurrentFileSearchMask.IndexOf(':');
+        int idp = CurrentFileName.IndexOf(':');
 
         // set has stream
         bool hasStreamPattern = idp >= 0;
@@ -1321,17 +1267,17 @@ public partial class FindItem : PSCmdlet
         {
 
             // get stream name
-            streamName = CurrentFileSearchMask.Substring(idp + 1);
+            streamName = CurrentFileName.Substring(idp + 1);
 
             // default *
             if (streamName == string.Empty) streamName = "*";
 
             // update mask
-            CurrentFileSearchMask = CurrentFileSearchMask.Substring(0, idp);
+            CurrentFileName = CurrentFileName.Substring(0, idp);
         }
 
         // create matcher
-        var patternMatcher = new WildcardPattern(CurrentFileSearchMask,
+        var patternMatcher = new WildcardPattern(CurrentFileName,
             CurrentWildCardOptions);
 
         // enumerate files in top directory only
@@ -1343,7 +1289,7 @@ public partial class FindItem : PSCmdlet
                 ("\\\\?\\UNC" + StartLocation.Substring(1)) :
                 ("\\\\?\\" + StartLocation)
             ),
-            CurrentFileSearchMask,
+            CurrentFileName,
             SearchOption.TopDirectoryOnly
         ))
         {
@@ -1420,7 +1366,7 @@ public partial class FindItem : PSCmdlet
                     VerboseQueue.Enqueue((
                         "Skipping file " + normalizedFilePath +
                         " due to pattern mismatch with " +
-                        CurrentFileSearchMask
+                        CurrentFileName
                     ));
                 }
 
@@ -1452,6 +1398,34 @@ public partial class FindItem : PSCmdlet
 
                     // break
                     break;
+                }
+            }
+
+            // check file categories
+            if (Category != null && Category.Length > 0)
+            {
+                haveExclusion = true;
+                var extension = Path.GetExtension(normalizedFilePath);                
+
+                foreach (var pattern in Category)
+                {
+                    if (FileGroups.Groups.TryGetValue(pattern, out var group))
+                    {
+                        if (group.Contains(extension)) {
+
+                            if (UseVerboseOutput)
+                            {
+                                // enqueue exclude
+                                VerboseQueue.Enqueue((
+                                    "Including file " + normalizedFilePath +
+                                    " for being member of: " + pattern
+                                ));
+                            }
+
+                            haveExclusion = false;
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -1809,9 +1783,9 @@ public partial class FindItem : PSCmdlet
     /// Enumerates subdirectories matching patterns.
     /// </summary>
     /// <param name="CurrentLocation">Location.</param>
-    /// <param name="CurrentFileSearchMask">File mask.</param>
-    /// <param name="RemainingSearchMask">Remaining mask.</param>
-    /// <param name="RemainingSearchMaskToRepeatWhenFound">Repeat mask.</param>
+    /// <param name="CurrentFileName">File mask.</param>
+    /// <param name="RemainingNamePart">Remaining mask.</param>
+    /// <param name="RemainingNameToRepeatWhenFound">Repeat mask.</param>
     /// <param name="uncMachineNameToEnumerate">UNC machine.</param>
     /// <param name="RecurseSubDirectories">Recurse.</param>
     /// <param name="NoMoreCustomWildcards">No wild.</param>
@@ -1820,9 +1794,9 @@ public partial class FindItem : PSCmdlet
     /// <param name="token">Token.</param>
     void EnumerateSubDirectories(
     string CurrentLocation,
-    string CurrentFileSearchMask,
-    string RemainingSearchMask,
-    string RemainingSearchMaskToRepeatWhenFound,
+    string CurrentFileName,
+    string RemainingNamePart,
+    string RemainingNameToRepeatWhenFound,
     string uncMachineNameToEnumerate,
     bool RecurseSubDirectories,
     bool NoMoreCustomWildcards,
@@ -1832,17 +1806,17 @@ public partial class FindItem : PSCmdlet
     )
     {
         // adjust wildcards flag based on mask
-        NoMoreCustomWildcards &= CurrentFileSearchMask == "*";
+        NoMoreCustomWildcards &= CurrentFileName == "*";
 
         // init found flag for subdirs
         var found = false;
 
         // create wildcard pattern matcher
-        var patternMatcher = new WildcardPattern(CurrentFileSearchMask,
+        var patternMatcher = new WildcardPattern(CurrentFileName,
             CurrentWildCardOptions);
 
         // set remaining full mask
-        var remainingFull = RemainingSearchMask;
+        var remainingFull = RemainingNamePart;
 
         // handle leading recursive wildcard
         if (remainingFull.StartsWith("**\\"))
@@ -1865,7 +1839,7 @@ public partial class FindItem : PSCmdlet
 
         // combine recursive pattern path
         var fullPatternRecurse = Path.Combine(CurrentLocation,
-            RemainingSearchMask);
+            RemainingNamePart);
 
         // add long path prefix if needed
         if (HasLongPathPrefix)
@@ -1936,7 +1910,7 @@ public partial class FindItem : PSCmdlet
 
             // get remaining parts after skipping unc prefix
             var partsLeft = string.Join('\\', Path.Combine(CurrentLocation,
-                RemainingSearchMask).Split('\\').Skip<string>(4).ToArray());
+                RemainingNamePart).Split('\\').Skip<string>(4).ToArray());
 
             // add backslash if parts left
             partsLeft = string.IsNullOrEmpty(partsLeft) ? string.Empty :
@@ -1997,7 +1971,7 @@ public partial class FindItem : PSCmdlet
                     IgnoreInaccessible = true,
 
                     // set match casing
-                    MatchCasing = CaseSearchMaskMatching
+                    MatchCasing = CaseNameMatching
                 };
 
             // skip reparse points if not following symlinks
@@ -2041,8 +2015,8 @@ public partial class FindItem : PSCmdlet
 
                     // select remaining mask based on match
                     var remaining = (isMatch ?
-                        RemainingSearchMaskToRepeatWhenFound :
-                        RemainingSearchMask);
+                        RemainingNameToRepeatWhenFound :
+                        RemainingNamePart);
 
                     // default to * if empty
                     if (string.IsNullOrEmpty(remaining))
@@ -2072,6 +2046,20 @@ public partial class FindItem : PSCmdlet
 
                     // add workers if needed
                     AddWorkerTasksIfNeeded(token);
+                }
+                else
+                {
+                    // log queueing subdir if verbose, showing remaining parts
+                    if (UseVerboseOutput)
+                    {
+
+                        // enqueue queueing message
+                        VerboseQueue.Enqueue((
+                            "Skipping subdirectory for processing: " +
+                            normalizedSubDir + " with remaining parts: " +
+                            RemainingNamePart
+                        ));
+                    }
                 }
 
                 // check full pattern match
@@ -2161,7 +2149,7 @@ public partial class FindItem : PSCmdlet
             // enqueue no found message, helping user see empty results
             VerboseQueue.Enqueue((
                 "No subdirectories found in: " + CurrentLocation +
-                " matching pattern: " + CurrentFileSearchMask
+                " matching pattern: " + CurrentFileName
             ));
         }
     }

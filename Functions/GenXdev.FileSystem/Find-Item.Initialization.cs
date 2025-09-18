@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Initialization.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.274.2025
+// Version                   : 1.276.2025
 // ################################################################################
 // MIT License
 //
@@ -35,6 +35,7 @@ using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Data.Common;
 using System.Diagnostics;
+using System.IO;
 using System.Management;
 using System.Management.Automation;
 using System.Runtime.InteropServices;
@@ -54,7 +55,7 @@ public partial class FindItem : PSCmdlet
     {
 
         // check if custom pattern provided
-        HavePattern = ".*" != Pattern;
+        HavePattern = ".*" != Content;
 
         // set base regex options
         // Configure regex options based on case sensitivity
@@ -67,7 +68,7 @@ public partial class FindItem : PSCmdlet
         }
 
         // create regex matcher
-        PatternMatcher = new Regex(Pattern, regexOptions);
+        PatternMatcher = new Regex(Content, regexOptions);
 
         // log creation if verbose
         if (UseVerboseOutput)
@@ -102,16 +103,30 @@ public partial class FindItem : PSCmdlet
     /// <summary>
     /// Configures buffering for pattern matching.
     /// </summary>
-    protected void InitializeBufferingConfiguration()
+    protected void InitializeBufferingConfiguration()                   
     {
 
         // calculate max file size from ram
         // Calculate max file size based on available RAM to prevent memory
         // issues
-        var baseBufferLength = Math.Max(1024 * 1024, Math.Min(Int32.MaxValue - 1, Convert.ToInt64(Math.Round((GetFreeRamInBytes() / 10d) / Convert.ToDouble(MaxDegreeOfParallelism), 0))));
+        var baseBufferLength = Math.Max(1024 * 1024, 
+            Math.Min(
+                Int32.MaxValue - 1, 
+                
+                Convert.ToInt64(
+                    Math.Round(
+                        (GetFreeRamInBytes() / 10d) / Convert.ToDouble(MaxDegreeOfParallelism), 
+                        0
+                    )
+                )
+            )
+        );
 
         // set overlap size
-        int overlapSize = (int)Math.Max(1024 * 1024 * 5, Math.Min(baseBufferLength / 3, 1024 * 1024 * 2));
+        int overlapSize = (int)Math.Max(
+            1024 * 1024 * 2,
+            baseBufferLength / 3
+        );
 
         // set buffer size
         PatternMatcherOptions.BufferSize = overlapSize * 3;
@@ -239,12 +254,12 @@ public partial class FindItem : PSCmdlet
     {
 
         // set options based on casing
-        this.CurrentWildCardOptions = CaseSearchMaskMatching == MatchCasing.PlatformDefault ? (
+        this.CurrentWildCardOptions = CaseNameMatching == MatchCasing.PlatformDefault ? (
                      // windows or linux based?
                      Environment.OSVersion.Platform == PlatformID.Win32NT ?
                      WildcardOptions.IgnoreCase |
                      WildcardOptions.CultureInvariant : WildcardOptions.CultureInvariant
-                ) : CaseSearchMaskMatching == MatchCasing.CaseInsensitive ? (
+                ) : CaseNameMatching == MatchCasing.CaseInsensitive ? (
                    WildcardOptions.IgnoreCase |
                    WildcardOptions.CultureInvariant
                 ) : WildcardOptions.CultureInvariant;
@@ -295,7 +310,7 @@ public partial class FindItem : PSCmdlet
         // create dictionary with casing comparer
         VisitedNodes = new ConcurrentDictionary<string, bool>(
             comparer: (
-                   this.CaseSearchMaskMatching == MatchCasing.PlatformDefault ?
+                   this.CaseNameMatching == MatchCasing.PlatformDefault ?
                    (
                         // windows or linux based?
                         Environment.OSVersion.Platform == PlatformID.Win32NT ?
@@ -303,7 +318,7 @@ public partial class FindItem : PSCmdlet
                         StringComparer.Ordinal
                    ) : (
 
-                        this.CaseSearchMaskMatching == MatchCasing.CaseInsensitive ?
+                        this.CaseNameMatching == MatchCasing.CaseInsensitive ?
                             StringComparer.OrdinalIgnoreCase :
                             StringComparer.Ordinal
                    )
@@ -352,17 +367,16 @@ public partial class FindItem : PSCmdlet
     /// <summary>
     /// Prepares search directory from mask.
     /// </summary>
-    /// <param name="searchMask">The search mask.</param>
-    protected void InitializeSearchDirectory(string searchMask)
+    /// <param name="name">The search mask.</param>
+    protected void InitializeSearchDirectory(string name)
     {
-
         // normalize separators
         // Normalize separators to backslashes for consistency
-        searchMask = searchMask.Replace("/", "\\");
+        name = name.Replace("/", "\\");
 
         // normalize path
         // Normalize the path part for processing
-        var normPath = NormalizePathForNonFileSystemUse(searchMask);
+        var normPath = NormalizePathForNonFileSystemUse(name);
 
         // adjust trailing recurse
         // Adjust for trailing recursive patterns
@@ -375,163 +389,28 @@ public partial class FindItem : PSCmdlet
         // Determine path type for correct handling
         bool isRooted = Path.IsPathRooted(normPath);
         bool isUncPath = normPath.StartsWith(@"\\");
-        bool needsCurrentDir = !isUncPath && isRooted && (normPath.Length < 3 || normPath[2] != '\\');
-        bool isRelative = !isRooted && !isUncPath;
+		 
+        bool isRelative = !isRooted && !isUncPath && !normPath.StartsWith("~");
 
-        // remove leading dot
-        // Remove leading .\ for clean path
-        if (normPath.StartsWith(".\\"))
+        // add it
+        if (UseVerboseOutput) { VerboseQueue.Enqueue($"Adding name: '{name}'"); }
+        AddToSearchQueue(name);
+
+        // add more roots?
+        if (isRelative && Root != null && Root.Length > 0)
         {
-            normPath = normPath.Substring(2);
-        }
-
-        // normalize duplicates in unc
-        // Normalize duplicate separators
-        if (isUncPath)
-        {
-
-            // find first separator after unc
-            int i = normPath.IndexOf('\\', 2);
-
-            // combine parts
-            normPath = normPath.Substring(0, i) +
-                        normPath.Substring(i).Replace("\\.\\", "\\").Replace("\\\\", "\\");
-        }
-        else
-        {
-
-            // normalize local
-            normPath = normPath.Replace("\\.\\", "\\").Replace("\\\\", "\\");
-        }
-
-        // get drives to search
-        var drives = GetDrivesToSearch().ToArray();
-
-        // handle no specific drives
-        // Handle search without specific drives
-        if (drives.Length == 0)
-        {
-            ProcessSingleDriveSearch(normPath, isRelative, needsCurrentDir);
-            return;
-        }
-
-        // process each drive
-        // Process search for each specified drive
-        foreach (var drive in drives)
-        {
-            ProcessDriveSearch(drive, normPath, isRelative, isRooted, isUncPath, needsCurrentDir);
-        }
-    }
-
-    /// <summary>
-    /// Processes search for single drive.
-    /// </summary>
-    /// <param name="searchMask">Mask.</param>
-    /// <param name="isRelative">If relative.</param>
-    /// <param name="needsCurrentDir">If needs current.</param>
-    protected void ProcessSingleDriveSearch(string searchMask, bool isRelative, bool needsCurrentDir)
-    {
-
-        // check ending separator
-        bool endsWithSeperator = searchMask.EndsWith("\\");
-
-        // set final path
-        var finalPath = searchMask;
-
-        // handle relative
-        if (isRelative)
-        {
-
-            // combine with current
-            // Combine with current directory for relative paths
-            finalPath = Path.Combine(CurrentDirectory, searchMask);
-        }
-        else if (needsCurrentDir)
-        {
-
-            // get drive current path
-            // Get current path for the drive
-            var currentPath = InvokeScript<string>($@"(Microsoft.PowerShell.Management\Get-Location -PSDrive {searchMask.Substring(0, 1)}).Path");
-
-            // combine
-            finalPath = Path.Combine(currentPath, searchMask.Substring(2));
-        }
-
-        // add separator if needed
-        if (endsWithSeperator && !finalPath.EndsWith("\\"))
-        {
-            finalPath += "\\";
-        }
-
-        // add to queue
-        AddToSearchQueue(finalPath);
-    }
-
-    /// <summary>
-    /// Processes search for specific drive.
-    /// </summary>
-    /// <param name="drive">Drive info.</param>
-    /// <param name="normPath">Normalized path.</param>
-    /// <param name="isRelative">If relative.</param>
-    /// <param name="isRooted">If rooted.</param>
-    /// <param name="isUncPath">If UNC.</param>
-    /// <param name="needsCurrentDir">If needs current.</param>
-    protected void ProcessDriveSearch(DriveInfo drive, string normPath, bool isRelative, bool isRooted, bool isUncPath, bool needsCurrentDir)
-    {
-
-        // try processing
-        try
-        {
-
-            // check root existence
-            if (System.IO.Directory.Exists(drive.RootDirectory.FullName))
+            foreach (string path in Root)
             {
-
-                // set final path
-                var finalPath = normPath;
-
-                // handle relative
-                if (isRelative)
-                {
-                    finalPath = Path.Combine(drive.RootDirectory.FullName, normPath);
-                }
-                else if (isRooted)
-                {
-
-                    // handle unc
-                    if (isUncPath)
-                    {
-
-                        // find separator
-                        int i = normPath.IndexOf('\\', 2);
-
-                        // combine
-                        finalPath = Path.Combine(drive.RootDirectory.FullName, normPath.Substring(i + 1));
-                    }
-                    else
-                    {
-
-                        // handle needs current
-                        if (needsCurrentDir)
-                        {
-                            finalPath = drive.RootDirectory.FullName.Substring(0, 3) + normPath.Substring(2);
-                        }
-                        else
-                        {
-                            finalPath = drive.RootDirectory.FullName.Substring(0, 2) + normPath.Substring(2);
-                        }
-                    }
-                }
-
-                // add to queue
-                AddToSearchQueue(finalPath);
+                if (UseVerboseOutput) { VerboseQueue.Enqueue($"Adding for path '{path}' with name: '{name}'"); }
+                AddToSearchQueue(Path.Combine(path, name));
             }
         }
-        catch
+        
+        // Process search for each specified drive
+        foreach (var root in GetRootsToSearch())
         {
-
-            // queue verbose skip
-            VerboseQueue.Enqueue($"Skipping drive {drive.Name} due to access issues.");
+            if (UseVerboseOutput) { VerboseQueue.Enqueue($"Adding for root '{root}' with name: '{name}'"); }
+            AddToSearchQueue(Path.Combine(root, name));
         }
     }
 }

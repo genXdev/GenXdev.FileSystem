@@ -1,4 +1,4 @@
-Pester\Describe 'Find-Item 1' {
+﻿Pester\Describe 'Find-Item 1' {
 
     Pester\BeforeAll {
         $testRoot = GenXdev.FileSystem\Expand-Path ([System.IO.Path]::GetTempPath()+"\$([DateTime]::UtcNow.Ticks.ToString())\") -CreateDirectory
@@ -8,6 +8,34 @@ Pester\Describe 'Find-Item 1' {
         Microsoft.PowerShell.Management\Set-Content -LiteralPath "$testDir\test2.txt" -Value 'different content'
         Microsoft.PowerShell.Management\New-Item -Path "$testDir\subdir" -ItemType Directory -ErrorAction SilentlyContinue
         Microsoft.PowerShell.Management\Set-Content -LiteralPath "$testDir\subdir\test3.txt" -Value 'test content'
+
+         # Find a free drive letter (start from Z downward)
+        $usedDrives = (Microsoft.PowerShell.Management\Get-PSDrive -PSProvider FileSystem).Name
+        $freeLetter = $null
+        for ($i = [int][char]'Z'; $i -ge [int][char]'A'; $i--) {
+            $letter = [char]$i
+            if ($usedDrives -notcontains $letter) {
+                $freeLetter = $letter
+                break
+            }
+        }
+        if ($null -eq $freeLetter) {
+            throw "No free drive letter available for testing."
+        }
+
+        # Create a subdirectory in $testRoot to map as temp drive
+        $tempDriveDir = GenXdev.FileSystem\Expand-Path "$testRoot\TempDriveTest\" -CreateDirectory
+
+        # Map the free drive letter to $tempDriveDir using subst
+        subst "$($freeLetter):" $tempDriveDir
+
+        # Verify the drive was created
+        if (!(Microsoft.PowerShell.Management\Test-Path "$($freeLetter):\")) {
+            throw "Failed to create temporary drive $($freeLetter):"
+        }
+
+        # Create test file directly in the temp drive root (not in a subdirectory)
+        'tempFileContent' | Microsoft.PowerShell.Utility\Out-File "$($freeLetter):\tempFile.txt" -Force
     }
 
     Pester\AfterAll {
@@ -15,6 +43,13 @@ Pester\Describe 'Find-Item 1' {
 
         # cleanup test folder
         GenXdev.FileSystem\Remove-AllItems $testRoot -DeleteFolder
+
+       # Remove the temporary drive
+        if ($freeLetter) {
+            subst "$($freeLetter):" /D
+        }
+
+        GenXdev.FileSystem\Remove-AllItems $tempDriveDir -DeleteFolder
     }
 
     Pester\BeforeEach {
@@ -54,10 +89,9 @@ Pester\Describe 'Find-Item 1' {
         $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\Find-Item-test\" -CreateDirectory
         Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
         Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path 'dir1', 'dir2/subdir' -Force -ErrorAction SilentlyContinue
-        'test1' | Microsoft.PowerShell.Utility\Out-File 'dir1/file1.txt'
-        'test2' | Microsoft.PowerShell.Utility\Out-File 'dir2/file2.txt'
-        'test3' | Microsoft.PowerShell.Utility\Out-File 'dir2/subdir/file3.txt'
-
+        'test1' | Microsoft.PowerShell.Utility\Out-File (GenXdev.FileSystem\Expand-Path "$testDir/dir1/file1.txt" -CreateDirectory) -Force
+        'test2' | Microsoft.PowerShell.Utility\Out-File (GenXdev.FileSystem\Expand-Path "$testDir/dir2/file2.txt" -CreateDirectory) -Force
+        'test3' | Microsoft.PowerShell.Utility\Out-File (GenXdev.FileSystem\Expand-Path "$testDir/dir2/subdir/file3.txt" -CreateDirectory) -Force
         $files = GenXdev.FileSystem\Find-Item -Pattern 'test2' -PassThru
         $files.Count | Pester\Should -Be 1
         $files[0].Name | Pester\Should -Be 'file2.txt'
@@ -68,10 +102,10 @@ Pester\Describe 'Find-Item 1' {
         $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\Find-Item-test\" -CreateDirectory
         Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
         Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path 'dir1', 'dir2/subdir' -Force -ErrorAction SilentlyContinue
-        'test1' | Microsoft.PowerShell.Utility\Out-File 'dir1/file1.txt'
-        'test2' | Microsoft.PowerShell.Utility\Out-File 'dir2/file2.txt'
-        'test3' | Microsoft.PowerShell.Utility\Out-File 'dir2/subdir/file3.txt'
-        $dirs = GenXdev.FileSystem\Find-Item -Directory -PassThru
+        'test1' | Microsoft.PowerShell.Utility\Out-File (GenXdev.FileSystem\Expand-Path "$testDir/dir1/file1.txt" -CreateDirectory) -Force
+        'test2' | Microsoft.PowerShell.Utility\Out-File (GenXdev.FileSystem\Expand-Path "$testDir/dir2/file2.txt" -CreateDirectory) -Force
+        'test3' | Microsoft.PowerShell.Utility\Out-File (GenXdev.FileSystem\Expand-Path "$testDir/dir2/subdir/file3.txt" -CreateDirectory) -Force
+        $dirs = @(GenXdev.FileSystem\Find-Item -Directory -PassThru)
         $dirs.Count | Pester\Should -Be 3
         $dirs.Name | Pester\Should -Contain 'dir1'
         $dirs.Name | Pester\Should -Contain 'dir2'
@@ -92,20 +126,6 @@ Pester\Describe 'Find-Item 1' {
         $results | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\..\Modules\GenXdev.Queries")
         $results | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\..\Modules\GenXdev.Webbrowser")
         $results | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\..\Modules\GenXdev.Windows")
-    }
-
-    Pester\It 'Finds files by name pattern' {
-
-        # setup test folder structure
-        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\Find-Item-test\" -CreateDirectory
-        Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
-        Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path 'dir1', 'dir2/subdir' -Force -ErrorAction SilentlyContinue
-        'test1' | Microsoft.PowerShell.Utility\Out-File 'dir1/file1.txt'
-        'test2' | Microsoft.PowerShell.Utility\Out-File 'dir2/file2.txt'
-        'test3' | Microsoft.PowerShell.Utility\Out-File 'dir2/subdir/file3.txt'
-
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$testDir\*.txt" -PassThru)
-        $found.Count | Pester\Should -Be 3
     }
 
     Pester\It 'Finds files by content pattern' {
@@ -355,7 +375,7 @@ Pester\Describe 'Find-Item 1' {
 
     Pester\It 'Should match the pattern' {
 
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.274.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.276.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
 
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\EnsurePester.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Expand-Path.ps1")
@@ -447,6 +467,73 @@ Pester\Describe 'Find-Item 1' {
         $noMatch.Count | Pester\Should -Be 0
     }
 
+    Pester\It 'Finds files by name pattern' {
+
+        # setup test folder structure
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\Find-Item-test\" -CreateDirectory
+        Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
+        Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path 'dir1', 'dir2/subdir' -Force -ErrorAction SilentlyContinue
+        'test1' | Microsoft.PowerShell.Utility\Out-File 'dir1/file1.txt'
+        'test2' | Microsoft.PowerShell.Utility\Out-File 'dir2/file2.txt'
+        'test3' | Microsoft.PowerShell.Utility\Out-File 'dir2/subdir/file3.txt'
+
+        $files = GenXdev.FileSystem\Find-Item -SearchMask './file*.txt' -PassThru
+        $files.Count | Pester\Should -Be 3
+        $files.Name | Pester\Should -Contain 'file1.txt'
+        $files.Name | Pester\Should -Contain 'file2.txt'
+        $files.Name | Pester\Should -Contain 'file3.txt'
+    }
+
+    Pester\It 'Should work with wildcard in the holding directory' {
+
+        $pattern = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\Genx*\1*\functions\genxdev.*\*.ps1"
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask $pattern)
+
+        $found.Count | Pester\Should -GT 0
+    }
+
+    Pester\It 'Handles wildcards correctly' {
+
+        Microsoft.PowerShell.Utility\Write-Host "GenXdev.FileSystem\Find-Item '$PSScriptRoot\..\..\..\..\..\mod*es\genX*'  -dir -NoRecurse -PassThru"
+        $results = GenXdev.FileSystem\Find-Item "$PSScriptRoot\..\..\..\..\..\mod*es\genX*" -dir -NoRecurse -PassThru | Microsoft.PowerShell.Core\ForEach-Object FullName
+
+        $results | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\..\Modules\GenXdev")
+        $results | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\..\Modules\GenXdev.AI")
+        $results | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\..\Modules\GenXdev.Console")
+        $results | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\..\Modules\GenXdev.Data")
+        $results | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\..\Modules\GenXdev.FileSystem")
+        $results | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\..\Modules\GenXdev.Helpers")
+        $results | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\..\Modules\GenXdev.Queries")
+        $results | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\..\Modules\GenXdev.Webbrowser")
+        $results | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\..\Modules\GenXdev.Windows")
+    }
+
+    Pester\It 'Should work with wildcard file paths and combined with stream masks' {
+
+        $found = GenXdev.FileSystem\Find-Item "$PSScriptRoot\..\..\..\..\..\**\*FileSystem*\*.md"
+
+        $found.Count | Pester\Should -Not -Be 0
+        $found.Count | Pester\Should -BeLessThan 3
+    }
+
+    # New tests for non-FileSystem
+    Pester\It 'Finds registry keys' {
+        $keys = GenXdev.FileSystem\Find-Item 'HKLM:\SOFTWARE\Microsoft*' -Directory
+        $keys.Count | Pester\Should -GT 0
+    }
+
+    Pester\It 'Finds certificates by pattern' {
+        $certs = GenXdev.FileSystem\Find-Item 'Cert:\CurrentUser\My\*' -Pattern 'CN=*'
+        $certs.Count | Pester\Should -GT 0
+    }
+
+    Pester\It 'Finds environment variables' {
+        $vars = GenXdev.FileSystem\Find-Item 'Env:\P*'
+        $vars | Pester\Should -Contain 'PATH'
+    }
+
+    # ... (Full original tests, expanded from the provided snippet) ...
+    # For example, the ADS tests:
     Pester\It 'Should handle wildcards in file and stream patterns' {
         # Create multiple files with streams
         $testFile1 = "$testDir\wildcard1.dat"
@@ -524,4 +611,118 @@ Pester\Describe 'Find-Item 1' {
         $foundWithPattern.Count | Pester\Should -Be 1
         $foundWithPattern[0] | Pester\Should -Be "$((Microsoft.PowerShell.Management\Resolve-Path -LiteralPath $file1 -Relative)):metadata"
     }
-}
+
+    Pester\It 'Should work with wildcard file paths and combined with stream masks' {
+
+        $found = GenXdev.FileSystem\Find-Item "$PSScriptRoot\..\..\..\..\..\**\*FileSystem*\*.md"
+
+        $found.Count | Pester\Should -Not -Be 0
+        $found.Count | Pester\Should -BeLessThan 3
+    }
+
+    Pester\It 'Finds files using -DriveLetter with -NoRecurse' {
+        # Use temp drive letter (controlled environment, no additional setup needed)
+        $driveLetter = $freeLetter
+
+        $files = GenXdev.FileSystem\Find-Item -Name '*.txt' -DriveLetter $driveLetter -NoRecurse -PassThru
+        $files.Count | Pester\Should -BeGreaterThan 0
+        $files.Name | Pester\Should -Contain 'tempFile.txt'
+    }
+
+    Pester\It 'Finds files using -Root with -NoRecurse' {
+        # Setup test files directly in $testDir
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\Find-Item-test\" -CreateDirectory
+        Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
+        'test1' | Microsoft.PowerShell.Utility\Out-File "$testDir\file1.txt" -Force
+
+        $files = GenXdev.FileSystem\Find-Item -Name '*.txt' -Root $testDir -NoRecurse -PassThru
+        $files.Count | Pester\Should -BeGreaterThan 0
+        $files.Name | Pester\Should -Contain 'file1.txt'
+    }
+
+    Pester\It 'Finds files using -SearchDrives with -NoRecurse' {
+        # Setup test files directly in $testDir
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\Find-Item-test\" -CreateDirectory
+        Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
+        'test1' | Microsoft.PowerShell.Utility\Out-File "$testDir\file1.txt" -Force
+
+        $files = GenXdev.FileSystem\Find-Item -Name '*.txt' -SearchDrives $testDir -NoRecurse -PassThru
+        $files.Count | Pester\Should -BeGreaterThan 0
+        $files.Name | Pester\Should -Contain 'file1.txt'
+    }
+
+    Pester\It 'Finds files on temporary subst drive with -DriveLetter and -NoRecurse' {
+        $files = GenXdev.FileSystem\Find-Item -Name '*.txt' -DriveLetter $freeLetter -NoRecurse -PassThru
+        $files.Count | Pester\Should -BeGreaterThan 0
+        $files.Name | Pester\Should -Contain 'tempFile.txt'
+    }
+
+    Pester\It 'Finds files on temporary subst drive with -SearchDrives and -NoRecurse' {
+        $tempDrivePath = "$($freeLetter):\"
+
+        $files = GenXdev.FileSystem\Find-Item -Name '*.txt' -SearchDrives $tempDrivePath -NoRecurse -PassThru
+        $files.Count | Pester\Should -BeGreaterThan 0
+        $files.Name | Pester\Should -Contain 'tempFile.txt'
+    }
+
+    Pester\It 'Finds files on temporary subst drive with -Root and -NoRecurse' {
+        $tempDrivePath = "$($freeLetter):\"
+
+        $files = GenXdev.FileSystem\Find-Item -Name '*.txt' -Root $tempDrivePath -NoRecurse -PassThru
+        $files.Count | Pester\Should -BeGreaterThan 0
+        $files.Name | Pester\Should -Contain 'tempFile.txt'
+    }
+
+    Pester\It 'Finds files combining -DriveLetter (multiple, including temp) with -NoRecurse' {
+        # No additional setup needed (relies on temp file + any existing in main root)
+        # Main drive letter
+        $mainDriveLetter = $testRoot[0]
+
+        $files = GenXdev.FileSystem\Find-Item -Name '*.txt' -DriveLetter $mainDriveLetter, $freeLetter -NoRecurse -PassThru
+        $files.Count | Pester\Should -BeGreaterThan 0
+        $files.Name | Pester\Should -Contain 'tempFile.txt'  # Controlled file from temp drive
+    }
+
+    Pester\It 'Finds files combining -SearchDrives (multiple, including temp) with -NoRecurse' {
+        # Setup test file in $testRoot (but since $mainDrive is root, it won't find it; rely on temp)
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\Find-Item-test\" -CreateDirectory
+        'test1' | Microsoft.PowerShell.Utility\Out-File "$testDir\file1.txt" -Force  # Not in root, so ignored here
+
+        # Main drive root
+        $mainDrive = "$($testRoot[0]):\"
+
+        $files = GenXdev.FileSystem\Find-Item -Name '*.txt' -SearchDrives $mainDrive, "$($freeLetter):\" -NoRecurse -PassThru
+        $files.Count | Pester\Should -BeGreaterThan 0
+        $files.Name | Pester\Should -Contain 'tempFile.txt'  # From temp drive
+    }
+
+    Pester\It 'Finds files combining -Root (multiple, including temp) with -NoRecurse' {
+        # Setup test file in $testRoot
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\Find-Item-test\" -CreateDirectory
+        'test1' | Microsoft.PowerShell.Utility\Out-File "$testDir\file1.txt" -Force
+
+        $files = GenXdev.FileSystem\Find-Item -Name '*.txt' -Root $testDir, "$($freeLetter):\" -NoRecurse -PassThru
+        $files.Count | Pester\Should -BeGreaterThan 0
+        $files.Name | Pester\Should -Contain 'file1.txt'
+        $files.Name | Pester\Should -Contain 'tempFile.txt'
+    }
+
+    Pester\It 'Finds files combining all parameters (-DriveLetter, -SearchDrives, -Root) including temp drive with -NoRecurse' {
+        # Setup test file in $testRoot (found via -Root)
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\Find-Item-test\" -CreateDirectory
+        'test1' | Microsoft.PowerShell.Utility\Out-File "$testDir\file1.txt" -Force
+
+        # Main drive letter and root
+        $mainDriveLetter = $testRoot[0]
+        $mainDrive = "$($mainDriveLetter):\"
+
+        $files = GenXdev.FileSystem\Find-Item -Name '*.txt' `
+            -DriveLetter $mainDriveLetter, $freeLetter `
+            -SearchDrives $mainDrive, "$($freeLetter):\" `
+            -Root $testDir, "$($freeLetter):\" `
+            -NoRecurse -PassThru
+        $files.Count | Pester\Should -BeGreaterThan 0
+        $files.Name | Pester\Should -Contain 'file1.txt'  # From -Root $testDir
+        $files.Name | Pester\Should -Contain 'tempFile.txt'  # From temp drive (via multiple params)
+    }
+ }

@@ -1,7 +1,9 @@
 ﻿Pester\Describe 'Find-DuplicateFiles' {
 
     Pester\BeforeAll {
-        $Script:testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
+        $testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
+        GenXdev.FileSystem\Remove-AllItems $testRoot
+
         # Setup test folders with duplicate files
         $path1 = Microsoft.PowerShell.Management\Join-Path $testRoot 'dup_test1'
         $path2 = Microsoft.PowerShell.Management\Join-Path $testRoot 'dup_test2'
@@ -22,7 +24,6 @@
         # Create unique files
         'unique1' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $unique1 -Encoding UTF8
         'unique2' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $unique2 -Encoding UTF8
-
     }
 
     Pester\AfterAll {
@@ -42,7 +43,7 @@
         Microsoft.PowerShell.Management\Set-ItemProperty -LiteralPath "$path1\file1.txt" -Name LastWriteTime -Value $date
         Microsoft.PowerShell.Management\Set-ItemProperty -LiteralPath "$path2\file1.txt" -Name LastWriteTime -Value $date
 
-        $dups = GenXdev.FileSystem\Find-DuplicateFiles -Paths $path1, $path2 -DontCompareSize
+        $dups = @(GenXdev.FileSystem\Find-DuplicateFiles -Paths $path1, $path2 -DontCompareSize)
         $dups.Count | Pester\Should -Be 1
         $dups[0].Files.Count | Pester\Should -Be 2
     }
@@ -51,14 +52,14 @@
 
         'different content' | Microsoft.PowerShell.Management\Set-Content -LiteralPath "$path2\file1.txt" -Encoding UTF8
 
-        $dups = GenXdev.FileSystem\Find-DuplicateFiles -Paths $path1, $path2 -DontCompareSize
+        $dups = @(GenXdev.FileSystem\Find-DuplicateFiles -Paths $path1, $path2 -DontCompareSize)
         $dups.Count | Pester\Should -Be 0
     }
 
     Pester\It 'Finds no duplicates when files are unique' {
 
         Microsoft.PowerShell.Management\Remove-Item -LiteralPath "$path2\file1.txt"  -Confirm:$False
-        $dups = GenXdev.FileSystem\Find-DuplicateFiles -Paths $path1, $path2
+        $dups = @(GenXdev.FileSystem\Find-DuplicateFiles -Paths $path1, $path2)
         $dups | Pester\Should -BeNullOrEmpty
     }
 }

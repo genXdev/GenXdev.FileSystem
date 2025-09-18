@@ -1,8 +1,8 @@
-<##############################################################################
+﻿<##############################################################################
 Part of PowerShell module : GenXdev.FileSystem
 Original cmdlet filename  : Move-ItemWithTracking.ps1
 Original author           : René Vaessen / GenXdev
-Version                   : 1.274.2025
+Version                   : 1.276.2025
 ################################################################################
 MIT License
 
@@ -25,8 +25,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-################################################################################>
-###############################################################################
+################################################################################
 <#
 .SYNOPSIS
 Moves files and directories while preserving filesystem links and references.
@@ -34,8 +33,10 @@ Moves files and directories while preserving filesystem links and references.
 .DESCRIPTION
 Uses the Windows MoveFileEx API to move files and directories with link tracking
 enabled. This ensures that filesystem references, symbolic links, and hardlinks
-are maintained. The function is particularly useful for tools like Git that need
-to track file renames.
+are maintained. If the source path is under Git control, it attempts to use `git mv`
+to track the rename in Git. Falls back to MoveFileEx if Git is not available or
+the git mv operation fails. The function is particularly useful for tools like Git
+that need to track file renames.
 
 .OUTPUTS
 System.Boolean
@@ -55,11 +56,11 @@ destination path.
 
 .EXAMPLE
 Move-ItemWithTracking -Path "C:\temp\oldfile.txt" -Destination "D:\newfile.txt"
-Moves a file while preserving any existing filesystem links
+Moves a file while preserving any existing filesystem links or Git tracking
 
 .EXAMPLE
 "C:\temp\olddir" | Move-ItemWithTracking -Destination "D:\newdir" -Force
-Moves a directory, overwriting destination if it exists
+Moves a directory, overwriting destination if it exists, with Git tracking if applicable
 #>
 function Move-ItemWithTracking {
 
@@ -127,7 +128,6 @@ public static extern bool MoveFileEx(
         }
     }
 
-
     process {
         try {
             # convert relative paths to absolute filesystem paths
@@ -138,23 +138,58 @@ public static extern bool MoveFileEx(
             if (Microsoft.PowerShell.Management\Test-Path -LiteralPath $fullSourcePath -ErrorAction SilentlyContinue) {
 
                 # check if user wants to proceed with the operation
-                if ($PSCmdlet.ShouldProcess($fullSourcePath,
-                        "Move to $fullDestPath")) {
+                if ($PSCmdlet.ShouldProcess($fullSourcePath, "Move to $fullDestPath")) {
 
-                    Microsoft.PowerShell.Utility\Write-Verbose "Moving $fullSourcePath to $fullDestPath"
+                    # Check if git is available
+                    $gitAvailable = $null -ne (Microsoft.PowerShell.Core\Get-Command git.exe -ErrorAction SilentlyContinue)
 
-                    # perform the move operation with link tracking
-                    $result = $win32::MoveFileEx($fullSourcePath,
-                        $fullDestPath, $flags)
+                    if ($gitAvailable) {
+                        # Check if the source path is under Git control
+                        $sourceDir = [System.IO.Path]::GetDirectoryName($fullSourcePath)
+                        Microsoft.PowerShell.Management\Push-Location -Path $sourceDir
+                        try {
+                            $gitStatus = & git rev-parse --is-inside-work-tree 2>$null
+                            $isGitRepo = $gitStatus -eq 'true'
+                        }
+                        finally {
+                            Microsoft.PowerShell.Management\Pop-Location
+                        }
+
+                        if ($isGitRepo) {
+                            Microsoft.PowerShell.Utility\Write-Verbose "Source path is under Git control, attempting git mv"
+                            # Attempt git mv
+                            try {
+                                $gitMvArgs = $Force ? "-f" : ""
+                                & git mv $gitMvArgs $fullSourcePath $fullDestPath 2>$null
+                                if ($LASTEXITCODE -eq 0) {
+                                    Microsoft.PowerShell.Utility\Write-Verbose "Git mv completed successfully"
+                                    # Verify the move occurred
+                                    if (-not (Microsoft.PowerShell.Management\Test-Path -LiteralPath $fullSourcePath) -and
+                                        (Microsoft.PowerShell.Management\Test-Path -LiteralPath $fullDestPath)) {
+                                        return $true
+                                    }
+                                    else {
+                                        Microsoft.PowerShell.Utility\Write-Verbose "Git mv reported success but move not confirmed, falling back to MoveFileEx"
+                                    }
+                                }
+                                else {
+                                    Microsoft.PowerShell.Utility\Write-Verbose "Git mv failed, falling back to MoveFileEx"
+                                }
+                            }
+                            catch {
+                                Microsoft.PowerShell.Utility\Write-Verbose "Error during git mv: $_, falling back to MoveFileEx"
+                            }
+                        }
+                    }
+
+                    # Fallback to original MoveFileEx logic if not in Git or git mv failed
+                    Microsoft.PowerShell.Utility\Write-Verbose "Moving $fullSourcePath to $fullDestPath using MoveFileEx"
+                    $result = $win32::MoveFileEx($fullSourcePath, $fullDestPath, $flags)
 
                     if (-not $result) {
                         # get detailed error information on failure
-                        $errorCode = [System.Runtime.InteropServices.Marshal]:: `
-                            GetLastWin32Error()
-                        throw (
-                            "Move failed from '$fullSourcePath' to " +
-                            "'$fullDestPath'. Error: $errorCode"
-                        )
+                        $errorCode = [System.Runtime.InteropServices.Marshal]::GetLastWin32Error()
+                        throw ("Move failed from '$fullSourcePath' to '$fullDestPath'. Error: $errorCode")
                     }
 
                     Microsoft.PowerShell.Utility\Write-Verbose 'Move completed successfully with link tracking'

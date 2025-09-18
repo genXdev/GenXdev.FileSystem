@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Fields.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.274.2025
+// Version                   : 1.276.2025
 // ################################################################################
 // MIT License
 //
@@ -210,9 +210,10 @@ public partial class FindItem : PSCmdlet
     protected long dirsQueued;
     protected long matchesQueued;
     protected long dirsCompleted;
-    protected long lastProgress;
+    protected long lastProgress = DateTime.UtcNow.AddSeconds(2).ToBinary();
     protected int oldMaxWorkerThread;
     protected int oldMaxCompletionPorts;
+    protected bool isStarted;
 
     /// <summary>
     /// Flag for enabling verbose output based on user preferences

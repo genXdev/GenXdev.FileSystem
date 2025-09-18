@@ -1,8 +1,8 @@
-<##############################################################################
+﻿<##############################################################################
 Part of PowerShell module : GenXdev.FileSystem
 Original cmdlet filename  : Find-DuplicateFiles.ps1
 Original author           : René Vaessen / GenXdev
-Version                   : 1.274.2025
+Version                   : 1.276.2025
 ################################################################################
 MIT License
 
@@ -47,11 +47,14 @@ are matched.
 .PARAMETER DontCompareModifiedDate
 When specified, file modification dates are not used as a comparison criterion.
 
-.EXAMPLE
-Find-DuplicateFiles -Paths "C:\Photos","D:\Backup\Photos"
+.PARAMETER Recurse
+Recurse into subdirectories.
 
 .EXAMPLE
-"C:\Photos","D:\Backup\Photos" | fdf -DontCompareSize
+Find-DuplicateFiles -Paths "C:\Pictures","D:\Backup\Pictures"
+
+.EXAMPLE
+"C:\Pictures","D:\Backup\Pictures" | fdf -DontCompareSize
 #>
 function Find-DuplicateFiles {
 
@@ -62,87 +65,86 @@ function Find-DuplicateFiles {
     param(
         ###############################################################################
         [Parameter(
-            Mandatory = $true,
+            Mandatory = $false,
             Position = 0,
-            ValueFromPipeline = $true,
-            ValueFromPipelineByPropertyName = $true,
             HelpMessage = 'One or more directory paths to search for duplicates'
         )]
         [string[]] $Paths,
         ###############################################################################
         [Parameter(
             Mandatory = $false,
-            Position = 1,
+            ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true,
+            HelpMessage = 'One or more directory paths to search for duplicates'
+        )]
+        [Alias("FullName", "Filename", "Path")]
+        [string] $Input,
+        ###############################################################################
+        [Parameter(
+            Mandatory = $false,
             HelpMessage = 'Skip file size comparison when grouping duplicates'
         )]
         [switch] $DontCompareSize,
         ###############################################################################
         [Parameter(
             Mandatory = $false,
-            Position = 2,
             HelpMessage = 'Skip last modified date comparison when grouping duplicates'
         )]
-        [switch] $DontCompareModifiedDate
+        [switch] $DontCompareModifiedDate,
+        ###############################################################################
+        [Parameter(
+            Mandatory = $false,
+            HelpMessage = 'Recurse into subdirectories'
+        )]
+        [switch] $Recurse
         ###############################################################################
     )
 
     begin {
-        # convert all input paths to full filesystem paths
-        $normalizedPaths = @()
-        $Paths | Microsoft.PowerShell.Core\ForEach-Object {
-            $normalizedPaths += (GenXdev.FileSystem\Expand-Path $_)
-        }
+        [System.Collections.Generic.List[IO.FileInfo]] $allFiles = @();
 
         # internal helper function to generate unique comparison key for each file
         function Get-FileKey([System.IO.FileInfo]$file) {
-
-            # start with filename as the base identifier
             $key = $file.Name
-
-            # include file size in comparison key if enabled
             if (-not $DontCompareSize) {
-                $key += "|$($file.Length)"
+                $key += ";$($file.Length)"
             }
-
-            # include modification date in comparison key if enabled
             if (-not $DontCompareModifiedDate) {
-                $key += "|$($file.LastWriteTimeUtc.ToString('o'))"
+                # Truncate to second precision to avoid millisecond differences
+                $key += ";$($file.LastWriteTimeUtc.ToString('yyyy-MM-ddTHH:mm:ssZ'))"
             }
-
             return $key
         }
 
         # initialize high-performance collection for gathering files
         $allFiles = [System.Collections.Generic.List[System.IO.FileInfo]]::new()
-    }
 
+        @($Paths) |
+            Microsoft.PowerShell.Core\Where-Object { $_ -is [string] -and -not [string]::IsNullOrEmpty($_) } |
+            Microsoft.PowerShell.Core\ForEach-Object { ([IO.Directory]::Exists($_) ? "$($_.TrimEnd("/\".ToCharArray()))\" : $_) } |
+            GenXdev.FileSystem\Find-Item -PassThru -NoRecurse:($Recurse -ne $true) |
+            Microsoft.PowerShell.Core\ForEach-Object -ErrorAction SilentlyContinue {
+
+                    $null = $allFiles.Add($_)
+            }
+    }
 
     process {
 
-        foreach ($path in $normalizedPaths) {
+        @($Input) |
+            Microsoft.PowerShell.Core\Where-Object { $_ -is [string] -and -not [string]::IsNullOrEmpty($_) } |
+            Microsoft.PowerShell.Core\ForEach-Object { ([IO.Directory]::Exists($_) ? "$($_.TrimEnd("/\".ToCharArray()))\" : $_) } |
+            GenXdev.FileSystem\Find-Item -PassThru -NoRecurse:($Recurse -ne $true) |
+            Microsoft.PowerShell.Core\ForEach-Object -ErrorAction SilentlyContinue {
 
-            # verify directory exists before attempting to process
-            if ([System.IO.Directory]::Exists($path)) {
-
-                Microsoft.PowerShell.Utility\Write-Verbose "Scanning directory for duplicates: $path"
-
-                # use direct .NET IO for faster recursive file enumeration
-                [System.IO.Directory]::GetFiles($path, '*.*',
-                    [System.IO.SearchOption]::AllDirectories) |
-                    Microsoft.PowerShell.Core\ForEach-Object {
-                        $null = $allFiles.Add([System.IO.FileInfo]::new($_))
-                    }
+                $null = $allFiles.Add($_)
             }
-            else {
-                Microsoft.PowerShell.Utility\Write-Warning "Skipping non-existent directory: $path"
-            }
-        }
     }
 
     end {
 
         # group files by composite key and return only groups with duplicates
-        $allFiles |
+         $allFiles | Microsoft.PowerShell.Utility\Sort-Object -Unique -Property FullName |
             Microsoft.PowerShell.Utility\Group-Object -Property { Get-FileKey $_ } |
             Microsoft.PowerShell.Core\Where-Object { $_.Count -gt 1 } |
             Microsoft.PowerShell.Core\ForEach-Object {
@@ -151,6 +153,6 @@ function Find-DuplicateFiles {
                     FileName = $_.Group[0].Name
                     Files    = $_.Group
                 }
-            }
+            } | Microsoft.PowerShell.Utility\Write-Output
     }
 }

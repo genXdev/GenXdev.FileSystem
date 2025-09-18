@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Cmdlet.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.274.2025
+// Version                   : 1.276.2025
 // ################################################################################
 // MIT License
 //
@@ -39,6 +39,7 @@ using System.Management;
 using System.Management.Automation;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using Windows.ApplicationModel.Calls;
 
 /// <summary>
@@ -46,97 +47,48 @@ using Windows.ApplicationModel.Calls;
 /// Fast multi-threaded file and directory search with optional textcontent pattern matching
 /// capabilities.
 /// </para>
-/// <para type="description">
-/// SearchMask format capabilities:
-/// 1. Basic Pattern Support:
-///    - Wildcards: * and ? for pattern matching
-///    - Directory Navigation: \ and / for path separators
-///    - \**\ pattern for recursive directory matching
-/// 2. Path Type Support:
-///    - File names without paths: e.g., *.txt
-///    - Relative paths: .\subfolder\*.log
-///    - Absolute paths: C:\Windows\*.exe
-///    - UNC paths: \\server\share\*.doc
-///    - Rooted paths with drive letters
-///    - Base directory patterns: [Directory]*.cs
-/// 3. Pattern Examples:
-///    - Simple wildcard: *.txt - All txt files in current directory
-///    - Specific extension: .\*.js - JavaScript files in current directory
-///    - Complex pattern: test*.log - Log files starting with "test"
-///    - Recursive: **\*.txt - All txt files recursively in any subdirectory
-///    - Deep path: dir1\*\item_??\john*\subdir\*\final\*.dat - Dat files in
-///      directories
-///      including and below any matching '\subdir\' directories
-///    - Multiple wildcards: *test*\*.xml - XML files in folders containing
-///      "test"
-/// 4. Special Features:
-///    - Alternate Data Streams: file.txt:stream
-///    - Multi-drive search with -AllDrives
-///    - -Directory switch to only match directories
-///    - -NoRecurse to prevent recursive searching
-///    - -Pattern parameter for content searching
-///    - Case-insensitive matching
-/// 5. Search Behavior:
-///    - When using -AllDrives, only the filename part is matched
-///    - Handles special characters in filenames
-///    - Supports long paths (>260 chars)
-///    - Follows NTFS junctions and symlinks
-///    - Respects access permissions
-/// </para>
-/// <para type="description">
-/// A powerful search utility that combines file/directory pattern matching with
-/// content filtering. Defaults to fast recursive searches, supports multi-drive
-/// operations, and flexible output formats.
-/// Can search by name patterns and content patterns
-/// simultaneously.
-/// Supports ntfs alternate-data-streams, unc share matching, and long filenames
-/// </para>
 ///
 /// <para type="description">
 /// PARAMETERS
 /// </para>
 ///
 /// <para type="description">
-/// -SearchMask &lt;String[]&gt;<br/>
-/// File name or pattern to search for. Supports wildcards (*, ?). Default is
-/// '*'.<br/>
-/// - <b>Aliases</b>: like, l, Path, Name, file, Query, FullName<br/>
+/// -Name &lt;String[]&gt;<br/>
+/// File name or pattern to search for. Default is '*'.<br/>
+/// - <b>Aliases</b>: like, l, Path, Query, SearchMask<br/>
 /// - <b>Position</b>: 0<br/>
-/// - <b>Examples</b>:<br/>
-///   - Simple wildcard: <c>*.txt</c> - All txt files in the current
-///     directory<br/>
-///   - Specific extension: <c>.\*.js</c> - JavaScript files in the current
-///     directory<br/>
-///   - Complex pattern: <c>test*.log</c> - Log files starting with "test"<br/>
-///   - Recursive: <c>**\*.txt</c> - All txt files recursively in any
-///     subdirectory<br/>
-///   - Deep path: <c>dir1\*\item_??\john*\subdir\*\final\*.dat</c> - Dat files
-///     in directories including and below any matching '\subdir\'
-///     directories<br/>
-///   - Multiple wildcards: <c>*test*\*.xml</c> - XML files in folders
-///     containing "test"<br/>
+/// - <b>Default</b>: "*"<br/>
 /// - <b>Features</b>:<br/>
-///   - Wildcards: <c>*</c> and <c>?</c> for pattern matching<br/>
+///   - Supports wildcards: <c>*</c> and <c>?</c> for pattern matching<br/>
 ///   - Directory Navigation: <c>\</c> and <c>/</c> for path separators<br/>
 ///   - Recursive pattern: <c>\**\</c> for recursive directory matching<br/>
-///   - Supports file names without paths, relative paths, absolute paths, UNC
-///     paths, rooted paths with drive letters, and base directory patterns<br/>
-///   - Alternate Data Streams: <c>file.txt:stream</c>
+///   - Supports file names without paths, relative paths, absolute paths, UNC paths, rooted paths with drive letters, and base directory patterns<br/>
+///   - Alternate Data Streams: <c>file.txt:stream</c><br/>
+/// - <b>Examples</b>:<br/>
+///   - Simple wildcard: <c>*.txt</c> - All txt files in the current directory<br/>
+///   - Specific extension: <c>.\*.js</c> - JavaScript files in the current directory<br/>
+///   - Complex pattern: <c>test*.log</c> - Log files starting with "test"<br/>
+///   - Recursive: <c>**\*.txt</c> - All txt files recursively in any subdirectory<br/>
 /// </para>
 ///
 /// <para type="description">
 /// -Input &lt;String&gt;<br/>
 /// File name or pattern to search for from pipeline input. Default is '*'.<br/>
-/// - <b>Aliases</b>: like, l, Path, Name, file, Query, FullName<br/>
-/// - <b>Accepts pipeline input</b>: Yes
+/// - <b>Aliases</b>: FullName<br/>
+/// - <b>Accepts pipeline input</b>: Yes<br/>
+/// - <b>Default</b>: "*"<br/>
+/// - <b>Features</b>:<br/>
+///   - Supports wildcards: <c>*</c> and <c>?</c> for pattern matching<br/>
+///   - Directory Navigation: <c>\</c> and <c>/</c> for path separators<br/>
+///   - Recursive pattern: <c>\**\</c> for recursive directory matching<br/>
 /// </para>
 ///
 /// <para type="description">
-/// -Pattern &lt;String&gt;<br/>
-/// Regular expression pattern to search within file contents.<br/>
-/// - <b>Aliases</b>: mc, matchcontent<br/>
+/// -Content &lt;String&gt;<br/>
+/// Regular expression pattern to search within content.<br/>
+/// - <b>Aliases</b>: mc, matchcontent, regex, Pattern<br/>
 /// - <b>Position</b>: 1<br/>
-/// - <b>Default</b>: ".*"
+/// - <b>Default</b>: ".*"<br/>
 /// </para>
 ///
 /// <para type="description">
@@ -144,118 +96,173 @@ using Windows.ApplicationModel.Calls;
 /// Base path for resolving relative paths in output.<br/>
 /// - <b>Aliases</b>: base<br/>
 /// - <b>Position</b>: 2<br/>
-/// - <b>Default</b>: ".\\"
+/// - <b>Default</b>: ".\\"<br/>
 /// </para>
+/// <para type="description">
+/// -Category &lt;String&gt = Pictures | Videos | Music | Documents | Spreadsheets | Presentations | Archives | Installers | Executables | Databases | DesignFiles | Ebooks | Subtitles | Fonts | EmailFiles | 3DModels | GameAssets | MedicalFiles | FinancialFiles | LegalFiles | SourceCode | Scripts | MarkupAndData | Configuration | Logs | TextFiles | WebFiles | MusicLyricsAndChords | CreativeWriting | Recipes | ResearchFiles
+/// SourceCode | Scripts | MarkupAndData | Documents | Spreadsheets | Presentations | TextFiles | LogFiles |WebFiles | Configuration | Ebooks | Subtitles | MusicLyricsAndChords | CreativeWriting | LegalAndContracts | RecipesAndCooking | ResearchAndAcademia
+/// <br/>
+/// Only output files belonging to selected categories.<br/>
+/// - <b>Aliases</b>: filetype<br/>
+/// </para>
+/// <summary>
+/// <para type="description">Only output files belonging to selected categories</para>
+/// </summary>
 ///
 /// <para type="description">
 /// -MaxDegreeOfParallelism &lt;Int32&gt;<br/>
 /// Maximum degree of parallelism for directory tasks.<br/>
-/// - <b>Default</b>: 8
+/// - <b>Aliases</b>: threads<br/>
+/// - <b>Default</b>: 0<br/>
 /// </para>
 ///
 /// <para type="description">
-/// -TimeoutSeconds &lt;Int32&gt;<br/>
-/// Optional cancellation timeout in seconds.
+/// -TimeoutSeconds &lt;Int32?&gt;<br/>
+/// Optional: cancellation timeout in seconds.<br/>
+/// - <b>Aliases</b>: maxseconds<br/>
 /// </para>
 ///
 /// <para type="description">
 /// -AllDrives &lt;SwitchParameter&gt;<br/>
-/// Search across all available drives.
+/// Search across all available drives.<br/>
 /// </para>
 ///
 /// <para type="description">
 /// -Directory &lt;SwitchParameter&gt;<br/>
 /// Search for directories only.<br/>
-/// - <b>Aliases</b>: dir
+/// - <b>Aliases</b>: dir<br/>
 /// </para>
 ///
 /// <para type="description">
 /// -FilesAndDirectories &lt;SwitchParameter&gt;<br/>
 /// Include both files and directories.<br/>
-/// - <b>Aliases</b>: both
+/// - <b>Aliases</b>: both<br/>
 /// </para>
 ///
 /// <para type="description">
 /// -PassThru &lt;SwitchParameter&gt;<br/>
 /// Output matched items as objects.<br/>
-/// - <b>Aliases</b>: pt
+/// - <b>Aliases</b>: pt<br/>
 /// </para>
 ///
 /// <para type="description">
 /// -IncludeAlternateFileStreams &lt;SwitchParameter&gt;<br/>
 /// Include alternate data streams in search results.<br/>
-/// - <b>Aliases</b>: ads
+/// - <b>Aliases</b>: ads<br/>
 /// </para>
 ///
 /// <para type="description">
-/// -NoLinks &lt;SwitchParameter&gt;<br/>
-///Forces unattended mode and will not generate links
-/// - <b>Aliases</b>: nl
-/// </para>
-
-/// <para type="description">
 /// -NoRecurse &lt;SwitchParameter&gt;<br/>
-/// Do not recurse into subdirectories.
+/// Do not recurse into subdirectories.<br/>
+/// - <b>Aliases</b>: nr<br/>
+/// </para>
+///
+/// <para type="description">
+/// -FollowSymlinkAndJunctions &lt;SwitchParameter&gt;<br/>
+/// Follow symlinks and junctions during directory traversal.<br/>
+/// - <b>Aliases</b>: symlinks, sl<br/>
+/// </para>
+///
+/// <para type="description">
+/// -IncludeOpticalDiskDrives &lt;SwitchParameter&gt;<br/>
+/// Include optical disk drives.<br/>
 /// </para>
 ///
 /// <para type="description">
 /// -SearchDrives &lt;String[]&gt;<br/>
-/// Optional: search specific drives.
+/// Optional: search specific drives.<br/>
+/// - <b>Aliases</b>: drives<br/>
+/// - <b>Default</b>: Empty array<br/>
+/// </para>
+///
+/// <para type="description">
+/// -DriveLetter &lt;Char[]&gt;<br/>
+/// Optional: search specific drives.<br/>
+/// - <b>Default</b>: Empty array<br/>
+/// </para>
+///
+/// <para type="description">
+/// -Root &lt;String[]&gt;<br/>
+/// Optional: search specific directories.<br/>
+/// - <b>Default</b>: Empty array<br/>
+/// </para>
+///
+/// <para type="description">
+/// -IncludeNonTextFileMatching &lt;SwitchParameter&gt;<br/>
+/// Include non-text files when searching file contents.<br/>
+/// - <b>Aliases</b>: binary<br/>
+/// </para>
+///
+/// <para type="description">
+/// -NoLinks &lt;SwitchParameter&gt;<br/>
+/// Forces unattended mode and will not generate links.<br/>
+/// - <b>Aliases</b>: nl<br/>
 /// </para>
 ///
 /// <para type="description">
 /// -CaseSensitivePattern &lt;SwitchParameter&gt;<br/>
-/// Makes pattern matching case-sensitive. By default, pattern matching
-/// is case-insensitive.
+/// Makes pattern matching case-sensitive. By default, pattern matching is case-insensitive.<br/>
+/// - <b>Aliases</b>: patternmatchcase, csp<br/>
+/// </para>
+///
+/// <para type="description">
+/// -CaseNameMatching &lt;MatchCasing&gt;<br/>
+/// Gets or sets the case-sensitivity for files and directories.<br/>
+/// - <b>Aliases</b>: casing, CaseSearchMaskMatching<br/>
+/// - <b>Default</b>: PlatformDefault<br/>
 /// </para>
 ///
 /// <para type="description">
 /// -SearchADSContent &lt;SwitchParameter&gt;<br/>
-/// When set, performs content search within alternate data streams (ADS). When
-/// not set, outputs ADS file info without searching their content.
+/// When set, performs content search within alternate data streams (ADS). When not set, outputs ADS file info without searching their content.<br/>
+/// - <b>Aliases</b>: sads<br/>
 /// </para>
+///
 /// <para type="description">
 /// -MaxRecursionDepth &lt;Int32&gt;<br/>
-/// Maximum recursion depth for directory traversal. 0 means unlimited.
+/// Maximum recursion depth for directory traversal. 0 means unlimited.<br/>
+/// - <b>Aliases</b>: md, depth, maxdepth<br/>
+/// - <b>Default</b>: 0<br/>
 /// </para>
 ///
 /// <para type="description">
 /// -MaxFileSize &lt;Int64&gt;<br/>
-/// Maximum file size in bytes to include in results. 0 means unlimited.
+/// Maximum file size in bytes to include in results. 0 means unlimited.<br/>
+/// - <b>Aliases</b>: maxlength, maxsize<br/>
+/// - <b>Default</b>: 0<br/>
 /// </para>
 ///
 /// <para type="description">
 /// -MinFileSize &lt;Int64&gt;<br/>
-/// Minimum file size in bytes to include in results. 0 means no minimum.
+/// Minimum file size in bytes to include in results. 0 means no minimum.<br/>
+/// - <b>Aliases</b>: minsize, minlength<br/>
+/// - <b>Default</b>: 0<br/>
 /// </para>
 ///
 /// <para type="description">
 /// -ModifiedAfter &lt;DateTime?&gt;<br/>
-/// Only include files modified after this date/time (UTC).
+/// Only include files modified after this date/time (UTC).<br/>
+/// - <b>Aliases</b>: ma, after<br/>
 /// </para>
 ///
 /// <para type="description">
 /// -ModifiedBefore &lt;DateTime?&gt;<br/>
-/// Only include files modified before this date/time (UTC).
+/// Only include files modified before this date/time (UTC).<br/>
+/// - <b>Aliases</b>: before, mb<br/>
 /// </para>
 ///
 /// <para type="description">
 /// -AttributesToSkip &lt;FileAttributes&gt;<br/>
-/// File attributes to skip (e.g., System, Hidden or None).
+/// File attributes to skip (e.g., System, Hidden or None).<br/>
+/// - <b>Aliases</b>: skipattr<br/>
+/// - <b>Default</b>: System<br/>
 /// </para>
 ///
 /// <para type="description">
 /// -Exclude &lt;String[]&gt;<br/>
-/// Exclude files or directories matching these wildcard patterns (e.g., *.tmp, *\bin\*).
-/// </para>
-/// <para type="description">
-/// -IncludeOpticalDiskDrives &lt;SwitchParameter&gt;<br/>
-/// Include optical disk drives
-/// </para>
-/// <para type="description">
-/// -IncludeNonTextFileMatching &lt;SwitchParameter&gt;<br/>
-/// Include non-text files (binaries, images, etc.) when searching file
-/// contents.
+/// Exclude files or directories matching these wildcard patterns (e.g., *.tmp, *\\bin\\*).<br/>
+/// - <b>Aliases</b>: skiplike<br/>
+/// - <b>Default</b>: "*\\.git\\*"<br/>
 /// </para>
 ///
 /// <example>
@@ -435,17 +442,16 @@ public partial class FindItem : PSCmdlet
     /// <para type="description">File name or pattern to search for. Supports wildcards (*,?). Default is '*'</para>
     /// </summary>
     [Parameter(Position = 0, Mandatory = false, HelpMessage = "File name or pattern to search for. Default is '*'")]
-    [Alias("like", "l", "Path", "Query")]
+    [Alias("like", "l", "Path", "Query", "SearchMask")]
     [ValidateNotNullOrEmpty()]
     [SupportsWildcards()]
-    public string[] SearchMask { get; set; } = new string[] { "*" };
+    public string[] Name { get; set; }
 
     /// <summary>
     /// <para type="description">File name or pattern to search for from pipeline input. Default is '*'</para>
     /// </summary>
     [Parameter(Mandatory = false, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true, HelpMessage = "File name or pattern to search for. Default is '*'")]
     [Alias("FullName")]
-    [ValidateNotNullOrEmpty()]
     [SupportsWildcards()]
     public string Input { get; set; }
 
@@ -453,10 +459,10 @@ public partial class FindItem : PSCmdlet
     /// <para type="description">Regular expression pattern to search within file contents</para>
     /// </summary>
     [Parameter(Position = 1, Mandatory = false, ParameterSetName = "WithPattern", HelpMessage = "Regular expression pattern to search within content")]
-    [Alias("mc", "matchcontent", "regex")]
+    [Alias("mc", "matchcontent", "regex", "Pattern")]
     [ValidateNotNull()]
     [SupportsWildcards()]
-    public string Pattern { get; set; } = ".*";
+    public string Content { get; set; } = ".*";
 
     /// <summary>
     /// <para type="description">Base path for resolving relative paths in output</para>
@@ -465,6 +471,46 @@ public partial class FindItem : PSCmdlet
     [Alias("base")]
     [ValidateNotNullOrEmpty()]
     public string RelativeBasePath { get; set; } = ".\\";
+
+    /// <summary>
+    /// <para type="description">Only output files belonging to selected categories</para>
+    /// </summary>
+    [Parameter(Mandatory = false)]
+    [Alias("filetype")]
+    [ValidateSet(
+        "Pictures",
+        "Videos",
+        "Music",
+        "Documents",
+        "Spreadsheets",
+        "Presentations",
+        "Archives",
+        "Installers",
+        "Executables",
+        "Databases",
+        "DesignFiles",
+        "Ebooks",
+        "Subtitles",
+        "Fonts",
+        "EmailFiles",
+        "3DModels",
+        "GameAssets",
+        "MedicalFiles",
+        "FinancialFiles",
+        "LegalFiles",
+        "SourceCode",
+        "Scripts",
+        "MarkupAndData",
+        "Configuration",
+        "Logs",
+        "TextFiles",
+        "WebFiles",
+        "MusicLyricsAndChords",
+        "CreativeWriting",
+        "Recipes",
+        "ResearchFiles"
+    )]
+    public string[] Category { get; set; }
 
     /// <summary>
     /// <para type="description">Maximum degree of parallelism for directory tasks</para>
@@ -544,6 +590,18 @@ public partial class FindItem : PSCmdlet
     public string[] SearchDrives { get; set; } = Array.Empty<string>();
 
     /// <summary>
+    /// <para type="description">Optional: search specific drives</para>
+    /// </summary>
+    [Parameter(Mandatory = false, HelpMessage = "Optional: search specific drives")]
+    public char[] DriveLetter { get; set; } = Array.Empty<char>();
+
+    /// <summary>
+    /// <para type="description">Optional: search specific base folders combined with provided Names</para>
+    /// </summary>
+    [Parameter(Mandatory = false, HelpMessage = "Optional: search specific directories")]
+    public string[] Root { get; set; } = Array.Empty<string>();
+
+    /// <summary>
     /// <para type="description">Include non-text files (binaries, images, etc.)
     /// when searching file contents</para>
     /// </summary>
@@ -569,8 +627,8 @@ public partial class FindItem : PSCmdlet
     /// <summary>Gets or sets the case-sensitivity for files and directories.
     /// </summary>
     [Parameter(Mandatory = false, HelpMessage = "Gets or sets the case-sensitivity for files and directories")]
-    [Alias("casing")]
-    public System.IO.MatchCasing CaseSearchMaskMatching { get; set; } = System.IO.MatchCasing.PlatformDefault;
+    [Alias("casing", "CaseSearchMaskMatching ")]
+    public System.IO.MatchCasing CaseNameMatching { get; set; } = System.IO.MatchCasing.PlatformDefault;
 
     /// <summary>
     /// <para type="description">
@@ -640,9 +698,9 @@ public partial class FindItem : PSCmdlet
     // Cmdlet lifecycle methods
     protected override void BeginProcessing()
     {
-
         // set default parallelism if not provided by user
         MaxDegreeOfParallelism = MaxDegreeOfParallelism <= 0 ? GetCoreCount() : MaxDegreeOfParallelism;
+        if (!String.IsNullOrWhiteSpace(Content) && Content != ".*") MaxDegreeOfParallelism *= 12;
         ThreadPool.GetMaxThreads(out this.oldMaxWorkerThread, out this.oldMaxCompletionPorts);
         ThreadPool.SetMaxThreads(MaxDegreeOfParallelism, MaxDegreeOfParallelism);
 
@@ -677,31 +735,29 @@ public partial class FindItem : PSCmdlet
         InitializeCancellationToken();
 
         // process each unique search mask provided
-        if (SearchMask != null && SearchMask.Length > 0)
+        if (Name != null && Name.Length > 0)
         {
-
             // loop through each mask
-            foreach (var mask in SearchMask)
+            foreach (var name in Name)
             {
-
                 // check if mask already processed to avoid duplicates
-                if (VisitedNodes.TryAdd("start;" + mask, true))
+                if (VisitedNodes.TryAdd("start;" + name, true))
                 {
 
                     // log processing of mask if verbose enabled
                     if (UseVerboseOutput)
                     {
-                        VerboseQueue.Enqueue($"Processing search mask: {mask}");
+                        VerboseQueue.Enqueue($"Processing name: {name}");
                     }
 
                     // prepare search starting point
-                    InitializeSearchDirectory(mask);
+                    InitializeSearchDirectory(name);
                 }
                 else if (UseVerboseOutput)
                 {
 
                     // log skipping duplicate mask
-                    VerboseQueue.Enqueue($"Skipping duplicate search mask: {mask}");
+                    VerboseQueue.Enqueue($"Skipping duplicate name: {name}");
                 }
             }
         }
@@ -709,21 +765,38 @@ public partial class FindItem : PSCmdlet
 
     protected override void ProcessRecord()
     {
+        if (string.IsNullOrEmpty(Input)) return;
 
-        // handle pipeline input if provided
-        if (!string.IsNullOrEmpty(Input))
+        // add to visited if new and initialize search
+        if (VisitedNodes.TryAdd("start;" + Input, true))
+        {
+            InitializeSearchDirectory(Input);
+        }
+        else if (UseVerboseOutput)
         {
 
-            // add to visited if new and initialize search
-            if (VisitedNodes.TryAdd("start;" + Input, true))
-            {
-                InitializeSearchDirectory(Input);
-            }
+            // log skipping duplicate mask
+            VerboseQueue.Enqueue($"Skipping duplicate name: {Input}");
         }
     }
 
     protected override void EndProcessing()
     {
+        // check for no params
+        if (DirQueue.Count == 0)
+        {
+            if (UseVerboseOutput)
+            {
+
+                // log skipping duplicate mask
+                VerboseQueue.Enqueue($"No input, adding current directory to the queue: {CurrentDirectory}\\");
+            }
+
+            InitializeSearchDirectory(CurrentDirectory + "\\");
+        }
+
+        // allow new workers to be created
+        isStarted = true;
 
         // run the search tasks
         ProcessSearchTasks();

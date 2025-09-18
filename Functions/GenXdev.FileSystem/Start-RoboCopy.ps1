@@ -2,7 +2,7 @@
 Part of PowerShell module : GenXdev.FileSystem
 Original cmdlet filename  : Start-RoboCopy.ps1
 Original author           : René Vaessen / GenXdev
-Version                   : 1.274.2025
+Version                   : 1.276.2025
 ################################################################################
 MIT License
 
@@ -266,8 +266,6 @@ function Start-RoboCopy {
         [SupportsWildcards()]
         [string[]] $Files = @(),
         ########################################################################
-
-        ########################################################################
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
@@ -283,15 +281,12 @@ function Start-RoboCopy {
         )]
         [switch] $Move,
         ########################################################################
-
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
             HelpMessage = 'Will also copy ownership, security descriptors and auditing information of files and directories'
         )]
         [switch] $IncludeSecurity,
-        ########################################################################
-
         ########################################################################
         [Parameter(
             ParameterSetName = 'Default',
@@ -301,7 +296,6 @@ function Start-RoboCopy {
         )]
         [switch] $SkipDirectories,
         ########################################################################
-
         [Parameter(
             ParameterSetName = 'SkipDirectories',
             Mandatory = $false,
@@ -310,7 +304,6 @@ function Start-RoboCopy {
         )]
         [switch] $SkipEmptyDirectories,
         ########################################################################
-
         [Parameter(
             ParameterSetName = 'SkipDirectories',
             Mandatory = $false,
@@ -319,15 +312,12 @@ function Start-RoboCopy {
         )]
         [switch] $CopyOnlyDirectoryTreeStructure,
         ########################################################################
-
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
             HelpMessage = 'Create directory tree and zero-length files only'
         )]
         [switch] $CopyOnlyDirectoryTreeStructureAndEmptyFiles,
-        ########################################################################
-
         ########################################################################
         [Parameter(
             Mandatory = $false,
@@ -336,7 +326,6 @@ function Start-RoboCopy {
         )]
         [switch] $SkipAllSymbolicLinks,
         ########################################################################
-
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
@@ -344,7 +333,6 @@ function Start-RoboCopy {
         )]
         [switch] $SkipSymbolicFileLinks,
         ########################################################################
-
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
@@ -352,7 +340,6 @@ function Start-RoboCopy {
         )]
         [switch] $CopySymbolicLinksAsLinks,
         ########################################################################
-
         [Parameter(
 
             ParameterSetName = 'SkipDirectories',
@@ -362,7 +349,6 @@ function Start-RoboCopy {
         )]
         [switch] $SkipJunctions,
         ########################################################################
-
         [Parameter(
 
             ParameterSetName = 'SkipDirectories',
@@ -372,16 +358,12 @@ function Start-RoboCopy {
         )]
         [switch] $CopyJunctionsAsJunctons,
         ########################################################################
-
-        ########################################################################
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
             HelpMessage = 'Will copy all files even if they are older then the ones in the destination'
         )]
         [switch] $Force,
-        ########################################################################
-
         ########################################################################
         [Parameter(
             Mandatory = $false,
@@ -390,7 +372,6 @@ function Start-RoboCopy {
         )]
         [switch] $SkipFilesWithoutArchiveAttribute,
         ########################################################################
-
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
@@ -398,7 +379,6 @@ function Start-RoboCopy {
         )]
         [switch] $ResetArchiveAttributeAfterSelection,
         ########################################################################
-
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
@@ -407,7 +387,6 @@ function Start-RoboCopy {
         [SupportsWildcards()]
         [string[]] $FileExcludeFilter = @(),
         ########################################################################
-
         [Parameter(
             ParameterSetName = 'SkipDirectories',
             Mandatory = $false,
@@ -417,7 +396,6 @@ function Start-RoboCopy {
         [SupportsWildcards()]
         [string[]] $DirectoryExcludeFilter = @(),
         ########################################################################
-
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
@@ -425,7 +403,6 @@ function Start-RoboCopy {
         )]
         [string] $AttributeIncludeFilter,
         ########################################################################
-
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
@@ -433,7 +410,6 @@ function Start-RoboCopy {
         )]
         [string] $AttributeExcludeFilter,
         ########################################################################
-
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
@@ -441,15 +417,12 @@ function Start-RoboCopy {
         )]
         [string] $SetAttributesAfterCopy,
         ########################################################################
-
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
             HelpMessage = 'Will remove the given attributes from copied files [RASHCNETO]'
         )]
         [string] $RemoveAttributesAfterCopy,
-        ########################################################################
-
         ########################################################################
         [ValidateRange(1, 1000000)]
         [Parameter(
@@ -460,7 +433,6 @@ function Start-RoboCopy {
         )]
         [int] $MaxSubDirTreeLevelDepth = -1,
         ########################################################################
-
         [ValidateRange(0, 9999999999999999)]
         [Parameter(
             Mandatory = $false,
@@ -469,7 +441,6 @@ function Start-RoboCopy {
         )]
         [int] $MinFileSize = -1,
         ########################################################################
-
         [ValidateRange(0, 9999999999999999)]
         [Parameter(
             Mandatory = $false,
@@ -478,7 +449,6 @@ function Start-RoboCopy {
         )]
         [int] $MaxFileSize = -1,
         ########################################################################
-
         [ValidateRange(0, 99999999)]
         [Parameter(
             Mandatory = $false,
@@ -487,7 +457,6 @@ function Start-RoboCopy {
         )]
         [int] $MinFileAge = -1,
         ########################################################################
-
         [ValidateRange(0, 99999999)]
         [Parameter(
             Mandatory = $false,
@@ -496,7 +465,6 @@ function Start-RoboCopy {
         )]
         [int] $MaxFileAge = -1,
         ########################################################################
-
         [ValidateRange(0, 99999999)]
         [Parameter(
             Mandatory = $false,
@@ -505,7 +473,6 @@ function Start-RoboCopy {
         )]
         [int] $MinLastAccessAge = -1,
         ########################################################################
-
         [ValidateRange(0, 99999999)]
         [Parameter(
             Mandatory = $false,
@@ -514,16 +481,12 @@ function Start-RoboCopy {
         )]
         [int] $MaxLastAccessAge = -1,
         ########################################################################
-
-        ########################################################################
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
             HelpMessage = 'Will shortly pause and retry when I/O errors occur during copying'
         )]
         [switch] $RecoveryMode,
-        ########################################################################
-
         ########################################################################
         [Parameter(
             Mandatory = $false,
@@ -532,7 +495,6 @@ function Start-RoboCopy {
         )]
         [switch] $MonitorMode,
         ########################################################################
-
         [ValidateRange(1, 144000)]
         [Parameter(
             Mandatory = $false,
@@ -541,7 +503,6 @@ function Start-RoboCopy {
         )]
         [int] $MonitorModeThresholdMinutes = -1,
         ########################################################################
-
         [ValidateRange(1, 1000000000)]
         [Parameter(
             Mandatory = $false,
@@ -550,7 +511,6 @@ function Start-RoboCopy {
         )]
         [int] $MonitorModeThresholdNrOfChanges = -1,
         ########################################################################
-
         [ValidateRange(0, 2359)]
         [Parameter(
             Mandatory = $false,
@@ -559,7 +519,6 @@ function Start-RoboCopy {
         )]
         [int] $MonitorModeRunHoursFrom = -1,
         ########################################################################
-
         [ValidateRange(0, 2359)]
         [Parameter(
             Mandatory = $false,
@@ -568,8 +527,6 @@ function Start-RoboCopy {
         )]
         [int] $MonitorModeRunHoursUntil = -1,
         ########################################################################
-
-        ########################################################################
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
@@ -577,7 +534,6 @@ function Start-RoboCopy {
         )]
         [string] $LogFilePath,
         ########################################################################
-
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
@@ -585,7 +541,6 @@ function Start-RoboCopy {
         )]
         [switch] $LogfileOverwrite,
         ########################################################################
-
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
@@ -593,7 +548,6 @@ function Start-RoboCopy {
         )]
         [switch] $LogDirectoryNames,
         ########################################################################
-
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
@@ -601,15 +555,12 @@ function Start-RoboCopy {
         )]
         [switch] $LogAllFileNames,
         ########################################################################
-
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
             HelpMessage = 'Output status as UNICODE'
         )]
         [switch] $Unicode,
-        ########################################################################
-
         ########################################################################
         [Parameter(
             Mandatory = $false,
@@ -618,7 +569,6 @@ function Start-RoboCopy {
         )]
         [switch] $LargeFiles,
         ########################################################################
-
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
@@ -626,7 +576,6 @@ function Start-RoboCopy {
         )]
         [switch] $MultiThreaded,
         ########################################################################
-
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
@@ -634,7 +583,6 @@ function Start-RoboCopy {
         )]
         [switch] $CompressibleContent,
         ########################################################################
-
         [Parameter(
             Mandatory = $false,
             ValueFromPipeline = $false,
@@ -1350,8 +1298,11 @@ Multiple overrides:
         $cmdLine = "& '$($RobocopyPath.Replace("'", "''"))' '$($Source.Replace("'", "''"))' '$($DestinationDirectory.Replace("'", "''"))' $FilesArgs $switchesCleaned"
     }
 
-
     process {
+
+    }
+
+    end {
         # construct and execute robocopy command
         Microsoft.PowerShell.Utility\Write-Verbose 'Constructing RoboCopy command with selected parameters'
 
@@ -1411,9 +1362,5 @@ Multiple overrides:
         Microsoft.PowerShell.Utility\Write-Verbose "Executing RoboCopy command: $cmdLine"
 
         Microsoft.PowerShell.Utility\Invoke-Expression $cmdLine
-    }
-
-    End {
-        # function has no end block operations
     }
 }

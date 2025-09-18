@@ -55,7 +55,7 @@ SOFTWARE.
     * ✅ Find files with Find-Item -> l
         * ✅ Fast multi-threaded search: utilizes parallel and asynchronous IO processing with configurable maximum degree of parallelism (default based on CPU cores) for efficient file and directory scanning.
         * ✅ Advanced Pattern Matching: Supports wildcards (*, ?), recursive patterns like **, and complex path structures for precise file and directory queries.
-        * ✅ Content Searching: Matches regular expression patterns within file contents using the -Pattern parameter, with options for case sensitivity.
+        * ✅ Content Searching: Matches regular expression patterns within file contents using the -Content parameter, with options for case sensitivity.
         * ✅ Path Type Flexibility: Handles relative, absolute, UNC, rooted paths, and NTFS alternate data streams (ADS) with optional content search in streams.
         * ✅ Multi-Drive Support: Searches across all drives with -AllDrives or specific drives via -SearchDrives, including optical disks if specified.
         * ✅ Directory and File Filtering: Options to search directories only (-Directory), both files and directories (-FilesAndDirectories), or files with content matching.
@@ -118,7 +118,7 @@ Update-Module
 | [Expand-Path](#expand-path) | ep | Expands any given file reference to a full pathname. |
 | [Find-DuplicateFiles](#find-duplicatefiles) | fdf | Find duplicate files across multiple directories based on configurable criteria. |
 | [Find-Item](#find-item) | l | Fast multi-threaded file and directory search with optional textcontent pattern matching |
-| [Invoke-Fasti](#invoke-fasti) | fasti | Extracts archive files in the current directory to their own folders and deletes the afterwards. |
+| [Invoke-Fasti](#invoke-fasti) | fasti | &nbsp; |
 | [Move-ItemWithTracking](#move-itemwithtracking) | &nbsp; | Moves files and directories while preserving filesystem links and references. |
 | [Move-ToRecycleBin](#move-torecyclebin) | recycle | Moves files and directories to the Windows Recycle Bin safely. |
 | [Remove-AllItems](#remove-allitems) | sdel | Recursively removes all content from a directory with advanced error handling. |
@@ -145,9 +145,9 @@ Update-Module
 
 ### SYNTAX 
 ```PowerShell 
-Find-Item [[-SearchMask] <string[]>] [[-RelativeBasePath] <string>] [-Input <string>] [-MaxDegreeOfParallelism <int>] [-TimeoutSeconds <int>] [-AllDrives] [-PassThru] [-IncludeAlternateFileStreams] [-NoRecurse] [-FollowSymlinkAndJunctions] [-IncludeOpticalDiskDrives] [-SearchDrives <string[]>] [-IncludeNonTextFileMatching] [-NoLinks] [-CaseSensitivePattern] [-CaseSearchMaskMatching {PlatformDefault | CaseSensitive | CaseInsensitive}] [-SearchADSContent] [-MaxRecursionDepth <int>] [-MaxFileSize <long>] [-MinFileSize <long>] [-ModifiedAfter <datetime>] [-ModifiedBefore <datetime>] [-AttributesToSkip {None | ReadOnly | Hidden | System | Directory | Archive | Device | Normal | Temporary | SparseFile | ReparsePoint | Compressed | Offline | NotContentIndexed | Encrypted | IntegrityStream | NoScrubData}] [-Exclude <string[]>] [<CommonParameters>]  
-   Find-Item [[-SearchMask] <string[]>] [[-Pattern] <string>] [[-RelativeBasePath] <string>] [-Input <string>] [-MaxDegreeOfParallelism <int>] [-TimeoutSeconds <int>] [-AllDrives] [-PassThru] [-IncludeAlternateFileStreams] [-NoRecurse] [-FollowSymlinkAndJunctions] [-IncludeOpticalDiskDrives] [-SearchDrives <string[]>] [-IncludeNonTextFileMatching] [-NoLinks] [-CaseSensitivePattern] [-CaseSearchMaskMatching {PlatformDefault | CaseSensitive | CaseInsensitive}] [-SearchADSContent] [-MaxRecursionDepth <int>] [-MaxFileSize <long>] [-MinFileSize <long>] [-ModifiedAfter <datetime>] [-ModifiedBefore <datetime>] [-AttributesToSkip {None | ReadOnly | Hidden | System | Directory | Archive | Device | Normal | Temporary | SparseFile | ReparsePoint | Compressed | Offline | NotContentIndexed | Encrypted | IntegrityStream | NoScrubData}] [-Exclude <string[]>] [<CommonParameters>]  
-   Find-Item [[-SearchMask] <string[]>] [[-RelativeBasePath] <string>] [-Input <string>] [-MaxDegreeOfParallelism <int>] [-TimeoutSeconds <int>] [-AllDrives] [-Directory] [-FilesAndDirectories] [-PassThru] [-IncludeAlternateFileStreams] [-NoRecurse] [-FollowSymlinkAndJunctions] [-IncludeOpticalDiskDrives] [-SearchDrives <string[]>] [-IncludeNonTextFileMatching] [-NoLinks] [-CaseSensitivePattern] [-CaseSearchMaskMatching {PlatformDefault | CaseSensitive | CaseInsensitive}] [-SearchADSContent] [-MaxRecursionDepth <int>] [-MaxFileSize <long>] [-MinFileSize <long>] [-ModifiedAfter <datetime>] [-ModifiedBefore <datetime>] [-AttributesToSkip {None | ReadOnly | Hidden | System | Directory | Archive | Device | Normal | Temporary | SparseFile | ReparsePoint | Compressed | Offline | NotContentIndexed | Encrypted | IntegrityStream | NoScrubData}] [-Exclude <string[]>] [<CommonParameters>] 
+Find-Item [[-Name] <string[]>] [[-RelativeBasePath] <string>] [-Input <string>] [-Category {Pictures | Videos | Music | Documents | Spreadsheets | Presentations | Archives | Installers | Executables | Databases | DesignFiles | Ebooks | Subtitles | Fonts | EmailFiles | 3DModels | GameAssets | MedicalFiles | FinancialFiles | LegalFiles | SourceCode | Scripts | MarkupAndData | Configuration | Logs | TextFiles | WebFiles | MusicLyricsAndChords | CreativeWriting | Recipes | ResearchFiles}] [-MaxDegreeOfParallelism <int>] [-TimeoutSeconds <int>] [-AllDrives] [-PassThru] [-IncludeAlternateFileStreams] [-NoRecurse] [-FollowSymlinkAndJunctions] [-IncludeOpticalDiskDrives] [-SearchDrives <string[]>] [-DriveLetter <char[]>] [-Root <string[]>] [-IncludeNonTextFileMatching] [-NoLinks] [-CaseSensitivePattern] [-CaseNameMatching {PlatformDefault | CaseSensitive | CaseInsensitive}] [-SearchADSContent] [-MaxRecursionDepth <int>] [-MaxFileSize <long>] [-MinFileSize <long>] [-ModifiedAfter <datetime>] [-ModifiedBefore <datetime>] [-AttributesToSkip {None | ReadOnly | Hidden | System | Directory | Archive | Device | Normal | Temporary | SparseFile | ReparsePoint | Compressed | Offline | NotContentIndexed | Encrypted | IntegrityStream | NoScrubData}] [-Exclude <string[]>] [<CommonParameters>]  
+   Find-Item [[-Name] <string[]>] [[-Content] <string>] [[-RelativeBasePath] <string>] [-Input <string>] [-Category {Pictures | Videos | Music | Documents | Spreadsheets | Presentations | Archives | Installers | Executables | Databases | DesignFiles | Ebooks | Subtitles | Fonts | EmailFiles | 3DModels | GameAssets | MedicalFiles | FinancialFiles | LegalFiles | SourceCode | Scripts | MarkupAndData | Configuration | Logs | TextFiles | WebFiles | MusicLyricsAndChords | CreativeWriting | Recipes | ResearchFiles}] [-MaxDegreeOfParallelism <int>] [-TimeoutSeconds <int>] [-AllDrives] [-PassThru] [-IncludeAlternateFileStreams] [-NoRecurse] [-FollowSymlinkAndJunctions] [-IncludeOpticalDiskDrives] [-SearchDrives <string[]>] [-DriveLetter <char[]>] [-Root <string[]>] [-IncludeNonTextFileMatching] [-NoLinks] [-CaseSensitivePattern] [-CaseNameMatching {PlatformDefault | CaseSensitive | CaseInsensitive}] [-SearchADSContent] [-MaxRecursionDepth <int>] [-MaxFileSize <long>] [-MinFileSize <long>] [-ModifiedAfter <datetime>] [-ModifiedBefore <datetime>] [-AttributesToSkip {None | ReadOnly | Hidden | System | Directory | Archive | Device | Normal | Temporary | SparseFile | ReparsePoint | Compressed | Offline | NotContentIndexed | Encrypted | IntegrityStream | NoScrubData}] [-Exclude <string[]>] [<CommonParameters>]  
+   Find-Item [[-Name] <string[]>] [[-RelativeBasePath] <string>] [-Input <string>] [-Category {Pictures | Videos | Music | Documents | Spreadsheets | Presentations | Archives | Installers | Executables | Databases | DesignFiles | Ebooks | Subtitles | Fonts | EmailFiles | 3DModels | GameAssets | MedicalFiles | FinancialFiles | LegalFiles | SourceCode | Scripts | MarkupAndData | Configuration | Logs | TextFiles | WebFiles | MusicLyricsAndChords | CreativeWriting | Recipes | ResearchFiles}] [-MaxDegreeOfParallelism <int>] [-TimeoutSeconds <int>] [-AllDrives] [-Directory] [-FilesAndDirectories] [-PassThru] [-IncludeAlternateFileStreams] [-NoRecurse] [-FollowSymlinkAndJunctions] [-IncludeOpticalDiskDrives] [-SearchDrives <string[]>] [-DriveLetter <char[]>] [-Root <string[]>] [-IncludeNonTextFileMatching] [-NoLinks] [-CaseSensitivePattern] [-CaseNameMatching {PlatformDefault | CaseSensitive | CaseInsensitive}] [-SearchADSContent] [-MaxRecursionDepth <int>] [-MaxFileSize <long>] [-MinFileSize <long>] [-ModifiedAfter <datetime>] [-ModifiedBefore <datetime>] [-AttributesToSkip {None | ReadOnly | Hidden | System | Directory | Archive | Device | Normal | Temporary | SparseFile | ReparsePoint | Compressed | Offline | NotContentIndexed | Encrypted | IntegrityStream | NoScrubData}] [-Exclude <string[]>] [<CommonParameters>] 
 ```` 
 
 ### PARAMETERS 
@@ -169,13 +169,13 @@ Find-Item [[-SearchMask] <string[]>] [[-RelativeBasePath] <string>] [-Input <str
         Aliases                      skipattr  
         Dynamic?                     false  
         Accept wildcard characters?  false  
-    -CaseSearchMaskMatching <MatchCasing>  
+    -CaseNameMatching <MatchCasing>  
         Gets or sets the case-sensitivity for files and directories  
         Required?                    false  
         Position?                    Named  
         Accept pipeline input?       false  
         Parameter set name           (All)  
-        Aliases                      casing  
+        Aliases                      casing, CaseSearchMaskMatching   
         Dynamic?                     false  
         Accept wildcard characters?  false  
     -CaseSensitivePattern  
@@ -187,6 +187,23 @@ Find-Item [[-SearchMask] <string[]>] [[-RelativeBasePath] <string>] [-Input <str
         Aliases                      patternmatchcase, csp  
         Dynamic?                     false  
         Accept wildcard characters?  false  
+    -Category <string[]>  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      filetype  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -Content <string>  
+        Regular expression pattern to search within content  
+        Required?                    false  
+        Position?                    1  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      mc, matchcontent, regex, Pattern  
+        Dynamic?                     false  
+        Accept wildcard characters?  true  
     -Directory  
         Search for directories only  
         Required?                    false  
@@ -194,6 +211,15 @@ Find-Item [[-SearchMask] <string[]>] [[-RelativeBasePath] <string>] [-Input <str
         Accept pipeline input?       false  
         Parameter set name           DirectoriesOnly  
         Aliases                      dir  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -DriveLetter <char[]>  
+        Optional: search specific drives  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
         Dynamic?                     false  
         Accept wildcard characters?  false  
     -Exclude <string[]>  
@@ -313,6 +339,15 @@ Find-Item [[-SearchMask] <string[]>] [[-RelativeBasePath] <string>] [-Input <str
         Aliases                      before, mb  
         Dynamic?                     false  
         Accept wildcard characters?  false  
+    -Name <string[]>  
+        File name or pattern to search for. Default is '*'  
+        Required?                    false  
+        Position?                    0  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      like, l, Path, Query, SearchMask  
+        Dynamic?                     false  
+        Accept wildcard characters?  true  
     -NoLinks  
         Forces unattended mode and will not generate links  
         Required?                    false  
@@ -340,15 +375,6 @@ Find-Item [[-SearchMask] <string[]>] [[-RelativeBasePath] <string>] [-Input <str
         Aliases                      pt  
         Dynamic?                     false  
         Accept wildcard characters?  false  
-    -Pattern <string>  
-        Regular expression pattern to search within content  
-        Required?                    false  
-        Position?                    1  
-        Accept pipeline input?       false  
-        Parameter set name           WithPattern  
-        Aliases                      mc, matchcontent, regex  
-        Dynamic?                     false  
-        Accept wildcard characters?  true  
     -RelativeBasePath <string>  
         Base path for resolving relative paths in output  
         Required?                    false  
@@ -356,6 +382,15 @@ Find-Item [[-SearchMask] <string[]>] [[-RelativeBasePath] <string>] [-Input <str
         Accept pipeline input?       false  
         Parameter set name           (All)  
         Aliases                      base  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -Root <string[]>  
+        Optional: search specific directories  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
         Dynamic?                     false  
         Accept wildcard characters?  false  
     -SearchADSContent  
@@ -376,15 +411,6 @@ Find-Item [[-SearchMask] <string[]>] [[-RelativeBasePath] <string>] [-Input <str
         Aliases                      drives  
         Dynamic?                     false  
         Accept wildcard characters?  false  
-    -SearchMask <string[]>  
-        File name or pattern to search for. Default is '*'  
-        Required?                    false  
-        Position?                    0  
-        Accept pipeline input?       false  
-        Parameter set name           (All)  
-        Aliases                      like, l, Path, Query  
-        Dynamic?                     false  
-        Accept wildcard characters?  true  
     -TimeoutSeconds <int>  
         Optional: cancellation timeout in seconds  
         Required?                    false  
@@ -516,14 +542,14 @@ Expand-Path [-FilePath] <string> [-CreateDirectory] [-CreateFile] [-DeleteExisti
 
 ### SYNTAX 
 ```PowerShell 
-Find-DuplicateFiles [-Paths] <string[]> [[-DontCompareSize]] [[-DontCompareModifiedDate]] [<CommonParameters>] 
+Find-DuplicateFiles [[-Paths] <string[]>] [-Input <string>] [-DontCompareSize] [-DontCompareModifiedDate] [-Recurse] [<CommonParameters>] 
 ```` 
 
 ### PARAMETERS 
     -DontCompareModifiedDate  
         Skip last modified date comparison when grouping duplicates  
         Required?                    false  
-        Position?                    2  
+        Position?                    Named  
         Accept pipeline input?       false  
         Parameter set name           (All)  
         Aliases                      None  
@@ -532,17 +558,35 @@ Find-DuplicateFiles [-Paths] <string[]> [[-DontCompareSize]] [[-DontCompareModif
     -DontCompareSize  
         Skip file size comparison when grouping duplicates  
         Required?                    false  
-        Position?                    1  
+        Position?                    Named  
         Accept pipeline input?       false  
         Parameter set name           (All)  
         Aliases                      None  
         Dynamic?                     false  
         Accept wildcard characters?  false  
+    -Input <string>  
+        One or more directory paths to search for duplicates  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       true (ByValue, ByPropertyName)  
+        Parameter set name           (All)  
+        Aliases                      FullName, Filename, Path  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
     -Paths <string[]>  
         One or more directory paths to search for duplicates  
-        Required?                    true  
+        Required?                    false  
         Position?                    0  
-        Accept pipeline input?       true (ByValue, ByPropertyName)  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -Recurse  
+        Recurse into subdirectories  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
         Parameter set name           (All)  
         Aliases                      None  
         Dynamic?                     false  

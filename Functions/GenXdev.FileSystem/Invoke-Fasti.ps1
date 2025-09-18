@@ -2,7 +2,7 @@
 Part of PowerShell module : GenXdev.FileSystem
 Original cmdlet filename  : Invoke-Fasti.ps1
 Original author           : René Vaessen / GenXdev
-Version                   : 1.274.2025
+Version                   : 1.276.2025
 ################################################################################
 MIT License
 
@@ -29,7 +29,8 @@ SOFTWARE.
 ###############################################################################
 <#
 .SYNOPSIS
-Extracts archive files in the current directory to their own folders and deletes the afterwards.
+Extracts archive files in the current directory to their own folders and deletes 
+them afterwards.
 
 .DESCRIPTION
 Automatically extracts common archive formats (zip, 7z, tar, etc.) found in the

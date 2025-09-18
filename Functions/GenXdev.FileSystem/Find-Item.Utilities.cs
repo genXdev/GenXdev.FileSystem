@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Utilities.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.274.2025
+// Version                   : 1.276.2025
 // ################################################################################
 // MIT License
 //
@@ -35,10 +35,12 @@ using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Data.Common;
 using System.Diagnostics;
+using System.IO;
 using System.Management;
 using System.Management.Automation;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using Windows.ApplicationModel.Calls;
 
 public partial class FindItem : PSCmdlet
@@ -51,9 +53,11 @@ public partial class FindItem : PSCmdlet
     /// <returns>The normalized path.</returns>
     protected string NormalizePathForNonFileSystemUse(string path)
     {
+        // force paths internally to have backslashes
         path = path.Replace("/", "\\");
 
-        if (path == "~" || path.StartsWith("~\\") || path.StartsWith("~/"))
+        // path references user home directory?
+        if (path == "~" || path.StartsWith("~\\"))
         {
             string home = this.SessionState.Path.GetResolvedPSPathFromPSPath("~")[0].Path;
             path = path == "~" ? home : Path.Combine(home, path.Substring(2));
@@ -179,7 +183,6 @@ public partial class FindItem : PSCmdlet
             // process each share
             foreach (ManagementObject share in shares)
             {
-
                 // get type value
                 uint typeValue = Convert.ToUInt32(share["Type"]);
 
@@ -217,12 +220,16 @@ public partial class FindItem : PSCmdlet
     /// <param name="path">The path to enqueue.</param>
     protected void AddToSearchQueue(string path)
     {
+        if (UseVerboseOutput) { VerboseQueue.Enqueue($"AddToSearchQueue: '{path}'"); }
 
         // add to directory queue
         DirQueue.Enqueue(path);
 
         // increment queued count
         Interlocked.Increment(ref dirsQueued);
+
+        // wait..
+        if (!isStarted) return;
 
         // add workers if needed
         AddWorkerTasksIfNeeded(cts.Token);
@@ -232,41 +239,43 @@ public partial class FindItem : PSCmdlet
     /// Gets drives to search based on parameters.
     /// </summary>
     /// <returns>Enumerable of drives.</returns>
-    protected IEnumerable<DriveInfo> GetDrivesToSearch()
+    protected IEnumerable<string> GetRootsToSearch()
     {
-
-        // get all drives
-        var allDrives = DriveInfo.GetDrives();
-
-        // declare result
-        IEnumerable<DriveInfo> result;
-
         // handle all drives switch
         if (this.AllDrives.IsPresent)
         {
+            var combinedDrives = DriveInfo.GetDrives()
+                 .Where(q => q.IsReady && (IncludeOpticalDiskDrives || q.DriveType != DriveType.CDRom) && q.DriveType != DriveType.Unknown)
+                 .Select(q => char.ToUpperInvariant(q.Name[0]))
+                 .Union(SearchDrives
+                     .Where(q => !string.IsNullOrWhiteSpace(q))
+                     .Select(q => char.ToUpperInvariant(q[0]))
+                     .Union(DriveLetter
+                         .Where(c => !char.IsWhiteSpace(c))
+                         .Select(c => char.ToUpperInvariant(c))
+                     )
+                  );
 
-            // filter ready non-unknown drives
-            result = allDrives.Where(d => d.IsReady &&
-                                        (IncludeOpticalDiskDrives || d.DriveType != DriveType.CDRom) &&
-                                        d.DriveType != DriveType.Unknown);
-        }
-        else if (SearchDrives.Length > 0)
-        {
-
-            // filter specified drives
-            result = allDrives.Where(d => SearchDrives.Contains(d.Name, StringComparer.OrdinalIgnoreCase) &&
-                                        d.IsReady &&
-                                        (IncludeOpticalDiskDrives || d.DriveType != DriveType.CDRom) &&
-                                        d.DriveType != DriveType.Unknown);
+            foreach (var drive in combinedDrives)
+            {
+                yield return (drive + ":\\");
+            }
         }
         else
         {
+            var drives = SearchDrives
+                     .Where(q => !string.IsNullOrWhiteSpace(q))
+                     .Select(q => char.ToUpperInvariant(q[0]))
+                     .Union(DriveLetter
+                         .Where(c => !char.IsWhiteSpace(c))
+                         .Select(c => char.ToUpperInvariant(c))
+                      );
 
-            // no multi-drive, empty
-            result = Enumerable.Empty<DriveInfo>();
+            foreach (var drive in drives)
+            {
+                yield return (drive + ":\\");
+            }
         }
-
-        return result;
     }
 
     /// <summary>
@@ -274,6 +283,8 @@ public partial class FindItem : PSCmdlet
     /// </summary>
     protected void AddWorkerTasksIfNeeded(CancellationToken ctx)
     {
+        if (ctx.IsCancellationRequested) return;
+
         // get count of active matches
         long fileMatchesCount = Interlocked.Read(ref this.fileMatchesActive);
 
@@ -293,10 +304,19 @@ public partial class FindItem : PSCmdlet
             var currentNrOfDirectoryProcessors = Interlocked.Read(ref this.directoryProcessors);
 
             // calculate needed matching workers
-            var requestedDirectoryProcessors = Math.Min(MaxDegreeOfParallelism, DirQueue.Count);
+            var requestedDirectoryProcessors = Math.Min(
+                MaxDegreeOfParallelism,
+                DirQueue.Count
+            );
 
             // determine missing workers
-            var missingDirectoryProcessors = requestedDirectoryProcessors - currentNrOfDirectoryProcessors;
+            long missingDirectoryProcessors = Math.Min(
+
+                requestedDirectoryProcessors - currentNrOfDirectoryProcessors,
+                (FileContentMatchQueue.Count <= PatternMatcherOptions.BufferSize / 125) ?
+                    Int32.MaxValue :
+                    0
+            );
 
             // add missing workers
             // List to hold worker tasks
@@ -323,7 +343,7 @@ public partial class FindItem : PSCmdlet
 
                 // Start worker tasks for parallel directory processing
                 AddWorkerTask(Workers, true, ctx);
-            }                        
+            }
         }
     }
 
@@ -333,6 +353,12 @@ public partial class FindItem : PSCmdlet
     /// <param name="workers">The list of workers.</param>
     protected void AddWorkerTask(List<Task> workers, bool contentMatcher, CancellationToken ctx)
     {
+        if (UseVerboseOutput) {
+
+            string str = contentMatcher ? "content matcher" : "directory processor";
+
+            VerboseQueue.Enqueue($"Start new {str} worker");
+        }
 
         // need to add a content matcher task?
         if (contentMatcher)
@@ -362,11 +388,24 @@ public partial class FindItem : PSCmdlet
                                 VerboseQueue.Enqueue($"Worker task failed: {ex.Message}");
                             }
                         }
+                        finally
+                        {
+                            if (UseVerboseOutput)
+                            {
+
+                                string str = contentMatcher ? "Content matcher" : "Directory processor";
+
+                                VerboseQueue.Enqueue($"{str} worker stopped");
+                            }
+
+                            AddWorkerTasksIfNeeded(ctx);
+                        }
                     }
                 }
                 finally
                 {
                     Interlocked.Decrement(ref matchProcessors);
+                    AddWorkerTasksIfNeeded(ctx);
                 }
             }, ctx));
 
@@ -398,6 +437,14 @@ public partial class FindItem : PSCmdlet
             }
             finally
             {
+                if (UseVerboseOutput)
+                {
+
+                    string str = contentMatcher ? "Content matcher" : "Directory processor";
+
+                    VerboseQueue.Enqueue($"{str} worker stopped");
+                }
+
                 Interlocked.Decrement(ref directoryProcessors);
             }
         }));
@@ -488,5 +535,120 @@ public partial class FindItem : PSCmdlet
 
         // compute limit
         CurrentRecursionLimit = MaxRecursionDepth <= 0 ? 0 : Path.IsPathRooted(relativePath) ? (MaxRecursionDepth + offset) : MaxRecursionDepth;
+    }
+
+    /// <summary>
+    ///     Formats 64-bits integers to string with a semi fixed width
+    /// </summary>
+    /// <param name="nr">Number to format</param>
+    /// <param name="padLeft">When set, will pad spaces to the left side</param>
+    /// <returns></returns>
+    private string formatStat(long nr, bool padLeft)
+    {
+        var s = nr.ToString();
+
+        // snap to sizes of 4
+        int steps = 3;
+        int length = s.Length + (steps - (s.Length % steps));
+
+        return padLeft ?
+            (s.PadLeft(length)) :
+            (s.PadRight(length));
+    }
+
+    /// <summary>
+    /// Handles progress queue dequeuing.
+    /// </summary>
+    /// <param name="all">If to process all.</param>
+    private void UpdateProgressStatus(bool force = false)
+    {
+
+        // get and convert last timestamp
+        var now = DateTime.UtcNow;
+        long lastProgress = Interlocked.Read(ref this.lastProgress);
+        var time = DateTime.FromBinary(lastProgress);
+
+        // too soon/frequent?
+        if (!force && now - time < TimeSpan.FromMilliseconds(250)) return;
+
+        // set current timestamp as the new checkpoint
+        lastProgress = now.ToBinary();
+        Interlocked.Exchange(ref lastProgress, lastProgress);
+
+        // get output kind
+        bool outputtingFiles = FilesAndDirectories.IsPresent || !Directory.IsPresent;
+
+        // get processing actions
+        bool matchingContent = outputtingFiles && (Content != ".*" && !string.IsNullOrWhiteSpace(Content));
+
+        // determine if including files based on switches and pattern
+        bool andFiles = outputtingFiles && matchingContent;
+
+        // get counters
+        long fileMatchesCount = Interlocked.Read(ref this.fileMatchesActive);
+        long dirsDone = Interlocked.Read(ref dirsCompleted);
+        long dirsLeft = Interlocked.Read(ref dirsQueued);
+        long fileMatchesLeft = Interlocked.Read(ref matchesQueued);
+        long fileOutputCount = Interlocked.Read(ref filesFound);
+
+        long directoryProcessorsCount = Interlocked.Read(ref directoryProcessors);
+        long matchProcessorsCount = Interlocked.Read(ref matchProcessors);
+        long fileMatchesStartedCount = Interlocked.Read(ref fileMatchesStarted);
+        long fileMatchesCompletedCount = Interlocked.Read(ref fileMatchesCompleted);
+        long queuedMatchesCount = FileContentMatchQueue.Count;
+
+        // calculate percent complete
+        double ratio = (dirsDone + fileMatchesCompletedCount) / Math.Max(1d, (dirsLeft + fileMatchesLeft));
+
+        // calculate completion percentage for progress
+        int progressPercent = (int)Math.Round(
+
+            Math.Min(100,
+                Math.Max(0,
+                    ratio
+                ) * 100d
+            ), 0
+        );
+
+        // create progress record
+        var record = new ProgressRecord(0, "Find-Item", (
+            "Scanning directories" + (andFiles ?
+            " and found file contents" : "")
+        ))
+        {
+
+            // set percent complete
+            PercentComplete = progressPercent,
+
+            // set status description with counts
+            StatusDescription = (
+                "Directories: " + formatStat(dirsDone, true) + "/" + formatStat(DirQueue.Count, false) +
+                " [" + formatStat(directoryProcessorsCount, false) + "] | Found: " + formatStat(fileOutputCount, false) +
+                (matchingContent ? " | Matched: " + formatStat(fileMatchesStartedCount, true) + "/" + formatStat(queuedMatchesCount, false) + " [" + formatStat(matchProcessors, false) + "]" :
+                string.Empty)
+            ),
+
+            // set current operation message
+            CurrentOperation = (
+                outputtingFiles && matchingContent ? (
+                    dirsLeft - dirsDone == 0 ?
+                    "Searching for more files and matching file content" :
+                    dirsLeft == 0 ?
+                    "Searching for files to match" :
+                    "Matching file contents"
+                )
+                : (
+                    outputtingFiles ? (
+                        filesFound == 0 ?
+                            "Searching for files" :
+                            "Searching for more files"
+                    ) :
+                    "Searching for matching directories"
+                )
+            )
+        };
+
+        // write the progress record
+        WriteProgress(record);
     }
 }
