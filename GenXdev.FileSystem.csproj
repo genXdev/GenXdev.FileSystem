@@ -11,8 +11,8 @@
     <PackageLicenseFile>license.txt</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <NeutralLanguage>en</NeutralLanguage>
-    <AssemblyVersion>1.276.2025</AssemblyVersion>
-    <FileVersion>1.276.2025</FileVersion>
+    <AssemblyVersion>1.278.2025</AssemblyVersion>
+    <FileVersion>1.278.2025</FileVersion>
     <Description>A Windows PowerShell module for basic and advanced file management tasks</Description>
     <Copyright>Copyright (c) 2024 GenXdev</Copyright>
     <PackageProjectUrl>https://github.com/genXdev/GenXdev.Helpers</PackageProjectUrl>
@@ -50,7 +50,7 @@
     <DebugType>none</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="StreamRegex.Extensions" Version="1.2.7" />
+    <PackageReference Include="Microsoft.PowerShell.Commands.Utility" Version="7.5.0" />
     <PackageReference Include="System.Management.Automation" Version="7.5.0" />
   </ItemGroup>
   <ItemGroup>

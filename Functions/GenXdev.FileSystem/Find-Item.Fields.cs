@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Fields.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.276.2025
+// Version                   : 1.278.2025
 // ################################################################################
 // MIT License
 //
@@ -29,65 +29,52 @@
 
 
 
-using StreamRegex.Extensions.Core;
-using StreamRegex.Extensions.RegexExtensions;
 using System.Collections.Concurrent;
-using System.Collections.ObjectModel;
-using System.Data.Common;
-using System.Diagnostics;
-using System.Management;
 using System.Management.Automation;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using Windows.ApplicationModel.Calls;
 
-public partial class FindItem : PSCmdlet
+namespace GenXdev.FileSystem
 {
 
-    // current wildcard options for matching
-    protected WildcardOptions CurrentWildCardOptions;
+    public partial class FindItem : PSCmdlet
+    {
 
-    // patterns to exclude files
-    protected WildcardPattern[] FileExcludePatterns;
+        // current wildcard options for matching
+        protected WildcardOptions CurrentWildCardOptions;
 
-    // patterns to exclude directories
-    protected WildcardPattern[] DirectoryExcludePatterns;
+        // patterns to exclude files
+        protected WildcardPattern[] FileExcludePatterns;
 
-    // Tracks visited paths to prevent duplicate processing and avoid infinite
-    // loops during traversal
-    protected ConcurrentDictionary<string, bool> VisitedNodes;
+        // patterns to exclude directories
+        protected WildcardPattern[] DirectoryExcludePatterns;
 
-    // Stores the current working directory for resolving relative paths
-    protected string CurrentDirectory = "";
+        // Tracks visited paths to prevent duplicate processing and avoid infinite
+        // loops during traversal
+        protected ConcurrentDictionary<string, bool> VisitedNodes;
 
-    // Indicates if the cmdlet is running in unattended mode, which affects how
-    // output is formatted
-    protected bool UnattendedMode = false;
+        // Stores the current working directory for resolving relative paths
+        protected string CurrentDirectory = "";
 
-    // Flag to determine if a content search pattern has been provided
-    protected bool HavePattern = false;
+        // Indicates if the cmdlet is running in unattended mode, which affects how
+        // output is formatted
+        protected bool UnattendedMode = false;
 
-    // Regex object for matching content patterns within files
-    protected Regex PatternMatcher;
+        // Regex to detect recursive search patterns like **
+        protected Regex RecursePatternMatcher = new Regex("^\\*\\*\\**$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-    // Regex to detect recursive search patterns like **
-    protected Regex RecursePatternMatcher = new Regex("^\\*\\*\\**$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        // Regex to detect recursive patterns ending with a slash
+        protected Regex RecursePatternWithSlashAtEndMatcher = new Regex("^\\*\\*\\**\\\\$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-    // Regex to detect recursive patterns ending with a slash
-    protected Regex RecursePatternWithSlashAtEndMatcher = new Regex("^\\*\\*\\**\\\\$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        // Regex to detect recursive patterns starting with **
+        protected Regex RecurseStartPatternWithSlashMatcher = new Regex("^\\*\\*\\**\\\\", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-    // Regex to detect recursive patterns starting with **
-    protected Regex RecurseStartPatternWithSlashMatcher = new Regex("^\\*\\*\\**\\\\", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        // Regex to detect recursive patterns ending with **
+        protected Regex RecurseEndPatternWithSlashAtStartMatcher = new Regex("\\\\\\*\\*\\**$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-    // Regex to detect recursive patterns ending with **
-    protected Regex RecurseEndPatternWithSlashAtStartMatcher = new Regex("\\\\\\*\\*\\**$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-
-    // Options for stream-based regex matching to handle large files efficiently
-    protected StreamRegexOptions PatternMatcherOptions = new StreamRegexOptions();
-
-    // Set of file extensions to skip during content search to avoid processing
-    // non-text files
-    protected static HashSet<string> ExtensionsToSkip = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+        // Set of file extensions to skip during content search to avoid processing
+        // non-text files
+        protected static HashSet<string> ExtensionsToSkip = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
         // Image formats (expanded with more common and specialized types)
         ".gif", ".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".tif", ".webp",
         ".ico", ".heic", ".heif",
@@ -184,57 +171,73 @@ public partial class FindItem : PSCmdlet
         ".bdl4", ".gmf", ".fes"
     };
 
-    /*
-     * Queues for implementing producer-consumer pattern to enable parallel
-     * directory processing
-     * and coordinated output handling.
-     */
-    protected readonly ConcurrentQueue<string> DirQueue = new();
-    protected readonly ConcurrentQueue<object> OutputQueue = new();
-    protected readonly ConcurrentQueue<string> VerboseQueue = new();
-    protected readonly ConcurrentQueue<string> FileContentMatchQueue = new();
-    protected readonly List<Task> Workers = new List<Task>();
-    protected readonly object WorkersLock = new object();
+        /*
+         * Queues for implementing producer-consumer pattern to enable parallel
+         * directory processing
+         * and coordinated output handling.
+         */
+        protected readonly ConcurrentQueue<string> DirQueue = new();
+        protected readonly ConcurrentQueue<object> OutputQueue = new();
+        protected readonly ConcurrentQueue<string> VerboseQueue = new();
+        protected readonly ConcurrentQueue<FileInfo> FileContentMatchQueue = new();
+        private readonly ConcurrentQueue<MatchContentProcessor> MatchContentProcessors = new();
+       
+        protected readonly List<Task> Workers = new List<Task>();
+        protected readonly object WorkersLock = new object();
 
-    // Cancellation source to handle timeouts and user interruptions gracefully
-    protected CancellationTokenSource cts;
+        // Cancellation source to handle timeouts and user interruptions gracefully
+        protected CancellationTokenSource cts;
 
-    // Counters for tracking progress: number of files found and directories
-    // queued
-    protected long directoryProcessors;
-    protected long matchProcessors;
-    protected long filesFound;
-    protected long fileMatchesActive;
-    protected long fileMatchesStarted;
-    protected long fileMatchesCompleted;
-    protected long dirsQueued;
-    protected long matchesQueued;
-    protected long dirsCompleted;
-    protected long lastProgress = DateTime.UtcNow.AddSeconds(2).ToBinary();
-    protected int oldMaxWorkerThread;
-    protected int oldMaxCompletionPorts;
-    protected bool isStarted;
+        // only show progress after at least 2 seconds of search activity
+        protected long lastProgress = DateTime.UtcNow.AddSeconds(2).ToBinary();
 
-    /// <summary>
-    /// Flag for enabling verbose output based on user preferences
-    /// </summary>
-    protected bool UseVerboseOutput;
+        // Counters for tracking progress: number of files found and directories
+        // queued
+        protected long directoryProcessors;
+        protected long matchProcessors;
+        protected long filesFound;
+        protected long fileMatchesActive;
+        protected long fileMatchesStarted;
+        protected long fileMatchesCompleted;
+        protected long dirsQueued;
+        protected long matchesQueued;
+        protected long dirsCompleted;
 
-    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-    protected static extern IntPtr FindFirstStreamW(string lpFileName, uint dwStreamInfoLevel, ref WIN32_FIND_STREAM_DATA lpFindStreamData, uint dwFlags);
+        // Store original thread pool settings to restore after cmdlet execution
+        protected int oldMaxWorkerThread;
+        protected int oldMaxCompletionPorts;
 
-    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-    protected static extern bool FindNextStreamW(IntPtr hFindStream, ref WIN32_FIND_STREAM_DATA lpFindStreamData);
+        // constraints for workers
+        protected int baseMemoryPerWorker;
+        protected int baseTargetWorkerCount;
+        protected Func<int> maxDirectoryWorkersInParallel;
+        protected Func<int> maxMatchWorkersInParallel;
 
-    [DllImport("kernel32.dll", SetLastError = true)]
-    protected static extern bool FindClose(IntPtr hFindFile);
+        protected int oldMaxWorkerThreads;
+        protected bool isStarted;
+        protected bool usingSelectString;
+        
+        /// <summary>
+        /// Flag for enabling verbose output based on user preferences
+        /// </summary>
+        protected bool UseVerboseOutput;
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    protected struct WIN32_FIND_STREAM_DATA
-    {
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        protected static extern IntPtr FindFirstStreamW(string lpFileName, uint dwStreamInfoLevel, ref WIN32_FIND_STREAM_DATA lpFindStreamData, uint dwFlags);
 
-        public long StreamSize;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 296)]
-        public string StreamName;
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        protected static extern bool FindNextStreamW(IntPtr hFindStream, ref WIN32_FIND_STREAM_DATA lpFindStreamData);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        protected static extern bool FindClose(IntPtr hFindFile);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        protected struct WIN32_FIND_STREAM_DATA
+        {
+
+            public long StreamSize;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 296)]
+            public string StreamName;
+        }
     }
 }

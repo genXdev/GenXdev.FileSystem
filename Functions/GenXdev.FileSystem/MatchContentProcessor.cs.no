@@ -1,0 +1,439 @@
+// ################################################################################
+// Part of PowerShell module : GenXdev.FileSystem
+// Original cmdlet filename  : SelectString.cs
+// Version                   : 1.278.2025
+// ################################################################################
+// MIT License
+//
+// Copyright 2021-2025 GenXdev
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+// ################################################################################
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+
+namespace GenXdev.FileSystem
+{
+    public class MatchContentProcessor
+    {
+        private readonly bool allMatches;
+        private readonly bool caseSensitive;
+        private readonly int[] context;
+        private readonly string[] pattern;
+        private readonly int postContext;
+        private readonly int preContext;
+        private readonly bool list;
+        private readonly bool notMatch;
+        private readonly bool simpleMatch;
+        private readonly System.Text.Encoding textEncoding;
+        private readonly Regex[] regexPattern;
+
+        public MatchContentProcessor(string[] pattern, bool simpleMatch = false, bool allMatches = false, bool notMatch = false, bool caseSensitive = false, string encoding = null, bool list = false, int[] context = null)
+        {
+            this.pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
+            this.simpleMatch = simpleMatch;
+            this.allMatches = allMatches;
+            this.notMatch = notMatch;
+            this.caseSensitive = caseSensitive;
+            this.list = list;
+            this.context = context;
+
+            if (this.context != null && this.context.Length > 0)
+            {
+                this.preContext = Math.Max(0, this.context[0]);
+                this.postContext = this.context.Length > 1 ? Math.Max(0, this.context[1]) : this.preContext;
+            }
+            else
+            {
+                this.preContext = 0;
+                this.postContext = 0;
+            }
+
+            if (this.encoding != null)
+            {
+                this.textEncoding = EncodingConversion.Convert(null, this.encoding);
+            }
+            else
+            {
+                this.textEncoding = new UTF8Encoding();
+            }
+
+            if (!this.simpleMatch)
+            {
+                RegexOptions options = this.caseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase;
+                this.regexPattern = new Regex[this.pattern.Length];
+                for (int i = 0; i < this.pattern.Length; i++)
+                {
+                    try
+                    {
+                        this.regexPattern[i] = new Regex(this.pattern[i], options);
+                    }
+                    catch (Exception exception)
+                    {
+                        throw new ArgumentException(string.Format(MatchStringStrings.InvalidRegex, this.pattern[i], exception.Message), exception);
+                    }
+                }
+            }
+        }
+
+        public async IAsyncEnumerable<MatchInfo> SearchAsync(FileInfo file)
+        {
+            if (list)
+            {
+                var firstMatch = default(MatchInfo);
+                await foreach (var match in SearchInternalAsync(file, @this))
+                {
+                    if (firstMatch == null)
+                    {
+                        firstMatch = match;
+                    }
+                }
+                if (firstMatch != null)
+                {
+                    yield return firstMatch;
+                }
+                yield break;
+            }
+
+            await foreach (var match in SearchInternalAsync(file, @this))
+            {
+                yield return match;
+            }
+        }
+
+        private static async IAsyncEnumerable<MatchInfo> SearchInternalAsync(FileInfo file, MatchContentProcessor options)
+        {
+            var contextTracker = new ContextTracker(options.preContext, options.postContext);
+            var lineNumber = 0;
+
+            await using var stream = file.OpenRead();
+            using var reader = new StreamReader(stream, options.textEncoding);
+
+            string line;
+            while ((line = await reader.ReadLineAsync()) != null)
+            {
+                lineNumber++;
+
+                if (options.doMatch(line, out var matchResult, out _))
+                {
+                    matchResult.LineNumber = lineNumber;
+                    matchResult.Filename = file.FullName;
+                    contextTracker.TrackMatch(matchResult);
+                }
+                else
+                {
+                    contextTracker.TrackLine(line);
+                }
+
+                foreach (var match in contextTracker.EmitQueue)
+                {
+                    yield return match;
+                }
+                contextTracker.EmitQueue.Clear();
+            }
+
+            contextTracker.TrackEOF();
+            foreach (var match in contextTracker.EmitQueue)
+            {
+                yield return match;
+            }
+            contextTracker.EmitQueue.Clear();
+        }
+
+        private bool doMatch(object operand, out MatchInfo matchResult, out string operandString)
+        {
+            bool success = false;
+            Match[] array = null;
+            int index = 0;
+            matchResult = null;
+            operandString = (string)operand;
+
+            if (!this.simpleMatch)
+            {
+                while (index < this.pattern.Length)
+                {
+                    Regex regex = this.regexPattern[index];
+                    if (this.allMatches && !this.notMatch)
+                    {
+                        MatchCollection matchs = regex.Matches(operandString);
+                        if ((matchs != null) && (matchs.Count > 0))
+                        {
+                            array = new Match[matchs.Count];
+                            matchs.CopyTo(array, 0);
+                            success = true;
+                        }
+                    }
+                    else
+                    {
+                        Match match = regex.Match(operandString);
+                        success = match.Success;
+                        if (match.Success)
+                        {
+                            array = new Match[] { match };
+                        }
+                    }
+                    if (success)
+                    {
+                        break;
+                    }
+                    index++;
+                }
+            }
+            else
+            {
+                StringComparison comparisonType = this.caseSensitive ? StringComparison.CurrentCulture : StringComparison.CurrentCultureIgnoreCase;
+                while (index < this.pattern.Length)
+                {
+                    string str = this.pattern[index];
+                    if (operandString.IndexOf(str, comparisonType) >= 0)
+                    {
+                        success = true;
+                        break;
+                    }
+                    index++;
+                }
+            }
+            if (this.notMatch)
+            {
+                success = !success;
+                index = 0;
+            }
+            if (!success)
+            {
+                return false;
+            }
+            matchResult = new MatchInfo();
+            matchResult.IgnoreCase = !this.caseSensitive;
+            matchResult.Line = operandString;
+            matchResult.Pattern = this.pattern[index];
+            if ((this.preContext > 0) || (this.postContext > 0))
+            {
+                matchResult.Context = new MatchInfoContext();
+            }
+            matchResult.Matches = (array != null) ? array : new Match[0];
+            return true;
+        }
+    }
+
+    private class ContextTracker : IContextTracker
+    {
+        private MatchContentProcessor.CircularBuffer<string> collectedPreContext;
+        private List<string> collectedPostContext;
+        private List<MatchInfo> emitQueue;
+        private MatchInfo matchInfo;
+        private int preContext;
+        private int postContext;
+        private ContextState contextState;
+
+        public ContextTracker(int preContext, int postContext)
+        {
+            this.preContext = preContext;
+            this.postContext = postContext;
+            this.collectedPreContext = new MatchContentProcessor.CircularBuffer<string>(preContext);
+            this.collectedPostContext = new List<string>(postContext);
+            this.emitQueue = new List<MatchInfo>();
+            this.Reset();
+        }
+
+        private void Reset()
+        {
+            this.contextState = (this.preContext > 0) ? ContextState.CollectPre : ContextState.InitialState;
+            this.collectedPreContext.Clear();
+            this.collectedPostContext.Clear();
+            this.matchInfo = null;
+        }
+
+        public void TrackEOF()
+        {
+            if (this.contextState == ContextState.CollectPost)
+            {
+                this.UpdateQueue();
+            }
+        }
+
+        public void TrackLine(string line)
+        {
+            switch (this.contextState)
+            {
+                case ContextState.InitialState:
+                    break;
+
+                case ContextState.CollectPre:
+                    this.collectedPreContext.Add(line);
+                    return;
+
+                case ContextState.CollectPost:
+                    this.collectedPostContext.Add(line);
+                    if (this.collectedPostContext.Count >= this.postContext)
+                    {
+                        this.UpdateQueue();
+                    }
+                    break;
+
+                default:
+                    return;
+            }
+        }
+
+        public void TrackMatch(MatchInfo match)
+        {
+            if (this.contextState == ContextState.CollectPost)
+            {
+                this.UpdateQueue();
+            }
+            this.matchInfo = match;
+            if (this.postContext > 0)
+            {
+                this.contextState = ContextState.CollectPost;
+            }
+            else
+            {
+                this.UpdateQueue();
+            }
+        }
+
+        private void UpdateQueue()
+        {
+            if (this.matchInfo != null)
+            {
+                this.emitQueue.Add(this.matchInfo);
+                if (this.matchInfo.Context != null)
+                {
+                    this.matchInfo.Context.DisplayPreContext = this.collectedPreContext.ToArray();
+                    this.matchInfo.Context.DisplayPostContext = this.collectedPostContext.ToArray();
+                }
+                this.Reset();
+            }
+        }
+
+        public IList<MatchInfo> EmitQueue
+        {
+            get
+            {
+                return this.emitQueue;
+            }
+        }
+
+        private enum ContextState
+        {
+            InitialState,
+            CollectPre,
+            CollectPost
+        }
+    }
+
+    private interface IContextTracker
+    {
+        void TrackEOF();
+        void TrackLine(string line);
+        void TrackMatch(MatchInfo match);
+
+        IList<MatchInfo> EmitQueue { get; }
+    }
+
+    private class CircularBuffer<T> : IList<T>
+    {
+        private T[] _buffer;
+        private int _head;
+        private int _count;
+
+        public CircularBuffer(int capacity)
+        {
+            _buffer = new T[capacity];
+        }
+
+        public int Count => _count;
+
+        public bool IsReadOnly => false;
+
+        public T this[int index] { get => _buffer[(_head + index) % _buffer.Length]; set => _buffer[(_head + index) % _buffer.Length] = value; }
+
+        public int IndexOf(T item) => throw new NotImplementedException();
+
+        public void Insert(int index, T item) => throw new NotImplementedException();
+
+        public void RemoveAt(int index) => throw new NotImplementedException();
+
+        public void Add(T item)
+        {
+            if (_count < _buffer.Length)
+            {
+                _buffer[_head] = item;
+                _head = (_head + 1) % _buffer.Length;
+                _count++;
+            }
+            else
+            {
+                _buffer[_head] = item;
+                _head = (_head + 1) % _buffer.Length;
+            }
+        }
+
+        public void Clear()
+        {
+            _head = 0;
+            _count = 0;
+        }
+
+        public bool Contains(T item) => throw new NotImplementedException();
+
+        public void CopyTo(T[] array, int arrayIndex) => throw new NotImplementedException();
+
+        public bool Remove(T item) => throw new NotImplementedException();
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            for (int i = 0; i < _count; i++)
+            {
+                yield return this[i];
+            }
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    public class MatchInfo
+    {
+        public string Filename { get; set; }
+        public int LineNumber { get; set; }
+        public string Line { get; set; }
+        public string Pattern { get; set; }
+        public bool IgnoreCase { get; set; }
+        public MatchInfoContext Context { get; set; }
+        public Match[] Matches { get; set; }
+
+        public MatchInfo Clone()
+        {
+            return this;
+        }
+    }
+
+    public class MatchInfoContext
+    {
+        public string[] PreContext { get; set; }
+        public string[] PostContext { get; set; }
+        public string[] DisplayPreContext { get; set; }
+        public string[] DisplayPostContext { get; set; }
+    }
+}
