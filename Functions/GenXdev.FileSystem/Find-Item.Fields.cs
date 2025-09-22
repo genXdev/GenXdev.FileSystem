@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Fields.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.278.2025
+// Version                   : 1.280.2025
 // ################################################################################
 // MIT License
 //
@@ -210,6 +210,7 @@ namespace GenXdev.FileSystem
         // constraints for workers
         protected int baseMemoryPerWorker;
         protected int baseTargetWorkerCount;
+        protected Func<bool> buffersFull;
         protected Func<int> maxDirectoryWorkersInParallel;
         protected Func<int> maxMatchWorkersInParallel;
 

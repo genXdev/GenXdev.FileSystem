@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Utilities.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.278.2025
+// Version                   : 1.280.2025
 // ################################################################################
 // MIT License
 //
@@ -625,7 +625,7 @@ namespace GenXdev.FileSystem
 
                 // build detailed status string showing directory and file counts
                 StatusDescription = (
-                    "Directories: " + formatStat(dirsDone, true) + "/" + formatStat(DirQueue.Count, false) +
+                    "Folders: " + formatStat(dirsDone, true) + "/" + formatStat(DirQueue.Count, false) +
                     " [" + formatStat(directoryProcessorsCount, false) + "] | Found: " + formatStat(fileOutputCount, false) +
                     (matchingContent ? " | Matched: " + formatStat(fileMatchesStartedCount, true) + "/" + formatStat(queuedMatchesCount, false) + " [" + formatStat(matchProcessors, false) + "]" :
                     string.Empty)

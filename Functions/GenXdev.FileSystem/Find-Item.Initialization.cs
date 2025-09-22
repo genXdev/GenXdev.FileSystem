@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Initialization.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.278.2025
+// Version                   : 1.280.2025
 // ################################################################################
 // MIT License
 //
@@ -56,7 +56,7 @@ namespace GenXdev.FileSystem
                 Math.Max(1, MaxDegreeOfParallelism / 2);
 
             int baseLength = baseMemoryPerWorker / 125;
-            bool buffersFull = FileContentMatchQueue.Count <= baseLength ||
+            buffersFull = () =>  FileContentMatchQueue.Count <= baseLength ||
                                 VerboseQueue.Count <= baseLength ||
                                 DirQueue.Count <= baseLength ||
                                 OutputQueue.Count <= baseLength;
@@ -66,7 +66,7 @@ namespace GenXdev.FileSystem
                             // we are thinking about the memory being used 
                             // for storing paths to process
                             // stop finding more files when queues get too full
-                            buffersFull ?
+                            buffersFull() ?
                             Math.Min(DirQueue.Count, baseTargetWorkerCount) : 0;
 
 
