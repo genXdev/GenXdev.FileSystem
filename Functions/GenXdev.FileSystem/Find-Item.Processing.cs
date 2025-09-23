@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Processing.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.284.2025
+// Version                   : 1.286.2025
 // ################################################################################
 // MIT License
 //
@@ -1205,7 +1205,8 @@ namespace GenXdev.FileSystem
             }
 
             // create matcher
-            var patternMatcher = new WildcardPattern(CurrentFileName,
+            var patternMatcher = new WildcardPattern(
+                EscapeBracketsInPattern(CurrentFileName),
                 CurrentWildCardOptions);
 
             // enumerate files in top directory only
@@ -1307,7 +1308,7 @@ namespace GenXdev.FileSystem
                 {
 
                     // if match
-                    if (pattern.IsMatch(normalizedFilePath))
+                    if (pattern.IsMatch(WildcardPattern.Escape(normalizedFilePath)))
                     {
 
                         // set exclusion
@@ -1440,7 +1441,10 @@ namespace GenXdev.FileSystem
             // create pattern if name
             WildcardPattern wildcardPattern = string.IsNullOrEmpty(StreamName) ?
                 null :
-              new WildcardPattern(StreamName, CurrentWildCardOptions);
+              new WildcardPattern(
+                  EscapeBracketsInPattern(StreamName), 
+                  CurrentWildCardOptions
+            );
 
             // try process
             try
@@ -1514,7 +1518,7 @@ namespace GenXdev.FileSystem
 
                                 // skip if no match
                                 if (wildcardPattern != null &&
-                                    !wildcardPattern.IsMatch(streamName))
+                                    !wildcardPattern.IsMatch(WildcardPattern.Escape(streamName)))
                                 {
                                     continue;
                                 }
@@ -1737,7 +1741,8 @@ namespace GenXdev.FileSystem
             var found = false;
 
             // create wildcard pattern matcher
-            var patternMatcher = new WildcardPattern(CurrentFileName,
+            var patternMatcher = new WildcardPattern(
+                EscapeBracketsInPattern(CurrentFileName),
                 CurrentWildCardOptions);
 
             // set remaining full mask
@@ -1793,11 +1798,13 @@ namespace GenXdev.FileSystem
             }
 
             // create matcher for full pattern
-            var patternMatcherFull = new WildcardPattern(fullPattern,
+            var patternMatcherFull = new WildcardPattern(
+                EscapeBracketsInPattern(fullPattern),
                 CurrentWildCardOptions);
 
             // create matcher for recursive full
-            var patternMatcherFullRecurse = new WildcardPattern(fullPatternRecurse,
+            var patternMatcherFullRecurse = new WildcardPattern(
+                EscapeBracketsInPattern(fullPatternRecurse),
                 CurrentWildCardOptions);
 
             // handle unc share enumeration if machine specified
@@ -1825,7 +1832,8 @@ namespace GenXdev.FileSystem
                 }
 
                 // create matcher for unc shares
-                var uncShareMatcher = new WildcardPattern(shareName,
+                var uncShareMatcher = new WildcardPattern(
+                    EscapeBracketsInPattern(shareName),
                     CurrentWildCardOptions);
 
                 // list disk shares on unc machine

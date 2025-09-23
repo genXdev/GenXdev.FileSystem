@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Utilities.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.284.2025
+// Version                   : 1.286.2025
 // ################################################################################
 // MIT License
 //
@@ -913,6 +913,36 @@ namespace GenXdev.FileSystem
                     VerboseQueue.Enqueue($"Failed to enqueue output item: {ex.Message}");
                 }
             }
+        }
+
+        public static string EscapeBracketsInPattern(string Pattern)
+        {
+            // Escape unescaped brackets in the pattern for regex safety
+            // This prevents regex syntax errors from unbalanced brackets
+            // Only escape brackets that are not already escaped with a backslash
+            if (string.IsNullOrEmpty(Pattern)) return Pattern;
+            // Use a StringBuilder for efficient string manipulation
+            var sb = new System.Text.StringBuilder();
+            bool isEscaped = false;
+            foreach (char c in Pattern)
+            {
+                if (c == '`' && !isEscaped)
+                {
+                    // Next character is escaped
+                    isEscaped = true;
+                    sb.Append(c);
+                }
+                else if ((c != '`' || !isEscaped) && (c == '[' || c == ']') && !isEscaped)
+                {
+                    // Escape unescaped brackets
+                    sb.Append('`');
+                }
+
+                sb.Append(c);
+                isEscaped = false; // Reset escape flag
+            }
+
+            return sb.ToString();
         }
     }
 

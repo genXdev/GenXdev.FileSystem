@@ -12,7 +12,7 @@
 RootModule = 'GenXdev.FileSystem.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.284.2025'
+ModuleVersion = '1.286.2025'
 
 # Supported PSEditions
 CompatiblePSEditions = 'Core'
@@ -94,6 +94,14 @@ ModuleList = @('GenXdev.FileSystem')
 FileList = 'GenXdev.FileSystem.csproj', 'GenXdev.FileSystem.format.ps1xml', 
                'GenXdev.FileSystem.psd1', 'GenXdev.FileSystem.psm1', 'ISSUES.md', 
                'LICENSE', 'license.txt', 'powershell.jpg', 'README.md', 
+               'DynamicBuffer\BufferExtensions.cs.no', 
+               'DynamicBuffer\BufferHelpers.cs.no', 
+               'DynamicBuffer\DynamicBuffer.cs.no', 
+               'DynamicBuffer\DynamicBufferAddedEventArgs.cs.no', 
+               'DynamicBuffer\DynamicBufferEmptyEventArgs.cs.no', 
+               'DynamicBuffer\IMemoryManagerConfiguration.cs.no', 
+               'DynamicBuffer\IServiceMemoryManager.cs.no', 
+               'Properties\launchSettings.json', 
                'lib\GenXdev.FileSystem.deps.json', 'lib\GenXdev.FileSystem.dll', 
                'lib\getfilesiginforedist.dll', 
                'lib\getfilesiginforedistwrapper.dll', 'lib\Humanizer.dll', 
@@ -111,14 +119,7 @@ FileList = 'GenXdev.FileSystem.csproj', 'GenXdev.FileSystem.format.ps1xml',
                'lib\Microsoft.Windows.SDK.NET.dll', 'lib\Newtonsoft.Json.dll', 
                'lib\PowerShell.Core.Instrumentation.dll', 'lib\pwrshplugin.dll', 
                'lib\System.Management.Automation.dll', 'lib\System.Management.dll', 
-               'DynamicBuffer\BufferExtensions.cs.no', 'lib\WinRT.Runtime.dll', 
-               'DynamicBuffer\BufferHelpers.cs.no', 
-               'DynamicBuffer\DynamicBuffer.cs.no', 
-               'DynamicBuffer\DynamicBufferAddedEventArgs.cs.no', 
-               'DynamicBuffer\DynamicBufferEmptyEventArgs.cs.no', 
-               'DynamicBuffer\IMemoryManagerConfiguration.cs.no', 
-               'DynamicBuffer\IServiceMemoryManager.cs.no', 
-               'Properties\launchSettings.json', 
+               'lib\WinRT.Runtime.dll', 
                'Functions\GenXdev.FileSystem\EnsurePester.ps1', 
                'Functions\GenXdev.FileSystem\Expand-Path.ps1', 
                'Functions\GenXdev.FileSystem\FileExtensionGroups.cs', 
