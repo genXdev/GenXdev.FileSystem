@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Fields.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.280.2025
+// Version                   : 1.284.2025
 // ################################################################################
 // MIT License
 //
@@ -32,6 +32,7 @@
 using System.Collections.Concurrent;
 using System.Management.Automation;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace GenXdev.FileSystem
@@ -181,9 +182,11 @@ namespace GenXdev.FileSystem
         protected readonly ConcurrentQueue<string> VerboseQueue = new();
         protected readonly ConcurrentQueue<FileInfo> FileContentMatchQueue = new();
         private readonly ConcurrentQueue<MatchContentProcessor> MatchContentProcessors = new();
-       
+
         protected readonly List<Task> Workers = new List<Task>();
         protected readonly object WorkersLock = new object();
+        protected readonly StringBuilder statusBuilder = new StringBuilder(256);
+
 
         // Cancellation source to handle timeouts and user interruptions gracefully
         protected CancellationTokenSource cts;
@@ -203,6 +206,18 @@ namespace GenXdev.FileSystem
         protected long matchesQueued;
         protected long dirsCompleted;
 
+        // Throughput measurement fields for adaptive scaling (thread-safe)
+        protected long lastThroughputMeasurement = DateTime.UtcNow.Ticks;
+        protected long lastDirsCompleted = 0;
+        protected long lastMatchesCompleted = 0;
+        protected long lastOutputCount = 0;
+        protected long currentDirThroughputx100 = 0;    // directories/second * 100 (for precision)
+        protected long currentMatchThroughputx100 = 0;  // matches/second * 100 (for precision)
+        protected long currentOutputThroughputx100 = 0; // outputs/second * 100 (for precision)
+        protected long recommendedDirectoryWorkers = 0;
+        protected long recommendedMatchWorkers = 0;
+        protected readonly object throughputLock = new object(); // Lock for measurement updates
+
         // Store original thread pool settings to restore after cmdlet execution
         protected int oldMaxWorkerThread;
         protected int oldMaxCompletionPorts;
@@ -216,8 +231,8 @@ namespace GenXdev.FileSystem
 
         protected int oldMaxWorkerThreads;
         protected bool isStarted;
-        protected bool usingSelectString;
-        
+        protected bool matchingFileContent;
+
         /// <summary>
         /// Flag for enabling verbose output based on user preferences
         /// </summary>

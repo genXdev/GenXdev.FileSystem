@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Utilities.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.280.2025
+// Version                   : 1.284.2025
 // ################################################################################
 // MIT License
 //
@@ -45,9 +45,175 @@ using System.Text.RegularExpressions;
 
 namespace GenXdev.FileSystem
 {
-
     public partial class FindItem : PSCmdlet
     {
+
+        /// <summary>
+        /// Measures throughput every 1000ms and adjusts recommended worker counts based on processing rates.
+        /// Thread-safe implementation using locks and atomic operations.
+        /// </summary>
+        private void MeasureThroughputAndAdjustWorkers()
+        {
+            // Early exit if not enough time has passed (thread-safe read)
+            long now = DateTime.UtcNow.Ticks;
+            long lastMeasurement = Interlocked.Read(ref lastThroughputMeasurement);
+            long timeSinceLastMeasurement = now - lastMeasurement;
+
+            // Only measure every 1000ms (10,000,000 ticks = 1 second)
+            if (timeSinceLastMeasurement < TimeSpan.TicksPerSecond)
+                return;
+
+            // Use lock to ensure only one thread performs measurement at a time
+            lock (throughputLock)
+            {
+                // Double-check pattern: verify time hasn't been updated by another thread
+                long currentLastMeasurement = Interlocked.Read(ref lastThroughputMeasurement);
+                if (now - currentLastMeasurement < TimeSpan.TicksPerSecond)
+                    return;
+
+                // Get current counters atomically
+                long currentDirsCompleted = Interlocked.Read(ref dirsCompleted);
+                long currentMatchesCompleted = Interlocked.Read(ref fileMatchesCompleted);
+                long currentOutputs = Interlocked.Read(ref filesFound);
+
+                // Calculate deltas since last measurement
+                long dirsDelta = currentDirsCompleted - lastDirsCompleted;
+                long matchesDelta = currentMatchesCompleted - lastMatchesCompleted;
+                long outputDelta = currentOutputs - lastOutputCount;
+
+                // Calculate time elapsed in seconds
+                double secondsElapsed = timeSinceLastMeasurement / (double)TimeSpan.TicksPerSecond;
+
+                // Calculate throughput rates (items per second * 100 for precision)
+                long newDirThroughputx100 = (long)((dirsDelta / secondsElapsed) * 100.0);
+                long newMatchThroughputx100 = (long)((matchesDelta / secondsElapsed) * 100.0);
+                long newOutputThroughputx100 = (long)((outputDelta / secondsElapsed) * 100.0);
+
+                // Update throughput values atomically
+                Interlocked.Exchange(ref currentDirThroughputx100, newDirThroughputx100);
+                Interlocked.Exchange(ref currentMatchThroughputx100, newMatchThroughputx100);
+                Interlocked.Exchange(ref currentOutputThroughputx100, newOutputThroughputx100);
+
+                // Adaptive scaling algorithm (inside lock for consistency)
+                CalculateRecommendedWorkerCounts(dirsDelta, matchesDelta, secondsElapsed);
+
+                // Update measurement baseline atomically
+                Interlocked.Exchange(ref lastThroughputMeasurement, now);
+                Interlocked.Exchange(ref lastDirsCompleted, currentDirsCompleted);
+                Interlocked.Exchange(ref lastMatchesCompleted, currentMatchesCompleted);
+                Interlocked.Exchange(ref lastOutputCount, currentOutputs);
+
+                if (UseVerboseOutput)
+                {
+                    double dirThroughput = newDirThroughputx100 / 100.0;
+                    double matchThroughput = newMatchThroughputx100 / 100.0;
+                    double outputThroughput = newOutputThroughputx100 / 100.0;
+                    long recDirWorkers = Interlocked.Read(ref recommendedDirectoryWorkers);
+                    long recMatchWorkers = Interlocked.Read(ref recommendedMatchWorkers);
+
+                    VerboseQueue.Enqueue($"Throughput: Dir={dirThroughput:F1}/s, Match={matchThroughput:F1}/s, Output={outputThroughput:F1}/s");
+                    VerboseQueue.Enqueue($"Recommended workers: Dir={recDirWorkers}, Match={recMatchWorkers}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Calculates recommended worker counts based on throughput analysis.
+        /// Must be called within throughputLock for thread safety.
+        /// </summary>
+        private void CalculateRecommendedWorkerCounts(long dirsDelta, long matchesDelta, double secondsElapsed)
+        {
+            // Get current queue sizes and worker counts atomically
+            int dirQueueSize = DirQueue.Count;
+            int matchQueueSize = FileContentMatchQueue.Count;
+            long currentDirWorkers = Interlocked.Read(ref directoryProcessors);
+            long currentMatchWorkers = Interlocked.Read(ref matchProcessors);
+
+            // Calculate throughput from parameters (avoid reading non-atomic fields)
+            double currentDirThroughput = dirsDelta / secondsElapsed;
+            double currentMatchThroughput = matchesDelta / secondsElapsed;
+
+            // Calculate directory worker recommendations
+            long newRecommendedDirWorkers;
+            if (currentDirThroughput > 0 && dirQueueSize > 0)
+            {
+                // Estimate time to clear queue at current rate
+                double timeToClearDirs = dirQueueSize / currentDirThroughput;
+
+                // If it would take > 10 seconds, increase workers
+                // If it would take < 2 seconds, decrease workers
+                if (timeToClearDirs > 10.0 && currentDirWorkers < baseTargetWorkerCount * 2)
+                {
+                    newRecommendedDirWorkers = Math.Min(
+                        baseTargetWorkerCount * 2,
+                        currentDirWorkers + Math.Max(1, (long)(timeToClearDirs / 10.0))
+                    );
+                }
+                else if (timeToClearDirs < 2.0 && currentDirWorkers > 1)
+                {
+                    newRecommendedDirWorkers = Math.Max(1, currentDirWorkers - 1);
+                }
+                else
+                {
+                    newRecommendedDirWorkers = Math.Max(baseTargetWorkerCount, currentDirWorkers);
+                }
+            }
+            else
+            {
+                // No throughput data, use baseline
+                newRecommendedDirWorkers = baseTargetWorkerCount;
+            }
+
+            // Calculate match worker recommendations
+            long newRecommendedMatchWorkers;
+            if (currentMatchThroughput > 0 && matchQueueSize > 0)
+            {
+                // Estimate time to clear queue at current rate
+                double timeToClearMatches = matchQueueSize / currentMatchThroughput;
+
+                // If it would take > 10 seconds, increase workers
+                // If it would take < 2 seconds, decrease workers
+                if (timeToClearMatches > 10.0 && currentMatchWorkers < baseTargetWorkerCount * 3)
+                {
+                    newRecommendedMatchWorkers = Math.Min(
+                        baseTargetWorkerCount * 3,
+                        currentMatchWorkers + Math.Max(1, (long)(timeToClearMatches / 10.0))
+                    );
+                }
+                else if (timeToClearMatches < 2.0 && currentMatchWorkers > 1)
+                {
+                    newRecommendedMatchWorkers = Math.Max(1, currentMatchWorkers - 1);
+                }
+                else
+                {
+                    newRecommendedMatchWorkers = Math.Max(baseTargetWorkerCount, currentMatchWorkers);
+                }
+            }
+            else
+            {
+                // No throughput data, use baseline
+                newRecommendedMatchWorkers = baseTargetWorkerCount;
+            }
+
+            // Apply output pressure feedback
+            // If output rate is very low compared to processing, something is bottlenecked
+            double outputThroughput = Interlocked.Read(ref filesFound) / secondsElapsed;
+            if (outputThroughput > 0 && currentDirThroughput > 0)
+            {
+                double outputRatio = outputThroughput / Math.Max(currentDirThroughput, currentMatchThroughput);
+
+                // If output ratio is very low, reduce workers to prevent queue buildup
+                if (outputRatio < 0.1)
+                {
+                    newRecommendedDirWorkers = Math.Max(1, newRecommendedDirWorkers / 2);
+                    newRecommendedMatchWorkers = Math.Max(1, newRecommendedMatchWorkers / 2);
+                }
+            }
+
+            // Update recommendations atomically
+            Interlocked.Exchange(ref recommendedDirectoryWorkers, newRecommendedDirWorkers);
+            Interlocked.Exchange(ref recommendedMatchWorkers, newRecommendedMatchWorkers);
+        }
 
         /// <summary>
         /// Normalizes paths by removing long path prefixes for non-filesystem use.
@@ -346,7 +512,6 @@ namespace GenXdev.FileSystem
         /// <summary>
         /// Adds a single worker task to the list.
         /// </summary>
-        /// <param name="workers">The list of workers.</param>
         protected void AddWorkerTask(List<Task> workers, bool contentMatcher, CancellationToken ctx)
         {
             // log worker creation if verbose output enabled
@@ -371,6 +536,7 @@ namespace GenXdev.FileSystem
                     {
                         // main content matching loop
                         FileInfo fileInfo;
+                        var maxMatchersFunc = maxMatchWorkersInParallel; // cache delegate reference
 
                         // process files from content matching queue until cancelled
                         while (FileContentMatchQueue.TryDequeue(out fileInfo) && !ctx.IsCancellationRequested)
@@ -388,19 +554,19 @@ namespace GenXdev.FileSystem
                                     VerboseQueue.Enqueue($"Worker task failed: {ex.Message}");
                                 }
                             }
-                            finally
+
+                            // dynamic throttling: check at end of iteration if we should exit
+                            var currentMatchers = Interlocked.Read(ref matchProcessors);
+                            var maxMatchers = maxMatchersFunc();
+                            if (currentMatchers > maxMatchers)
                             {
-                                // check if more workers are needed after processing
                                 if (UseVerboseOutput)
                                 {
-                                    // log worker completion type
-                                    string str = contentMatcher ? "Content matcher" : "Directory processor";
-
-                                    VerboseQueue.Enqueue($"{str} worker stopped");
+                                    VerboseQueue.Enqueue($"Content matcher exiting: {currentMatchers} > {maxMatchers}");
                                 }
-
-                                // potentially spawn more workers if queue pressure increases
+                                // ensure other workers can be spawned when needed
                                 AddWorkerTasksIfNeeded(ctx);
+                                break;
                             }
                         }
                     }
@@ -410,6 +576,7 @@ namespace GenXdev.FileSystem
                         Interlocked.Decrement(ref matchProcessors);
                         // final check for needed workers
                         AddWorkerTasksIfNeeded(ctx);
+
                     }
                 }, ctx));
 
@@ -449,7 +616,7 @@ namespace GenXdev.FileSystem
                     // decrement active directory processor count
                     Interlocked.Decrement(ref directoryProcessors);
                 }
-            }));
+            }, ctx));
         }
 
         /// <summary>
@@ -582,7 +749,7 @@ namespace GenXdev.FileSystem
             bool outputtingFiles = FilesAndDirectories.IsPresent || !Directory.IsPresent;
 
             // check if we're doing content matching (Select-String like behavior)
-            bool matchingContent = outputtingFiles && usingSelectString;
+            bool matchingContent = outputtingFiles && matchingFileContent;
 
             // determine if we're including files in the search scope
             bool andFiles = outputtingFiles && matchingContent;
@@ -614,6 +781,30 @@ namespace GenXdev.FileSystem
                 ), 0
             );
 
+
+            // build detailed status string showing directory and file counts
+            // Replace multiple string concatenations in UpdateProgressStatus
+            statusBuilder.Clear();
+            statusBuilder.Append("Folders: ")
+            .Append(formatStat(dirsDone, true))
+            .Append("/")
+            .Append(formatStat(DirQueue.Count, false))
+            .Append(" [")
+            .Append(formatStat(directoryProcessorsCount, false))
+            .Append("] | Found: ")
+            .Append(formatStat(fileOutputCount, false));
+
+            if (matchingContent)
+            {
+                statusBuilder.Append(" | Matched: ")
+                    .Append(formatStat(fileMatchesStartedCount, true))
+                    .Append('/')
+                    .Append(formatStat(queuedMatchesCount, false))
+                    .Append(" [")
+                    .Append(formatStat(matchProcessors, false))
+                    .Append(']');
+            }
+
             // create progress record with dynamic status information
             var record = new ProgressRecord(0, "Find-Item", (
                 "Scanning directories" + (andFiles ?
@@ -622,14 +813,7 @@ namespace GenXdev.FileSystem
             {
                 // set completion percentage
                 PercentComplete = progressPercent,
-
-                // build detailed status string showing directory and file counts
-                StatusDescription = (
-                    "Folders: " + formatStat(dirsDone, true) + "/" + formatStat(DirQueue.Count, false) +
-                    " [" + formatStat(directoryProcessorsCount, false) + "] | Found: " + formatStat(fileOutputCount, false) +
-                    (matchingContent ? " | Matched: " + formatStat(fileMatchesStartedCount, true) + "/" + formatStat(queuedMatchesCount, false) + " [" + formatStat(matchProcessors, false) + "]" :
-                    string.Empty)
-                ),
+                StatusDescription = statusBuilder.ToString(),
 
                 // set current operation description based on search state
                 CurrentOperation = (
@@ -676,7 +860,7 @@ namespace GenXdev.FileSystem
                     Interlocked.Increment(ref filesFound);
                 }
 
-                bool outputtingMatches = usingSelectString && !Quiet.IsPresent;
+                bool outputtingMatches = matchingFileContent && !Quiet.IsPresent;
                 bool userIsWatching = !UnattendedMode;
                 bool notDisabledByUser = !PassThru.IsPresent;
                 bool outputRelative = (isFile || isDirectory) && notDisabledByUser;
@@ -712,13 +896,7 @@ namespace GenXdev.FileSystem
 
                         // format as ANSI hyperlink escape sequence
                         // \u001b]8;; creates hyperlink, file:// URI, \u001b]8;; closes it
-                        var formattedLink = (
-                            "\u001b]8;;file://" + name + "\u001b\\" +
-                            relativePath + "\u001b]8;;\u001b\\"
-                        );
-
-                        // enqueue the formatted hyperlink
-                        OutputQueue.Enqueue(formattedLink);
+                        OutputQueue.Enqueue($"\u001b]8;;file://{name}\u001b\\{relativePath}\u001b]8;;\u001b\\");
                     }
 
                     return;
@@ -806,6 +984,18 @@ namespace GenXdev.FileSystem
         private readonly bool notMatch;
 
         /// <summary>
+        /// Disables tracking to disable highlighting when formatting MatchInfo objects
+        /// in the terminal.
+        /// </summary>
+        private readonly bool noEmphasis;
+
+        /// <summary>
+        /// Indicates that the cmdlet returns a simple response instead of
+        /// a MatchInfo object. The returned value is $true if the pattern
+        /// is found or $null if the pattern is not found.
+        private readonly bool quiet;
+
+        /// <summary>
         /// When true, uses simple string matching instead of regular expression matching.
         /// Provides better performance for literal string searches.
         /// </summary>
@@ -870,6 +1060,9 @@ namespace GenXdev.FileSystem
         /// </summary>
         protected static ConcurrentQueue<List<int>> reusableIntLists = new();
 
+        /// <summary> Reusable list for matchinfo results</summary>
+        protected static ConcurrentQueue<List<MatchInfo>> reusableMatchResults = new();
+
         /// <summary>
         /// Initializes a new content processor for file content matching.
         /// Supports both regex and simple string matching with context lines.
@@ -882,6 +1075,9 @@ namespace GenXdev.FileSystem
         /// <param name="encoding">Text encoding for file reading.</param>
         /// <param name="list">If true, only show filenames with matches.</param>
         /// <param name="context">Context lines before and after matches.</param>
+        /// <param name="culture">Culture name for culture-specific comparisons.</param>
+        /// <param name="quiet">If true, only return basic match information for performance.</param>
+        /// <param name="token">Cancellation token for cooperative cancellation.</param>
         public MatchContentProcessor(
             int maxBytes,
             string[] pattern,
@@ -893,6 +1089,8 @@ namespace GenXdev.FileSystem
             bool list = false,
             int[] context = null,
             string culture = null,
+            bool quiet = false,
+            bool noEmphasis = false,
             CancellationToken token = default
             )
         {
@@ -905,8 +1103,10 @@ namespace GenXdev.FileSystem
             this.notMatch = notMatch;
             this.caseSensitive = caseSensitive;
             this.list = list;
-            this.context = context;
+            this.noEmphasis = noEmphasis || notMatch;
+            this.context = context ?? new int[] { 0, 0 };
             this.cultureName = culture;
+            this.quiet = quiet;
 
             // pre-compute culture-aware comparison functions for performance
             if (!string.IsNullOrEmpty(culture))
@@ -959,28 +1159,24 @@ namespace GenXdev.FileSystem
                 this.textEncoding = EncodingConversion.Convert(null, this.Encoding);
             }
 
-            // pre-compile regex patterns for performance
-            if (!this.simpleMatch)
-            {
-                // set case sensitivity option
-                RegexOptions options =
-                    (this.caseSensitive ?
-                    RegexOptions.None :
-                    RegexOptions.IgnoreCase) | RegexOptions.Compiled;
+            // set case sensitivity option
+            RegexOptions options =
+                (this.caseSensitive ?
+                RegexOptions.None :
+                RegexOptions.IgnoreCase) | RegexOptions.Compiled;
 
-                this.regexPattern = new Regex[this.pattern.Length];
-                for (int i = 0; i < this.pattern.Length; i++)
+            this.regexPattern = new Regex[this.pattern.Length];
+            for (int i = 0; i < this.pattern.Length; i++)
+            {
+                try
                 {
-                    try
-                    {
-                        // compile each pattern with error handling
-                        this.regexPattern[i] = new Regex(this.pattern[i], options);
-                    }
-                    catch (Exception exception)
-                    {
-                        // provide clear error message for invalid regex
-                        throw new ArgumentException(string.Format("Invalid regular expression: {0}, Message: {1}", this.pattern[i], exception.Message), exception);
-                    }
+                    // compile each pattern with error handling
+                    this.regexPattern[i] = new Regex(this.simpleMatch ? Regex.Escape(this.pattern[i]) : this.pattern[i], options);
+                }
+                catch (Exception exception)
+                {
+                    // provide clear error message for invalid regex
+                    throw new ArgumentException(string.Format("Invalid regular expression: {0}, Message: {1}", this.pattern[i], exception.Message), exception);
                 }
             }
         }
@@ -1030,7 +1226,8 @@ namespace GenXdev.FileSystem
         private async IAsyncEnumerable<MatchInfo> SearchInternalAsync(FileInfo file)
         {
             // initialize context tracker for pre/post context line collection
-            var contextTracker = new ContextTracker(preContext, postContext);
+            bool useTracking = !noEmphasis && !quiet;
+            ContextTracker contextTracker = useTracking ? new ContextTracker(preContext, postContext) : null;
             ulong lineNumber = 0;
 
             // open file with specified encoding for reading
@@ -1052,6 +1249,8 @@ namespace GenXdev.FileSystem
             if (!reusableCharBuffers.TryDequeue(out head) || head.Length != maxCharCount) head = new char[maxCharCount];
             char[] line;
             if (!reusableLongCharBuffers.TryDequeue(out line) || line.Length != maxCharCount * 2) line = new char[maxCharCount * 2];
+            List<MatchInfo> matchResults = null;
+            if (!reusableMatchResults.TryDequeue(out matchResults)) matchResults = new List<MatchInfo>();
             try
             {
                 int headStartIndex = 0;
@@ -1087,37 +1286,59 @@ namespace GenXdev.FileSystem
                     ReadOnlySpan<char> lineSpan = line.AsSpan(0, lineEndIndex);
 
                     // check if current line matches the search pattern
-                    if (doMatch(lineSpan, out var matchResult))
+                    if (doMatch(lineSpan, matchResults))
                     {
-                        // populate match result with file and line information
-                        matchResult.LineNumber = lineNumber;
-                        matchResult.Path = file.FullName;
+                        if (quiet)
+                        {
+                            yield return null;
+                            yield break;
+                        }
 
-                        // track this match for context collection
-                        contextTracker.TrackMatch(matchResult);
+                        foreach (var matchResult in matchResults)
+                        {
+                            // populate match result with file and line information
+                            matchResult.LineNumber = lineNumber;
+                            matchResult.Path = file.FullName;
+
+                            // track this match for context collection
+                            if (useTracking)
+                            {
+                                contextTracker.TrackMatch(matchResult);
+                            }
+                            else
+                            {
+                                yield return matchResult;
+                            }
+                        }
                     }
                     else
                     {
-                        contextTracker.TrackLine(new string(lineSpan));
+                        if (useTracking) contextTracker.TrackLine(new string(lineSpan));
                     }
 
-                    // yield any completed match results with full context
+                    if (useTracking)
+                    {
+                        // yield any completed match results with full context
+                        foreach (var match in contextTracker.EmitQueue)
+                        {
+                            yield return match;
+                        }
+
+                        contextTracker.EmitQueue.Clear();
+                    }
+                }
+
+                // handle end-of-file to emit any pending matches
+                if (useTracking)
+                {
+                    contextTracker.TrackEOF();
                     foreach (var match in contextTracker.EmitQueue)
                     {
                         yield return match;
                     }
 
-                    contextTracker.EmitQueue.Clear();
+                    if (useTracking) contextTracker.EmitQueue.Clear();
                 }
-
-                // handle end-of-file to emit any pending matches
-                contextTracker.TrackEOF();
-                foreach (var match in contextTracker.EmitQueue)
-                {
-                    yield return match;
-                }
-
-                contextTracker.EmitQueue.Clear();
             }
             finally
             {
@@ -1126,11 +1347,13 @@ namespace GenXdev.FileSystem
                 charBuffer.AsSpan().Clear();
                 line.AsSpan().Clear();
                 head.AsSpan().Clear();
+                matchResults.Clear();
 
                 reusableByteBuffers.Enqueue(byteBuffer);
                 reusableCharBuffers.Enqueue(charBuffer);
                 reusableCharBuffers.Enqueue(head);
                 reusableLongCharBuffers.Enqueue(line);
+                reusableMatchResults.Enqueue(matchResults);
             }
         }
 
@@ -1404,7 +1627,7 @@ namespace GenXdev.FileSystem
                 while (p < end)
                 {
                     // Check for ESC (27) and BEL (7), plus the invisible Unicodes
-                    if (*p == 7 || (*p >= 128 && (
+                    if (*p == 7 || *p == 0x001b || (*p >= 128 && (
                         // Bidirectional controls (all >128)
                         *p == 0x200E || *p == 0x200F || *p == 0x202A || *p == 0x202B || *p == 0x202C ||
                         *p == 0x202D || *p == 0x202E || *p == 0x2066 || *p == 0x2067 || *p == 0x2068 ||
@@ -1530,828 +1753,751 @@ namespace GenXdev.FileSystem
 
         /// <summary>
         /// Performs pattern matching against a line of text using either regex or simple string matching.
-        /// Supports match inversion, case sensitivity, and multiple match modes.
+        /// Automatically selects optimized implementation based on Quiet mode setting.
+        /// </summary>
+        /// <param name="operandSpan">The line of text to match against as a character span</param>
+        /// <param name="matchResult">Output parameter containing detailed match information (null in Quiet mode)</param>
+        /// <returns>True if the line matches the pattern (considering notMatch inversion)</returns>
+        private bool doMatch(
+                ReadOnlySpan<char> operandSpan,
+                List<MatchInfo> matchResult
+            )
+        {
+            // use optimized Quiet mode implementation when detailed output isn't needed
+            if (quiet)
+            {
+                matchResult.Clear();
+                return doMatchQuiet(operandSpan);
+            }
+
+            // use full output implementation for detailed match information
+            return doMatchWithOutput(operandSpan, matchResult);
+        }
+
+        /// <summary>
+        /// Optimized pattern matching for Quiet mode - returns simple boolean without detailed match information.
+        /// Prioritizes performance by avoiding unnecessary match position calculations and object allocations.
+        /// </summary>
+        /// <param name="operandSpan">The line of text to match against as a character span</param>
+        /// <returns>True if the line matches the pattern (considering notMatch inversion)</returns>
+        private bool doMatchQuiet(ReadOnlySpan<char> operandSpan)
+        {
+            // convert span to string only once for efficiency
+            string subject = operandSpan.ToString();
+
+            // iterate through all regex patterns until one matches
+            foreach (var regExPattern in this.regexPattern)
+            {
+                // find all matches in the line when requested
+                if (regExPattern.IsMatch(subject))
+                {
+                    return true ^ notMatch;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Optimized pattern matching for non-Quiet mode with full match information output.
+        /// Generates complete MatchInfo objects with positions, context, and detailed match data.
         /// </summary>
         /// <param name="operandSpan">The line of text to match against as a character span</param>
         /// <param name="matchResult">Output parameter containing detailed match information including positions</param>
         /// <returns>True if the line matches the pattern (considering notMatch inversion)</returns>
-        private bool doMatch(
+        private bool doMatchWithOutput(
                 ReadOnlySpan<char> operandSpan,
-                out MatchInfo matchResult
+                List<MatchInfo> matchResult
             )
         {
-            matchResult = null;
             bool success = false;
-            int idx = 0;
-            Match[] found = Array.Empty<Match>();
+            matchResult.Clear();
 
             // convert span to string only once for efficiency
             string subject = operandSpan.ToString();
 
-            // perform regex matching when not using simple string matching
-            if (!simpleMatch)
+            // iterate through all regex patterns until one matches
+            foreach (var regExPattern in this.regexPattern)
             {
-                // iterate through all regex patterns until one matches
-                for (; idx < regexPattern.Length; idx++)
-                {
-                    var re = regexPattern[idx];
+                Match[] found = Array.Empty<Match>();
 
-                    if (allMatches && !notMatch)
-                    {
-                        // find all matches in the line when requested
-                        var coll = re.Matches(subject);
-                        if (coll.Count > 0)
-                        {
-                            found = new Match[coll.Count];
-                            coll.CopyTo(found, 0);
-                            success = true;
-                            //break;
-                        }
-                    }
-                    else
-                    {
-                        // find only the first match in the line
-                        var m = re.Match(subject);
-                        if (m.Success)
-                        {
-                            found = new[] { m };
-                            success = true;
-                            //break;
-                        }
-                    }
-
-                    // stop on first successful pattern
-                    if (success)
-                    {
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                // check each pattern for string containment
-                for (; idx < pattern.Length; idx++)
+                if (allMatches && !notMatch)
                 {
-                    if (this.stringContainsFunc(subject, pattern[idx]))
+                    // find all matches in the line when requested
+                    var coll = regExPattern.Matches(subject);
+                    if (coll.Count > 0)
                     {
+                        found = new Match[coll.Count];
+                        coll.CopyTo(found, 0);
                         success = true;
+
+                        if (!this.notMatch)
+                        {
+                            var idxs = (found != null) ? found.Select(m => m.Index).ToArray() : Array.Empty<int>();
+                            var lens = (found != null) ? found.Select(m => m.Length).ToArray() : Array.Empty<int>();
+                            matchResult.Add(setMatchResultProperties((idxs.Length > 0) ? new MatchInfo(idxs, lens) : new MatchInfo(), subject, regExPattern.ToString(), found));
+                        }
+
                         break;
                     }
-                }
-            }
-
-            // invert the match result if notMatch flag is set
-            if (notMatch)
-            {
-                success = !success;
-                idx = 0;
-                found = Array.Empty<Match>();
-            }
-
-            if (!success)
-                return false;
-
-            // create MatchInfo object with match position information
-            if (!this.notMatch)
-            {
-                if (!this.simpleMatch)
-                {
-                    // extract match positions from regex Match objects
-                    var idxs = (found != null) ? found.Select(m => m.Index).ToArray() : Array.Empty<int>();
-                    var lens = (found != null) ? found.Select(m => m.Length).ToArray() : Array.Empty<int>();
-                    matchResult = (idxs.Length > 0) ? new MatchInfo(idxs, lens) : new MatchInfo();
                 }
                 else
                 {
-                    // compute match positions for simple string matching
-                    var needle = this.pattern[idx];
-                    List<int> idxs = new List<int>();
-                    List<int> lens = new List<int>();
-
-                    if (this.allMatches)
+                    // find only the first match in the line
+                    var m = regExPattern.Match(subject);
+                    if (m.Success)
                     {
-                        // find all occurrences of the string
-                        int start = 0;
-                        while (true)
+                        found = new[] { m };
+                        success = true;
+                        if (!this.notMatch)
                         {
-                            int pos = this.indexOfFunc(subject, needle, start);
-                            if (pos < 0) break;
-                            idxs.Add(pos);
-                            lens.Add(needle.Length);
-                            // advance past this match to find overlapping ones
-                            start = pos + Math.Max(1, needle.Length);
+                            var idxs = (found != null) ? found.Select(m => m.Index).ToArray() : Array.Empty<int>();
+                            var lens = (found != null) ? found.Select(m => m.Length).ToArray() : Array.Empty<int>();
+                            matchResult.Add(
+                                setMatchResultProperties(
+                                    !noEmphasis && idxs.Length > 0 ?
+                                    new MatchInfo(idxs, lens) :
+                                    new MatchInfo(),
+                                    subject,
+                                    regExPattern.ToString(),
+                                    found
+                                )
+                            );
                         }
+
+                        break;
                     }
                     else
                     {
-                        // find first occurrence only
-                        int pos = this.indexOfFunc(subject, needle, 0);
-                        if (pos >= 0)
+                        if (this.notMatch)
                         {
-                            idxs.Add(pos);
-                            lens.Add(needle.Length);
+                            success = true;
+
+                            // add the whole line as matchResult
+                            matchResult.Add(
+                                setMatchResultProperties(
+                                    new MatchInfo(
+                                        new int[1] { 0 },
+                                        new int[1] { 0 }
+                                    ), subject,
+                                    regExPattern.ToString(),
+                                    new Match[0]
+                                )
+                            );
                         }
                     }
+                }
 
-                    matchResult = (idxs.Count > 0) ? new MatchInfo(idxs.ToArray(), lens.ToArray()) : new MatchInfo();
+                // stop on first successful pattern
+                if (success)
+                {
+                    break;
                 }
             }
-            else
-            {
-                // for notMatch mode, create empty MatchInfo
-                matchResult = new MatchInfo();
-            }
 
+            // for notMatch, success flag is already correctly set by individual line matching
+            // do not invert the overall success - it represents whether we found lines that should be yielded
+            return success;
+        }
+
+        /// <summary>
+        /// Populates the specified MatchInfo instance with result properties based on the provided subject and pattern.
+        /// </summary>
+        /// <remarks>If context lines are requested, the method attaches a MatchInfoContext object to the
+        /// Context property of the MatchInfo. The IgnoreCase property is set based on the case sensitivity
+        /// configuration.</remarks>
+        /// <param name="matchInfo">The MatchInfo object to populate with match result properties. Must not be null.</param>
+        /// <param name="subject">The input string that was searched for matches. This value is assigned to the Line property of the
+        /// MatchInfo.</param>
+        /// <param name="pattern">The pattern used for matching. This value is assigned to the Pattern property of the MatchInfo.</param>
+        /// <returns>The same MatchInfo instance with its properties updated to reflect the match result and context.</returns>
+        private MatchInfo setMatchResultProperties(MatchInfo matchInfo, string subject, string pattern, Match[] found)
+        {
             // populate common MatchInfo properties
-            matchResult.IgnoreCase = !this.caseSensitive;
-            matchResult.Line = subject;
-            matchResult.Pattern = this.pattern[idx];
+            matchInfo.IgnoreCase = !this.caseSensitive;
+            matchInfo.Line = subject;
+            if (!noEmphasis) matchInfo.Pattern = pattern;
 
             // attach context object if context lines are requested
-            if ((this.preContext > 0) || (this.postContext > 0))
+            if (!noEmphasis && (this.preContext > 0) || (this.postContext > 0))
             {
-                matchResult.Context = (MatchInfoContext)Activator.CreateInstance(typeof(MatchInfoContext), true);
+                matchInfo.Context = (MatchInfoContext)Activator.CreateInstance(typeof(MatchInfoContext), true);
             }
-
-            // attach regex Match objects for advanced formatting (only for regex matching)
-            if (!this.simpleMatch)
-            {
-                matchResult.Matches = (found != null) ? found : Array.Empty<Match>();
-            }
-
-            return true;
+            if (!noEmphasis) matchInfo.Matches = (found != null) ? found : Array.Empty<Match>();
+            return matchInfo;
         }
 
         /// <summary>
-        /// Processes all pattern matches in a line using unsafe pointer operations for performance.
-        /// Finds match positions and lengths for simple string patterns.
+        /// Tracks and manages lines of text that appear before and after matches to provide contextual output, similar
+        /// to Select-String context features.
         /// </summary>
-        /// <param name="indexes">Output array of match start positions</param>
-        /// <param name="lengths">Output array of match lengths</param>
-        /// <param name="pattern">The pattern to search for</param>
-        /// <param name="comparisonType">String comparison type for matching</param>
-        /// <param name="lineSpan">The line text to search within</param>
-        /// <param name="AllMatches">True to find all matches, false to stop at first match</param>
-        private unsafe void processAllMatches(
-            out int[] indexes,
-            out int[] lengths,
-            ReadOnlySpan<char> pattern,
-            StringComparison comparisonType,
-            ReadOnlySpan<char> lineSpan,
-            bool AllMatches
-        )
+        /// <remarks>ContextTracker collects a configurable number of lines preceding and following each
+        /// match, enabling consumers to display search results with surrounding context. It maintains a circular buffer
+        /// for pre-context lines and a list for post-context lines, and provides a queue of completed matches with
+        /// their associated context. This class is intended for internal use and is not thread-safe.</remarks>
+        internal class ContextTracker : IContextTracker
         {
-            List<int> idxList = GetReusableList();
-            List<int> lenList = GetReusableList();
-            try
+            /// <summary>
+            /// Circular buffer that maintains the most recent non-matching lines for pre-context.
+            /// Automatically overwrites oldest lines when capacity is exceeded.
+            /// </summary>
+            private CircularBuffer<string> collectedPreContext;
+
+            /// <summary>
+            /// List of lines collected after a match for post-context display.
+            /// Cleared and rebuilt for each new match.
+            /// </summary>
+            private List<string> collectedPostContext;
+
+            /// <summary>
+            /// Queue of match results that are ready to be emitted with complete context.
+            /// Populated by UpdateQueue when matches have collected sufficient context.
+            /// </summary>
+            private List<MatchInfo> emitQueue;
+
+            /// <summary>
+            /// The current match being processed while collecting post-context lines.
+            /// Set when a match is found and cleared when the match is emitted.
+            /// </summary>
+            private MatchInfo matchInfo;
+
+            /// <summary>
+            /// Number of lines to collect before each match for context display.
+            /// Determines the size of the pre-context circular buffer.
+            /// </summary>
+            private int preContext;
+
+            /// <summary>
+            /// Number of lines to collect after each match for context display.
+            /// Controls when matches are emitted from the post-context collection state.
+            /// </summary>
+            private int postContext;
+
+            /// <summary>
+            /// Current state of the context collection state machine.
+            /// Determines how non-matching lines are processed (ignored, pre-context, or post-context).
+            /// </summary>
+            private ContextState contextState;
+
+            /// <summary>
+            /// Tracks context lines around matches for Select-String style output.
+            /// Maintains circular buffer for pre-context and list for post-context.
+            /// </summary>
+            /// <param name="preContext">Number of lines to show before each match.</param>
+            /// <param name="postContext">Number of lines to show after each match.</param>
+            public ContextTracker(int preContext, int postContext)
             {
-                // use unsafe pointers for maximum performance during character comparison
-                fixed (char* lineSpanPointer = lineSpan)
-                fixed (char* patternPointer = pattern)
-                {
-                    char* pLineSpan = lineSpanPointer;
-                    char* pLineSpanEnd = lineSpanPointer + lineSpan.Length;
-                    char* pPattern = patternPointer;
-                    char* pPatternEnd = patternPointer + pattern.Length;
-
-                    int matchCount = 0;
-
-                    // scan through the entire line character by character
-                    while (pLineSpan < pLineSpanEnd)
-                    {
-                        if (*pLineSpan == *pPattern)
-                        {
-                            matchCount++;
-
-                            // check if we've matched the complete pattern
-                            if (matchCount == pattern.Length)
-                            {
-                                // calculate absolute position of match start
-                                int absPos = (int)(pLineSpan - lineSpanPointer) - (pattern.Length - 1);
-                                idxList.Add(absPos);
-                                lenList.Add(pattern.Length);
-                                matchCount = 0;
-
-                                // stop at first match unless finding all matches
-                                if (!AllMatches) break;
-                            }
-                            else
-                            {
-                                // advance pattern pointer for next character
-                                pPattern++;
-                                if (pPattern >= pPatternEnd)
-                                {
-                                    pPattern = patternPointer;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // reset pattern matching when characters don't match
-                            matchCount = 0;
-                            pPattern = patternPointer;
-                        }
-
-                        pLineSpan++;
-                    }
-                }
-
-                // convert collected results to arrays
-                indexes = idxList.ToArray();
-                lengths = lenList.ToArray();
-            }
-            finally
-            {
-                ReturnReusableList(idxList);
-                ReturnReusableList(lenList);
-            }
-        }
-
-        /// <summary>
-        /// Gets a reusable integer list from the pool to reduce allocations.
-        /// Creates a new list if none are available in the pool.
-        /// </summary>
-        /// <returns>A reusable List&lt;int&gt; instance</returns>
-        private List<int> GetReusableList()
-        {
-            if (reusableIntLists.TryDequeue(out var list))
-            {
-                return list;
-            }
-            return new List<int>();
-        }
-
-        /// <summary>
-        /// Returns a used integer list to the pool for reuse.
-        /// Clears the list contents before returning to pool.
-        /// </summary>
-        /// <param name="list">The list to return to the pool</param>
-        private void ReturnReusableList(List<int> list)
-        {
-            list.Clear();
-            reusableIntLists.Enqueue(list);
-        }
-    }
-
-    internal class ContextTracker : IContextTracker
-    {
-        /// <summary>
-        /// Circular buffer that maintains the most recent non-matching lines for pre-context.
-        /// Automatically overwrites oldest lines when capacity is exceeded.
-        /// </summary>
-        private CircularBuffer<string> collectedPreContext;
-
-        /// <summary>
-        /// List of lines collected after a match for post-context display.
-        /// Cleared and rebuilt for each new match.
-        /// </summary>
-        private List<string> collectedPostContext;
-
-        /// <summary>
-        /// Queue of match results that are ready to be emitted with complete context.
-        /// Populated by UpdateQueue when matches have collected sufficient context.
-        /// </summary>
-        private List<MatchInfo> emitQueue;
-
-        /// <summary>
-        /// The current match being processed while collecting post-context lines.
-        /// Set when a match is found and cleared when the match is emitted.
-        /// </summary>
-        private MatchInfo matchInfo;
-
-        /// <summary>
-        /// Number of lines to collect before each match for context display.
-        /// Determines the size of the pre-context circular buffer.
-        /// </summary>
-        private int preContext;
-
-        /// <summary>
-        /// Number of lines to collect after each match for context display.
-        /// Controls when matches are emitted from the post-context collection state.
-        /// </summary>
-        private int postContext;
-
-        /// <summary>
-        /// Current state of the context collection state machine.
-        /// Determines how non-matching lines are processed (ignored, pre-context, or post-context).
-        /// </summary>
-        private ContextState contextState;
-
-        /// <summary>
-        /// Tracks context lines around matches for Select-String style output.
-        /// Maintains circular buffer for pre-context and list for post-context.
-        /// </summary>
-        /// <param name="preContext">Number of lines to show before each match.</param>
-        /// <param name="postContext">Number of lines to show after each match.</param>
-        public ContextTracker(int preContext, int postContext)
-        {
-            this.preContext = preContext;
-            this.postContext = postContext;
-            // circular buffer automatically handles overflow for pre-context
-            this.collectedPreContext = new CircularBuffer<string>(preContext);
-            this.collectedPostContext = new List<string>(postContext);
-            this.emitQueue = new List<MatchInfo>();
-            this.Reset();
-        }
-
-        /// <summary>
-        /// Resets tracker state between matches.
-        /// </summary>
-        private void Reset()
-        {
-            // determine initial state based on pre-context requirements
-            this.contextState = (this.preContext > 0) ? ContextState.CollectPre : ContextState.InitialState;
-            this.collectedPreContext.Clear();
-            this.collectedPostContext.Clear();
-            this.matchInfo = null;
-        }
-
-        /// <summary>
-        /// Signals end of file - emit any pending matches.
-        /// </summary>
-        public void TrackEOF()
-        {
-            // if we were collecting post-context, emit the match now
-            if (this.contextState == ContextState.CollectPost)
-            {
-                this.UpdateQueue();
-            }
-        }
-
-        /// <summary>
-        /// Processes a non-matching line for potential context inclusion.
-        /// </summary>
-        /// <param name="line">The line content.</param>
-        public void TrackLine(string line)
-        {
-            switch (this.contextState)
-            {
-                case ContextState.InitialState:
-                    // no active match, nothing to do
-                    break;
-
-                case ContextState.CollectPre:
-                    // add to pre-context buffer (circular, so old lines drop out)
-                    this.collectedPreContext.Add(line);
-                    return;
-
-                case ContextState.CollectPost:
-                    // add to post-context list
-                    this.collectedPostContext.Add(line);
-                    // check if we've collected enough post-context lines
-                    if (this.collectedPostContext.Count >= this.postContext)
-                    {
-                        this.UpdateQueue();
-                    }
-                    break;
-
-                default:
-                    return;
-            }
-        }
-
-        /// <summary>
-        /// Processes a matching line and transitions to post-context collection.
-        /// </summary>
-        /// <param name="match">The match information.</param>
-        public void TrackMatch(MatchInfo match)
-        {
-            // if we were already collecting post-context, emit previous match first
-            if (this.contextState == ContextState.CollectPost)
-            {
-                this.UpdateQueue();
-            }
-            // store the new match
-            this.matchInfo = match;
-            // transition to post-context collection if needed
-            if (this.postContext > 0)
-            {
-                this.contextState = ContextState.CollectPost;
-            }
-            else
-            {
-                // no post-context needed, emit immediately
-                this.UpdateQueue();
-            }
-        }
-
-        /// <summary>
-        /// Moves completed match with full context to emit queue.
-        /// </summary>
-        private void UpdateQueue()
-        {
-            if (this.matchInfo != null)
-            {
-                // add match to emit queue
-                this.emitQueue.Add(this.matchInfo);
-                // attach collected context if match supports it
-                if (this.matchInfo.Context != null)
-                {
-                    this.matchInfo.Context.DisplayPreContext = this.collectedPreContext.ToArray();
-                    this.matchInfo.Context.DisplayPostContext = this.collectedPostContext.ToArray();
-                }
-                // reset for next match
+                this.preContext = preContext;
+                this.postContext = postContext;
+                // circular buffer automatically handles overflow for pre-context
+                this.collectedPreContext = new CircularBuffer<string>(preContext);
+                this.collectedPostContext = new List<string>(postContext);
+                this.emitQueue = new List<MatchInfo>();
                 this.Reset();
             }
-        }
 
-        /// <summary>
-        /// Queue of completed matches ready for emission.
-        /// </summary>
-        public IList<MatchInfo> EmitQueue
-        {
-            get
+            /// <summary>
+            /// Resets tracker state between matches.
+            /// </summary>
+            private void Reset()
             {
-                return this.emitQueue;
+                // determine initial state based on pre-context requirements
+                this.contextState = (this.preContext > 0) ? ContextState.CollectPre : ContextState.InitialState;
+                this.collectedPreContext.Clear();
+                this.collectedPostContext.Clear();
+                this.matchInfo = null;
+            }
+
+            /// <summary>
+            /// Signals end of file - emit any pending matches.
+            /// </summary>
+            public void TrackEOF()
+            {
+                // if we were collecting post-context, emit the match now
+                if (this.contextState == ContextState.CollectPost)
+                {
+                    this.UpdateQueue();
+                }
+            }
+
+            /// <summary>
+            /// Processes a non-matching line for potential context inclusion.
+            /// </summary>
+            /// <param name="line">The line content.</param>
+            public void TrackLine(string line)
+            {
+                switch (this.contextState)
+                {
+                    case ContextState.InitialState:
+                        // no active match, nothing to do
+                        break;
+
+                    case ContextState.CollectPre:
+                        // add to pre-context buffer (circular, so old lines drop out)
+                        this.collectedPreContext.Add(line);
+                        return;
+
+                    case ContextState.CollectPost:
+                        // add to post-context list
+                        this.collectedPostContext.Add(line);
+                        // check if we've collected enough post-context lines
+                        if (this.collectedPostContext.Count >= this.postContext)
+                        {
+                            this.UpdateQueue();
+                        }
+                        break;
+
+                    default:
+                        return;
+                }
+            }
+
+            /// <summary>
+            /// Processes a matching line and transitions to post-context collection.
+            /// </summary>
+            /// <param name="match">The match information.</param>
+            public void TrackMatch(MatchInfo match)
+            {
+                // if we were already collecting post-context, emit previous match first
+                if (this.contextState == ContextState.CollectPost)
+                {
+                    this.UpdateQueue();
+                }
+                // store the new match
+                this.matchInfo = match;
+
+                // transition to post-context collection if needed
+                if (this.postContext > 0)
+                {
+                    this.contextState = ContextState.CollectPost;
+                }
+                else
+                {
+                    // no post-context needed, emit immediately
+                    this.UpdateQueue();
+                }
+            }
+
+            /// <summary>
+            /// Moves completed match with full context to emit queue.
+            /// </summary>
+            private void UpdateQueue()
+            {
+                if (this.matchInfo != null)
+                {
+                    // add match to emit queue
+                    this.emitQueue.Add(this.matchInfo);
+
+                    // attach collected context if match supports it
+                    if (this.matchInfo.Context != null)
+                    {
+                        this.matchInfo.Context.DisplayPreContext = this.collectedPreContext.ToArray();
+                        this.matchInfo.Context.DisplayPostContext = this.collectedPostContext.ToArray();
+                    }
+                    // reset for next match
+                    this.Reset();
+                }
+            }
+
+            /// <summary>
+            /// Queue of completed matches ready for emission.
+            /// </summary>
+            public IList<MatchInfo> EmitQueue
+            {
+                get
+                {
+                    return this.emitQueue;
+                }
+            }
+
+            /// <summary>
+            /// State machine for context collection phases.
+            /// </summary>
+            private enum ContextState
+            {
+                InitialState,   // no active match
+                CollectPre,     // collecting pre-context lines
+                CollectPost     // collecting post-context lines
             }
         }
 
         /// <summary>
-        /// State machine for context collection phases.
+        /// Interface for tracking context lines around pattern matches in file content.
+        /// Provides methods for collecting pre and post-context lines and managing match emission.
         /// </summary>
-        private enum ContextState
+        internal interface IContextTracker
         {
-            InitialState,   // no active match
-            CollectPre,     // collecting pre-context lines
-            CollectPost     // collecting post-context lines
+            /// <summary>
+            /// Signals that end of file has been reached and any pending matches should be emitted.
+            /// </summary>
+            void TrackEOF();
+
+            /// <summary>
+            /// Tracks a non-matching line for potential inclusion as context around matches.
+            /// </summary>
+            /// <param name="line">The line content to potentially include as context</param>
+            void TrackLine(string line);
+
+            /// <summary>
+            /// Tracks a matching line and begins collecting post-context if needed.
+            /// </summary>
+            /// <param name="match">The match information including line content and position data</param>
+            void TrackMatch(MatchInfo match);
+
+            /// <summary>
+            /// Gets the queue of completed matches ready for emission with full context attached.
+            /// </summary>
+            IList<MatchInfo> EmitQueue { get; }
         }
-    }
-
-    /// <summary>
-    /// Interface for tracking context lines around pattern matches in file content.
-    /// Provides methods for collecting pre and post-context lines and managing match emission.
-    /// </summary>
-    internal interface IContextTracker
-    {
-        /// <summary>
-        /// Signals that end of file has been reached and any pending matches should be emitted.
-        /// </summary>
-        void TrackEOF();
 
         /// <summary>
-        /// Tracks a non-matching line for potential inclusion as context around matches.
+        /// Provides encoding name to Encoding object conversion for file operations.
+        /// Supports common encoding names used in PowerShell and .NET.
         /// </summary>
-        /// <param name="line">The line content to potentially include as context</param>
-        void TrackLine(string line);
-
-        /// <summary>
-        /// Tracks a matching line and begins collecting post-context if needed.
-        /// </summary>
-        /// <param name="match">The match information including line content and position data</param>
-        void TrackMatch(MatchInfo match);
-
-        /// <summary>
-        /// Gets the queue of completed matches ready for emission with full context attached.
-        /// </summary>
-        IList<MatchInfo> EmitQueue { get; }
-    }
-
-    /// <summary>
-    /// Provides encoding name to Encoding object conversion for file operations.
-    /// Supports common encoding names used in PowerShell and .NET.
-    /// </summary>
-    internal static class EncodingConversion
-    {
-        // encoding name constants for case-insensitive comparison
-        internal const string Ascii = "ascii";
-        internal const string Ansi = "ansi";
-        internal const string BigEndianUnicode = "bigendianunicode";
-        internal const string BigEndianUtf32 = "bigendianutf32";
-        internal const string Default = "default";
-        internal const string OEM = "oem";
-        internal const string String = "string";
-        internal const string Unicode = "unicode";
-        internal const string Unknown = "unknown";
-        internal const string Utf32 = "utf32";
-        internal const string Utf7 = "utf7";
-        internal const string Utf8 = "utf8";
-        internal const string Utf8BOM = "utf8bom";
-        internal const string Utf8NoBOM = "utf8nobom";
-
-        /// <summary>
-        /// Converts an encoding name string to the corresponding Encoding object.
-        /// Supports PowerShell standard encodings, .NET encoding names, and numeric codepages.
-        /// </summary>
-        /// <param name="cmdlet">Cmdlet for error reporting (currently unused).</param>
-        /// <param name="encoding">The encoding name to convert.</param>
-        /// <returns>The corresponding Encoding object, defaults to UTF8NoBOM.</returns>
-        internal static Encoding Convert(Cmdlet cmdlet, string encoding)
+        internal static class EncodingConversion
         {
-            // handle null or empty encoding name
-            if ((encoding == null) || (encoding.Length == 0))
-            {
-                return new UTF8Encoding(false); // UTF8NoBOM
-            }
+            // encoding name constants for case-insensitive comparison
+            internal const string Ascii = "ascii";
+            internal const string Ansi = "ansi";
+            internal const string BigEndianUnicode = "bigendianunicode";
+            internal const string BigEndianUtf32 = "bigendianutf32";
+            internal const string Default = "default";
+            internal const string OEM = "oem";
+            internal const string String = "string";
+            internal const string Unicode = "unicode";
+            internal const string Unknown = "unknown";
+            internal const string Utf32 = "utf32";
+            internal const string Utf7 = "utf7";
+            internal const string Utf8 = "utf8";
+            internal const string Utf8BOM = "utf8bom";
+            internal const string Utf8NoBOM = "utf8nobom";
 
-            // handle special "unknown" encoding
-            if (string.Equals(encoding, "unknown", StringComparison.OrdinalIgnoreCase))
+            /// <summary>
+            /// Converts an encoding name string to the corresponding Encoding object.
+            /// Supports PowerShell standard encodings, .NET encoding names, and numeric codepages.
+            /// </summary>
+            /// <param name="cmdlet">Cmdlet for error reporting (currently unused).</param>
+            /// <param name="encoding">The encoding name to convert.</param>
+            /// <returns>The corresponding Encoding object, defaults to UTF8NoBOM.</returns>
+            internal static Encoding Convert(Cmdlet cmdlet, string encoding)
             {
-                return new UTF8Encoding(false); // UTF8NoBOM
-            }
+                // handle null or empty encoding name
+                if ((encoding == null) || (encoding.Length == 0))
+                {
+                    return new UTF8Encoding(false); // UTF8NoBOM
+                }
 
-            // handle "string" encoding (PowerShell convention)
-            if (string.Equals(encoding, "string", StringComparison.OrdinalIgnoreCase))
-            {
-                return Encoding.Unicode;
-            }
+                // handle special "unknown" encoding
+                if (string.Equals(encoding, "unknown", StringComparison.OrdinalIgnoreCase))
+                {
+                    return new UTF8Encoding(false); // UTF8NoBOM
+                }
 
-            // handle Unicode encodings
-            if (string.Equals(encoding, "unicode", StringComparison.OrdinalIgnoreCase))
-            {
-                return Encoding.Unicode;
-            }
-            if (string.Equals(encoding, "bigendianunicode", StringComparison.OrdinalIgnoreCase))
-            {
-                return Encoding.BigEndianUnicode;
-            }
+                // handle "string" encoding (PowerShell convention)
+                if (string.Equals(encoding, "string", StringComparison.OrdinalIgnoreCase))
+                {
+                    return System.Text.Encoding.Unicode;
+                }
 
-            // handle ASCII encoding
-            if (string.Equals(encoding, "ascii", StringComparison.OrdinalIgnoreCase))
-            {
-                return Encoding.ASCII;
-            }
+                // handle Unicode encodings
+                if (string.Equals(encoding, "unicode", StringComparison.OrdinalIgnoreCase))
+                {
+                    return System.Text.Encoding.Unicode;
+                }
+                if (string.Equals(encoding, "bigendianunicode", StringComparison.OrdinalIgnoreCase))
+                {
+                    return System.Text.Encoding.BigEndianUnicode;
+                }
 
-            // handle ANSI encoding (PowerShell 7.4+)
-            if (string.Equals(encoding, "ansi", StringComparison.OrdinalIgnoreCase))
-            {
-                return Encoding.GetEncoding(0); // Current culture's ANSI codepage
-            }
+                // handle ASCII encoding
+                if (string.Equals(encoding, "ascii", StringComparison.OrdinalIgnoreCase))
+                {
+                    return System.Text.Encoding.ASCII;
+                }
 
-            // handle UTF encodings
-            if (string.Equals(encoding, "utf8", StringComparison.OrdinalIgnoreCase))
-            {
-                return Encoding.UTF8;
-            }
-            if (string.Equals(encoding, "utf8bom", StringComparison.OrdinalIgnoreCase))
-            {
-                return new UTF8Encoding(true); // UTF8 with BOM
-            }
-            if (string.Equals(encoding, "utf8nobom", StringComparison.OrdinalIgnoreCase))
-            {
-                return new UTF8Encoding(false); // UTF8 without BOM
-            }
-            if (string.Equals(encoding, "utf7", StringComparison.OrdinalIgnoreCase))
-            {
+                // handle ANSI encoding (PowerShell 7.4+)
+                if (string.Equals(encoding, "ansi", StringComparison.OrdinalIgnoreCase))
+                {
+                    return System.Text.Encoding.GetEncoding(0); // Current culture's ANSI codepage
+                }
+
+                // handle UTF encodings
+                if (string.Equals(encoding, "utf8", StringComparison.OrdinalIgnoreCase))
+                {
+                    return System.Text.Encoding.UTF8;
+                }
+                if (string.Equals(encoding, "utf8bom", StringComparison.OrdinalIgnoreCase))
+                {
+                    return new UTF8Encoding(true); // UTF8 with BOM
+                }
+                if (string.Equals(encoding, "utf8nobom", StringComparison.OrdinalIgnoreCase))
+                {
+                    return new UTF8Encoding(false); // UTF8 without BOM
+                }
+                if (string.Equals(encoding, "utf7", StringComparison.OrdinalIgnoreCase))
+                {
 #pragma warning disable SYSLIB0001 // Type or member is obsolete
-                return Encoding.UTF7;
+                    return System.Text.Encoding.UTF7;
 #pragma warning restore SYSLIB0001 // Type or member is obsolete
-            }
-            if (string.Equals(encoding, "utf32", StringComparison.OrdinalIgnoreCase))
-            {
-                return Encoding.UTF32;
-            }
-            if (string.Equals(encoding, "bigendianutf32", StringComparison.OrdinalIgnoreCase))
-            {
-                return new UTF32Encoding(true, true); // Big-endian UTF32 with BOM
-            }
+                }
+                if (string.Equals(encoding, "utf32", StringComparison.OrdinalIgnoreCase))
+                {
+                    return System.Text.Encoding.UTF32;
+                }
+                if (string.Equals(encoding, "bigendianutf32", StringComparison.OrdinalIgnoreCase))
+                {
+                    return new UTF32Encoding(true, true); // Big-endian UTF32 with BOM
+                }
 
-            // handle system default encoding
-            if (string.Equals(encoding, "default", StringComparison.OrdinalIgnoreCase))
-            {
-                return Encoding.Default;
-            }
+                // handle system default encoding
+                if (string.Equals(encoding, "default", StringComparison.OrdinalIgnoreCase))
+                {
+                    return System.Text.Encoding.Default;
+                }
 
-            // handle OEM codepage (console encoding)
-            if (string.Equals(encoding, "oem", StringComparison.OrdinalIgnoreCase))
-            {
-                return Encoding.GetEncoding((int)NativeMethods.GetOEMCP());
-            }
+                // handle OEM codepage (console encoding)
+                if (string.Equals(encoding, "oem", StringComparison.OrdinalIgnoreCase))
+                {
+                    return System.Text.Encoding.GetEncoding((int)NativeMethods.GetOEMCP());
+                }
 
-            // Try to parse as numeric codepage
-            if (int.TryParse(encoding, out int codepage))
-            {
+                // Try to parse as numeric codepage
+                if (int.TryParse(encoding, out int codepage))
+                {
+                    try
+                    {
+                        return System.Text.Encoding.GetEncoding(codepage);
+                    }
+                    catch (ArgumentException)
+                    {
+                        // Invalid codepage, fall through to name-based lookup
+                    }
+                }
+
+                // Try to get encoding by name (handles all .NET encoding names)
                 try
                 {
-                    return Encoding.GetEncoding(codepage);
+                    return System.Text.Encoding.GetEncoding(encoding);
                 }
                 catch (ArgumentException)
                 {
-                    // Invalid codepage, fall through to name-based lookup
+                    // Encoding name not found, use default
                 }
+
+                // default fallback to UTF8NoBOM for unrecognized encodings
+                return new UTF8Encoding(false);
             }
 
-            // Try to get encoding by name (handles all .NET encoding names)
-            try
+            /// <summary>
+            /// P/Invoke declarations for Windows API functions.
+            /// </summary>
+            private static class NativeMethods
             {
-                return Encoding.GetEncoding(encoding);
+                /// <summary>
+                /// Gets the OEM codepage identifier for the system.
+                /// </summary>
+                /// <returns>The OEM codepage identifier.</returns>
+                [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+                internal static extern int GetOEMCP();
             }
-            catch (ArgumentException)
-            {
-                // Encoding name not found, use default
-            }
-
-            // default fallback to UTF8NoBOM for unrecognized encodings
-            return new UTF8Encoding(false);
         }
 
         /// <summary>
-        /// P/Invoke declarations for Windows API functions.
+        /// Fixed-size circular buffer implementation for efficient storage of recent items.
+        /// Automatically overwrites oldest items when capacity is exceeded.
+        /// Used for storing pre-context lines in content matching.
         /// </summary>
-        private static class NativeMethods
+        /// <typeparam name="T">The type of items stored in the buffer.</typeparam>
+        internal class CircularBuffer<T> : IList<T>
+        {
+            private T[] _buffer;
+            private int _head;
+            private int _count;
+
+            /// <summary>
+            /// Initializes a new circular buffer with the specified capacity.
+            /// </summary>
+            /// <param name="capacity">The maximum number of items the buffer can hold.</param>
+            public CircularBuffer(int capacity)
+            {
+                _buffer = new T[capacity];
+            }
+
+            /// <summary>
+            /// Gets the number of items currently in the buffer.
+            /// </summary>
+            public int Count => _count;
+
+            /// <summary>
+            /// Gets a value indicating whether the buffer is read-only (always false).
+            /// </summary>
+            public bool IsReadOnly => false;
+
+            /// <summary>
+            /// Gets or sets the item at the specified index.
+            /// Index 0 is the oldest item, higher indices are more recent.
+            /// </summary>
+            /// <param name="index">The zero-based index of the item.</param>
+            /// <returns>The item at the specified index.</returns>
+            public T this[int index] { get => _buffer[(_head + index) % _buffer.Length]; set => _buffer[(_head + index) % _buffer.Length] = value; }
+
+            /// <summary>
+            /// Not implemented - circular buffers don't support index-based search.
+            /// </summary>
+            public int IndexOf(T item) => throw new NotImplementedException();
+
+            /// <summary>
+            /// Not implemented - circular buffers don't support insertion at arbitrary positions.
+            /// </summary>
+            public void Insert(int index, T item) => throw new NotImplementedException();
+
+            /// <summary>
+            /// Not implemented - circular buffers don't support removal at arbitrary positions.
+            /// </summary>
+            public void RemoveAt(int index) => throw new NotImplementedException();
+
+            /// <summary>
+            /// Adds an item to the buffer. If the buffer is full, the oldest item is overwritten.
+            /// </summary>
+            /// <param name="item">The item to add.</param>
+            public void Add(T item)
+            {
+                // handle buffer capacity - either add new item or overwrite oldest
+                if (_count < _buffer.Length)
+                {
+                    _buffer[_head] = item;
+                    _head = (_head + 1) % _buffer.Length;
+                    _count++;
+                }
+                else
+                {
+                    // buffer is full, overwrite oldest item (circular behavior)
+                    _buffer[_head] = item;
+                    _head = (_head + 1) % _buffer.Length;
+                    // count stays the same (buffer remains full)
+                }
+            }
+
+            /// <summary>
+            /// Clears all items from the buffer.
+            /// </summary>
+            public void Clear()
+            {
+                _head = 0;
+                _count = 0;
+            }
+
+            /// <summary>
+            /// Not implemented - circular buffers don't support containment checks.
+            /// </summary>
+            public bool Contains(T item) => throw new NotImplementedException();
+
+            /// <summary>
+            /// Copies the elements of the circular buffer to an array, starting at the specified array index.
+            /// </summary>
+            /// <param name="array">The one-dimensional array that is the destination of the elements copied from the circular buffer.</param>
+            /// <param name="arrayIndex">The zero-based index in array at which copying begins.</param>
+            public void CopyTo(T[] array, int arrayIndex)
+            {
+                if (array == null) throw new ArgumentNullException(nameof(array));
+                if (arrayIndex < 0) throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+                if (array.Length - arrayIndex < _count) throw new ArgumentException("Destination array is not large enough");
+
+                for (int i = 0; i < _count; i++)
+                {
+                    array[arrayIndex + i] = this[i];
+                }
+            }
+
+            /// <summary>
+            /// Not implemented - circular buffers don't support removal of specific items.
+            /// </summary>
+            public bool Remove(T item) => throw new NotImplementedException();
+
+            /// <summary>
+            /// Returns an enumerator that iterates through the buffer from oldest to newest.
+            /// </summary>
+            /// <returns>An enumerator for the buffer.</returns>
+            public IEnumerator<T> GetEnumerator()
+            {
+                // iterate from oldest (head - count) to newest (head - 1), wrapping around
+                for (int i = 0; i < _count; i++)
+                {
+                    yield return this[i];
+                }
+            }
+
+            /// <summary>
+            /// Returns a non-generic enumerator for the buffer.
+            /// </summary>
+            /// <returns>A non-generic enumerator.</returns>
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        /// <summary>
+        /// Provides string formatting and manipulation utilities.
+        /// Includes culture-aware formatting and buffer width calculations.
+        /// </summary>
+        internal static class StringUtil
         {
             /// <summary>
-            /// Gets the OEM codepage identifier for the system.
+            /// Formats a string using the current thread's culture.
             /// </summary>
-            /// <returns>The OEM codepage identifier.</returns>
-            [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-            internal static extern int GetOEMCP();
-        }
-    }
-
-    /// <summary>
-    /// Fixed-size circular buffer implementation for efficient storage of recent items.
-    /// Automatically overwrites oldest items when capacity is exceeded.
-    /// Used for storing pre-context lines in content matching.
-    /// </summary>
-    /// <typeparam name="T">The type of items stored in the buffer.</typeparam>
-    internal class CircularBuffer<T> : IList<T>
-    {
-        private T[] _buffer;
-        private int _head;
-        private int _count;
-
-        /// <summary>
-        /// Initializes a new circular buffer with the specified capacity.
-        /// </summary>
-        /// <param name="capacity">The maximum number of items the buffer can hold.</param>
-        public CircularBuffer(int capacity)
-        {
-            _buffer = new T[capacity];
-        }
-
-        /// <summary>
-        /// Gets the number of items currently in the buffer.
-        /// </summary>
-        public int Count => _count;
-
-        /// <summary>
-        /// Gets a value indicating whether the buffer is read-only (always false).
-        /// </summary>
-        public bool IsReadOnly => false;
-
-        /// <summary>
-        /// Gets or sets the item at the specified index.
-        /// Index 0 is the oldest item, higher indices are more recent.
-        /// </summary>
-        /// <param name="index">The zero-based index of the item.</param>
-        /// <returns>The item at the specified index.</returns>
-        public T this[int index] { get => _buffer[(_head + index) % _buffer.Length]; set => _buffer[(_head + index) % _buffer.Length] = value; }
-
-        /// <summary>
-        /// Not implemented - circular buffers don't support index-based search.
-        /// </summary>
-        public int IndexOf(T item) => throw new NotImplementedException();
-
-        /// <summary>
-        /// Not implemented - circular buffers don't support insertion at arbitrary positions.
-        /// </summary>
-        public void Insert(int index, T item) => throw new NotImplementedException();
-
-        /// <summary>
-        /// Not implemented - circular buffers don't support removal at arbitrary positions.
-        /// </summary>
-        public void RemoveAt(int index) => throw new NotImplementedException();
-
-        /// <summary>
-        /// Adds an item to the buffer. If the buffer is full, the oldest item is overwritten.
-        /// </summary>
-        /// <param name="item">The item to add.</param>
-        public void Add(T item)
-        {
-            // handle buffer capacity - either add new item or overwrite oldest
-            if (_count < _buffer.Length)
+            /// <param name="formatSpec">The format string.</param>
+            /// <param name="o">The objects to format.</param>
+            /// <returns>The formatted string.</returns>
+            internal static string Format(string formatSpec, params object[] o)
             {
-                _buffer[_head] = item;
-                _head = (_head + 1) % _buffer.Length;
-                _count++;
+                return string.Format(Thread.CurrentThread.CurrentCulture, formatSpec, o);
             }
-            else
+
+            /// <summary>
+            /// Formats a string with one parameter using the current thread's culture.
+            /// </summary>
+            /// <param name="formatSpec">The format string.</param>
+            /// <param name="o">The object to format.</param>
+            /// <returns>The formatted string.</returns>
+            internal static string Format(string formatSpec, object o)
             {
-                // buffer is full, overwrite oldest item (circular behavior)
-                _buffer[_head] = item;
-                _head = (_head + 1) % _buffer.Length;
-                // count stays the same (buffer remains full)
+                return string.Format(Thread.CurrentThread.CurrentCulture, formatSpec, new object[] { o });
             }
-        }
 
-        /// <summary>
-        /// Clears all items from the buffer.
-        /// </summary>
-        public void Clear()
-        {
-            _head = 0;
-            _count = 0;
-        }
-
-        /// <summary>
-        /// Not implemented - circular buffers don't support containment checks.
-        /// </summary>
-        public bool Contains(T item) => throw new NotImplementedException();
-
-        /// <summary>
-        /// Copies the elements of the circular buffer to an array, starting at the specified array index.
-        /// </summary>
-        /// <param name="array">The one-dimensional array that is the destination of the elements copied from the circular buffer.</param>
-        /// <param name="arrayIndex">The zero-based index in array at which copying begins.</param>
-        public void CopyTo(T[] array, int arrayIndex)
-        {
-            if (array == null) throw new ArgumentNullException(nameof(array));
-            if (arrayIndex < 0) throw new ArgumentOutOfRangeException(nameof(arrayIndex));
-            if (array.Length - arrayIndex < _count) throw new ArgumentException("Destination array is not large enough");
-
-            for (int i = 0; i < _count; i++)
+            /// <summary>
+            /// Formats a string with two parameters using the current thread's culture.
+            /// </summary>
+            /// <param name="formatSpec">The format string.</param>
+            /// <param name="o1">The first object to format.</param>
+            /// <param name="o2">The second object to format.</param>
+            /// <returns>The formatted string.</returns>
+            internal static string Format(string formatSpec, object o1, object o2)
             {
-                array[arrayIndex + i] = this[i];
+                return string.Format(Thread.CurrentThread.CurrentCulture, formatSpec, new object[] { o1, o2 });
             }
-        }
 
-        /// <summary>
-        /// Not implemented - circular buffers don't support removal of specific items.
-        /// </summary>
-        public bool Remove(T item) => throw new NotImplementedException();
-
-        /// <summary>
-        /// Returns an enumerator that iterates through the buffer from oldest to newest.
-        /// </summary>
-        /// <returns>An enumerator for the buffer.</returns>
-        public IEnumerator<T> GetEnumerator()
-        {
-            // iterate from oldest (head - count) to newest (head - 1), wrapping around
-            for (int i = 0; i < _count; i++)
+            /// <summary>
+            /// Truncates a string to fit within a specified buffer cell width.
+            /// Accounts for wide characters and terminal display width.
+            /// </summary>
+            /// <param name="rawUI">The PowerShell host raw UI interface.</param>
+            /// <param name="toTruncate">The string to truncate.</param>
+            /// <param name="maxWidthInBufferCells">The maximum width in buffer cells.</param>
+            /// <returns>The truncated string that fits within the specified width.</returns>
+            internal static string TruncateToBufferCellWidth(PSHostRawUserInterface rawUI, string toTruncate, int maxWidthInBufferCells)
             {
-                yield return this[i];
-            }
-        }
+                // start with the full string length, but don't exceed the string length
+                int length = Math.Min(toTruncate.Length, maxWidthInBufferCells);
 
-        /// <summary>
-        /// Returns a non-generic enumerator for the buffer.
-        /// </summary>
-        /// <returns>A non-generic enumerator.</returns>
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
-    }
-    /// <summary>
-    /// Provides string formatting and manipulation utilities.
-    /// Includes culture-aware formatting and buffer width calculations.
-    /// </summary>
-    internal static class StringUtil
-    {
-        /// <summary>
-        /// Formats a string using the current thread's culture.
-        /// </summary>
-        /// <param name="formatSpec">The format string.</param>
-        /// <param name="o">The objects to format.</param>
-        /// <returns>The formatted string.</returns>
-        internal static string Format(string formatSpec, params object[] o)
-        {
-            return string.Format(Thread.CurrentThread.CurrentCulture, formatSpec, o);
-        }
-
-        /// <summary>
-        /// Formats a string with one parameter using the current thread's culture.
-        /// </summary>
-        /// <param name="formatSpec">The format string.</param>
-        /// <param name="o">The object to format.</param>
-        /// <returns>The formatted string.</returns>
-        internal static string Format(string formatSpec, object o)
-        {
-            return string.Format(Thread.CurrentThread.CurrentCulture, formatSpec, new object[] { o });
-        }
-
-        /// <summary>
-        /// Formats a string with two parameters using the current thread's culture.
-        /// </summary>
-        /// <param name="formatSpec">The format string.</param>
-        /// <param name="o1">The first object to format.</param>
-        /// <param name="o2">The second object to format.</param>
-        /// <returns>The formatted string.</returns>
-        internal static string Format(string formatSpec, object o1, object o2)
-        {
-            return string.Format(Thread.CurrentThread.CurrentCulture, formatSpec, new object[] { o1, o2 });
-        }
-
-        /// <summary>
-        /// Truncates a string to fit within a specified buffer cell width.
-        /// Accounts for wide characters and terminal display width.
-        /// </summary>
-        /// <param name="rawUI">The PowerShell host raw UI interface.</param>
-        /// <param name="toTruncate">The string to truncate.</param>
-        /// <param name="maxWidthInBufferCells">The maximum width in buffer cells.</param>
-        /// <returns>The truncated string that fits within the specified width.</returns>
-        internal static string TruncateToBufferCellWidth(PSHostRawUserInterface rawUI, string toTruncate, int maxWidthInBufferCells)
-        {
-            // start with the full string length, but don't exceed the string length
-            int length = Math.Min(toTruncate.Length, maxWidthInBufferCells);
-
-            // iteratively reduce length until the string fits in the buffer width
-            while (true)
-            {
-                string source = toTruncate.Substring(0, length);
-                // check if this substring fits within the buffer cell width
-                if (rawUI.LengthInBufferCells(source) <= maxWidthInBufferCells)
+                // iteratively reduce length until the string fits in the buffer width
+                while (true)
                 {
-                    return source;
+                    string source = toTruncate.Substring(0, length);
+                    // check if this substring fits within the buffer cell width
+                    if (rawUI.LengthInBufferCells(source) <= maxWidthInBufferCells)
+                    {
+                        return source;
+                    }
+                    length--; // reduce length and try again
                 }
-                length--; // reduce length and try again
             }
         }
     }

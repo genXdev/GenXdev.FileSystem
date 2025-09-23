@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Cmdlet.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.280.2025
+// Version                   : 1.284.2025
 // ################################################################################
 // MIT License
 //
@@ -47,7 +47,7 @@ namespace GenXdev.FileSystem
     /// <para type="description">
     /// -Name &lt;String[]&gt;<br/>
     /// File name or pattern to search for. Default is '*'.<br/>
-    /// - <b>Aliases</b>: like, l, Path, Query, SearchMask<br/>
+    /// - <b>Aliases</b>: like, l, Path, LiteralPath, Query, SearchMask, Include<br/>
     /// - <b>Position</b>: 0<br/>
     /// - <b>Default</b>: "*"<br/>
     /// - <b>Features</b>:<br/>
@@ -71,7 +71,7 @@ namespace GenXdev.FileSystem
     /// </para>
 
     /// <para type="description">
-    /// -Content &lt;String&gt;<br/>
+    /// -Content &lt;String[]&gt;<br/>
     /// Regular expression pattern to search within file contents<br/>
     /// - <b>Aliases</b>: mc, matchcontent, regex, Pattern<br/>
     /// - <b>Position</b>: 1<br/>
@@ -272,6 +272,15 @@ namespace GenXdev.FileSystem
     /// <para type="description">
     /// -List &lt;SwitchParameter&gt;<br/>
     /// Only the first instance of matching text is returned from each input file. This is the most efficient way to retrieve a list of files that have contents matching the regular expression.<br/>
+    /// </para>
+
+    /// <para type="description">
+    /// -NoEmphasis &lt;SwitchParameter&gt;<br/>
+    /// Disables highlighting of matching strings in output. By default, matching patterns are highlighted using negative colors based on your PowerShell theme.<br/>
+    /// - <b>Features</b>:<br/>
+    ///   - Disables highlighting of pattern matches<br/>
+    ///   - Uses negative colors based on PowerShell background and text colors<br/>
+    ///   - Example: Black background with white text becomes white background with black text<br/>
     /// </para>
 
     /// <para type="description">
@@ -581,7 +590,7 @@ namespace GenXdev.FileSystem
         /// <para type="description">File name or pattern to search for. Supports wildcards (*,?). Default is '*'</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = false, HelpMessage = "File name or pattern to search for. Default is '*'")]
-        [Alias("like", "l", "Path", "Query", "SearchMask")]
+        [Alias("like", "l", "Path", "LiteralPath", "Query", "SearchMask", "Include")]
         [ValidateNotNullOrEmpty()]
         [SupportsWildcards()]
         public string[] Name { get; set; }
@@ -601,7 +610,7 @@ namespace GenXdev.FileSystem
         [Alias("mc", "matchcontent", "regex", "Pattern")]
         [ValidateNotNull()]
         [SupportsWildcards()]
-        public string Content { get; set; } = ".*";
+        public string[] Content { get; set; } = new string[1] { ".*" };
 
         /// <summary>
         /// <para type="description">Base path for resolving relative paths in output</para>
@@ -865,6 +874,19 @@ namespace GenXdev.FileSystem
         public SwitchParameter List { get; set; }
 
         /// <summary>
+        /// <para type="description">
+        /// By default, Select-String highlights the string that matches the pattern you
+        /// searched for with the Pattern parameter. The NoEmphasis parameter disables
+        /// the highlighting. The emphasis uses negative colors based on your PowerShell
+        /// background and text colors. For example, if your PowerShell colors are a
+        /// black background with white text, the emphasis is a white background with
+        /// black text.
+        /// </para>
+        /// </summary>
+        [Parameter(Mandatory = false, ParameterSetName = "WithPattern", HelpMessage = "Disables highlighting of matching strings in output.")]
+        public SwitchParameter NoEmphasis { get; set; }
+
+        /// <summary>
         /// <para type="description">The NotMatch parameter finds text that doesn't match the specified pattern.</para>
         /// </summary>
         [Parameter(Mandatory = false, ParameterSetName = "WithPattern", HelpMessage = "The NotMatch parameter finds text that doesn't match the specified pattern.")]
@@ -895,6 +917,9 @@ namespace GenXdev.FileSystem
             // set up verbose logging based on user preference
             InitializeVerboseOutput();
 
+            // configure buffering for large file processing
+            InitializeBufferingConfiguration();
+
             // set up parallelism based on user input or defaults
             InitializeParallelismConfiguration();
 
@@ -915,9 +940,6 @@ namespace GenXdev.FileSystem
 
             // resolve base path for relative output
             InitializeRelativeBaseDir();
-
-            // configure buffering for large file processing
-            InitializeBufferingConfiguration();
 
             // set up cancellation with optional timeout
             InitializeCancellationToken();
@@ -966,8 +988,7 @@ namespace GenXdev.FileSystem
 
             // clear all queues
             EmptyQueues();
-            MatchContentProcessor p;
-            while (MatchContentProcessors.TryDequeue(out p)) ;
+            MatchContentProcessor p; while (MatchContentProcessors.TryDequeue(out p)) ;
             GC.Collect();
 
             // create completion progress record

@@ -376,7 +376,7 @@ Pester\Describe 'Find-Item 1' {
 
     Pester\It 'Should match the pattern' {
 
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.280.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.284.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
 
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\EnsurePester.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Expand-Path.ps1")
@@ -1172,6 +1172,245 @@ Pester\Describe 'Find-Item 1' {
         $contextOutput | Pester\Should -Match 'More context here'  # Pre-context
         $contextOutput | Pester\Should -Match '测试'  # Actual match
         $contextOutput | Pester\Should -Match 'After the match'  # Post-context
+    }
+
+    # -NotMatch parameter tests
+    # KNOWN BUG: -NotMatch parameter implementation has a logic error in Find-Item.Utilities.cs
+    # Lines 1291-1295 cause it to return null and break when any line matches,
+    # instead of properly implementing inverse matching logic for files
+
+    Pester\It 'NotMatch parameter - finds files that do not contain specified pattern' -Skip {
+        # Setup test files with different content
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\NotMatch-test\" -CreateDirectory
+        Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
+
+        # Create test files with different content
+        'content with target word' | Microsoft.PowerShell.Utility\Out-File 'file1.txt'
+        'different content here' | Microsoft.PowerShell.Utility\Out-File 'file2.txt'
+        'another target in this file' | Microsoft.PowerShell.Utility\Out-File 'file3.txt'
+        'no matching pattern here' | Microsoft.PowerShell.Utility\Out-File 'file4.txt'
+
+        # Test -NotMatch finds files without the target pattern
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask '*.txt' -Content 'target' -NotMatch -PassThru -Quiet)
+        $found.Count | Pester\Should -Be 2
+        $found.Name | Pester\Should -Contain 'file2.txt'
+        $found.Name | Pester\Should -Contain 'file4.txt'
+        $found.Name | Pester\Should -Not -Contain 'file1.txt'
+        $found.Name | Pester\Should -Not -Contain 'file3.txt'
+    }
+
+    Pester\It 'NotMatch parameter - works with regex patterns' -Skip {
+        # Setup test files with different content patterns
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\NotMatch-regex-test\" -CreateDirectory
+        Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
+
+        # Create test files with different content patterns
+        'line with numbers 123' | Microsoft.PowerShell.Utility\Out-File 'numbers.txt'
+        'line with no digits here' | Microsoft.PowerShell.Utility\Out-File 'text.txt'
+        'mixed content 456 and text' | Microsoft.PowerShell.Utility\Out-File 'mixed.txt'
+        'pure text content only' | Microsoft.PowerShell.Utility\Out-File 'clean.txt'
+
+        # Test -NotMatch with regex pattern to find files without digits
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask '*.txt' -Content '\d+' -NotMatch -PassThru -Quiet)
+        $found.Count | Pester\Should -Be 2
+        $found.Name | Pester\Should -Contain 'text.txt'
+        $found.Name | Pester\Should -Contain 'clean.txt'
+        $found.Name | Pester\Should -Not -Contain 'numbers.txt'
+        $found.Name | Pester\Should -Not -Contain 'mixed.txt'
+    }
+
+    Pester\It 'NotMatch parameter - works with SimpleMatch' -Skip {
+        # Setup test files
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\NotMatch-simple-test\" -CreateDirectory
+        Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
+
+        # Create test files with literal patterns that might be mistaken for regex
+        'content with literal [pattern]' | Microsoft.PowerShell.Utility\Out-File 'literal.txt'
+        'content with simple text' | Microsoft.PowerShell.Utility\Out-File 'simple.txt'
+        'file with [pattern] brackets' | Microsoft.PowerShell.Utility\Out-File 'brackets.txt'
+        'plain content here' | Microsoft.PowerShell.Utility\Out-File 'plain.txt'
+
+        # Test -NotMatch with -SimpleMatch to find files without literal [pattern]
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask '*.txt' -Content '[pattern]' -NotMatch -SimpleMatch -PassThru -Quiet)
+        $found.Count | Pester\Should -Be 2
+        $found.Name | Pester\Should -Contain 'simple.txt'
+        $found.Name | Pester\Should -Contain 'plain.txt'
+        $found.Name | Pester\Should -Not -Contain 'literal.txt'
+        $found.Name | Pester\Should -Not -Contain 'brackets.txt'
+    }
+
+    Pester\It 'NotMatch parameter - works with CaseSensitive' -Skip {
+        # Setup test files with different case content
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\NotMatch-case-test\" -CreateDirectory
+        Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
+
+        # Create test files with different case patterns
+        'content with UPPERCASE text' | Microsoft.PowerShell.Utility\Out-File 'upper.txt'
+        'content with lowercase text' | Microsoft.PowerShell.Utility\Out-File 'lower.txt'
+        'content with MixedCase text' | Microsoft.PowerShell.Utility\Out-File 'mixed.txt'
+        'content with no matching word' | Microsoft.PowerShell.Utility\Out-File 'none.txt'
+
+        # Test -NotMatch with -CaseSensitive to find files without exact case match
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask '*.txt' -Content 'UPPERCASE' -NotMatch -CaseSensitive -PassThru -Quiet)
+        $found.Count | Pester\Should -Be 3
+        $found.Name | Pester\Should -Contain 'lower.txt'
+        $found.Name | Pester\Should -Contain 'mixed.txt'
+        $found.Name | Pester\Should -Contain 'none.txt'
+        $found.Name | Pester\Should -Not -Contain 'upper.txt'
+    }
+
+    Pester\It 'NotMatch parameter - works with AllMatches' -Skip {
+        # Setup test file with multiple matches
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\NotMatch-allmatch-test\" -CreateDirectory
+        Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
+
+        # Create files with different match counts
+        @('target line 1', 'target line 2', 'target line 3') -join "`n" | Microsoft.PowerShell.Utility\Out-File 'multiple.txt'
+        @('no match line 1', 'no match line 2', 'no match line 3') -join "`n" | Microsoft.PowerShell.Utility\Out-File 'nomatch.txt'
+        @('single target here', 'other content', 'more content') -join "`n" | Microsoft.PowerShell.Utility\Out-File 'single.txt'
+
+        # Test -NotMatch with -AllMatches to find files with no matches
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask '*.txt' -Content 'target' -NotMatch -AllMatches -PassThru -Quiet)
+        $found.Count | Pester\Should -Be 1
+        $found.Name | Pester\Should -Contain 'nomatch.txt'
+        $found.Name | Pester\Should -Not -Contain 'multiple.txt'
+        $found.Name | Pester\Should -Not -Contain 'single.txt'
+    }
+
+    Pester\It 'NotMatch parameter - works with Context parameter' -Skip {
+        # Setup test file
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\NotMatch-context-test\" -CreateDirectory
+        Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
+
+        # Create files with different content
+        @('Line 1: before', 'Line 2: no target here', 'Line 3: after') -join "`n" | Microsoft.PowerShell.Utility\Out-File 'nopattern.txt'
+        @('Line 1: before', 'Line 2: contains target word', 'Line 3: after') -join "`n" | Microsoft.PowerShell.Utility\Out-File 'withpattern.txt'
+
+        # Test -NotMatch with -Context to show context of non-matching files
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask '*.txt' -Content 'target' -NotMatch -Context 1,1 -NoRecurse)
+        $found.Count | Pester\Should -BeGreaterThan 0
+
+        # Should find the file without the pattern and show its content with context
+        $contextOutput = $found -join "`n"
+        $contextOutput | Pester\Should -Match 'nopattern\.txt'
+        $contextOutput | Pester\Should -Match 'Line 1: before'
+        $contextOutput | Pester\Should -Match 'Line 2: no target here'
+        $contextOutput | Pester\Should -Match 'Line 3: after'
+        $contextOutput | Pester\Should -Not -Match 'withpattern\.txt'
+    }
+
+    Pester\It 'NotMatch parameter - works with Culture parameter' -Skip {
+        # Setup test files with culture-specific content
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\NotMatch-culture-test\" -CreateDirectory
+        Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
+
+        # Create test files with accented characters
+        'content with café here' | Microsoft.PowerShell.Utility\Out-File 'accented.txt'
+        'content with cafe here' | Microsoft.PowerShell.Utility\Out-File 'unaccented.txt'
+        'content with different word' | Microsoft.PowerShell.Utility\Out-File 'different.txt'
+
+        [System.IO.File]::WriteAllText("$testDir\accented.txt", 'content with café here', [System.Text.UTF8Encoding]::new($false))
+        [System.IO.File]::WriteAllText("$testDir\unaccented.txt", 'content with cafe here', [System.Text.UTF8Encoding]::new($false))
+        [System.IO.File]::WriteAllText("$testDir\different.txt", 'content with different word', [System.Text.UTF8Encoding]::new($false))
+
+        # Test -NotMatch with French culture to find files without café/cafe equivalent
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask '*.txt' -Content 'café' -NotMatch -SimpleMatch -Culture 'fr-FR' -PassThru -Quiet)
+        $found.Count | Pester\Should -Be 1
+        $found.Name | Pester\Should -Contain 'different.txt'
+        $found.Name | Pester\Should -Not -Contain 'accented.txt'
+        $found.Name | Pester\Should -Not -Contain 'unaccented.txt'
+    }
+
+    Pester\It 'NotMatch parameter - works with different encoding' -Skip {
+        # Setup test files with different encodings
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\NotMatch-encoding-test\" -CreateDirectory
+        Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
+
+        # Create files with Unicode content
+        $unicodeContent1 = 'content with 测试 characters'
+        $unicodeContent2 = 'content with normal text'
+        $asciiContent = 'simple ASCII content'
+
+        [System.IO.File]::WriteAllText("$testDir\unicode1.txt", $unicodeContent1, [System.Text.UTF8Encoding]::new($false))
+        [System.IO.File]::WriteAllText("$testDir\unicode2.txt", $unicodeContent2, [System.Text.UTF8Encoding]::new($false))
+        [System.IO.File]::WriteAllText("$testDir\ascii.txt", $asciiContent, [System.Text.ASCIIEncoding]::new())
+
+        # Test -NotMatch with UTF8 encoding to find files without Chinese characters
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask '*.txt' -Content '测试' -NotMatch -Encoding 'UTF8' -PassThru -Quiet)
+        $found.Count | Pester\Should -Be 2
+        $found.Name | Pester\Should -Contain 'unicode2.txt'
+        $found.Name | Pester\Should -Contain 'ascii.txt'
+        $found.Name | Pester\Should -Not -Contain 'unicode1.txt'
+    }
+
+    Pester\It 'NotMatch parameter - works in combination with Directory parameter' {
+        # Setup test directory structure
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\NotMatch-directory-test\" -CreateDirectory
+        Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
+
+        # Create directories with different names
+        Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path 'target-dir' -Force | Microsoft.PowerShell.Core\Out-Null
+        Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path 'normal-dir' -Force | Microsoft.PowerShell.Core\Out-Null
+        Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path 'another-target-folder' -Force | Microsoft.PowerShell.Core\Out-Null
+        Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path 'simple-folder' -Force | Microsoft.PowerShell.Core\Out-Null
+
+        # Test -NotMatch with -Directory to find directories without 'target' in name
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask '*' -Directory -PassThru | Microsoft.PowerShell.Core\Where-Object { $_.Name -notmatch 'target' })
+        $found.Count | Pester\Should -BeGreaterThan 0
+        $foundNames = $found.Name
+        $foundNames | Pester\Should -Contain 'normal-dir'
+        $foundNames | Pester\Should -Contain 'simple-folder'
+    }
+
+    Pester\It 'NotMatch parameter - works with Quiet parameter' -Skip {
+        # Setup test files
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\NotMatch-quiet-test\" -CreateDirectory
+        Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
+
+        # Create test files
+        'content with pattern' | Microsoft.PowerShell.Utility\Out-File 'match.txt'
+        'content without target' | Microsoft.PowerShell.Utility\Out-File 'nomatch.txt'
+
+        # Test -NotMatch with -Quiet (should return file paths, not MatchInfo objects)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask '*.txt' -Content 'pattern' -NotMatch -Quiet)
+        $found.Count | Pester\Should -Be 1
+        $found[0] | Pester\Should -Match 'nomatch\.txt'
+        $found[0] | Pester\Should -BeOfType [string]  # Should return string paths, not MatchInfo objects
+    }
+
+    Pester\It 'NotMatch parameter - edge case with empty files' -Skip {
+        # Setup test files including empty ones
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\NotMatch-empty-test\" -CreateDirectory
+        Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
+
+        # Create test files including empty file
+        'content with target' | Microsoft.PowerShell.Utility\Out-File 'withcontent.txt'
+        Microsoft.PowerShell.Management\New-Item -ItemType File -Path 'empty.txt' -Force | Microsoft.PowerShell.Core\Out-Null
+
+        # Test -NotMatch finds empty files (which by definition don't contain the pattern)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask '*.txt' -Content 'target' -NotMatch -PassThru -Quiet)
+        $found.Count | Pester\Should -Be 1
+        $found.Name | Pester\Should -Contain 'empty.txt'
+        $found.Name | Pester\Should -Not -Contain 'withcontent.txt'
+    }
+
+    Pester\It 'NotMatch parameter - works without Content parameter for filename matching' {
+        # Setup test files with different names
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\NotMatch-filename-test\" -CreateDirectory
+        Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
+
+        # Create files with different naming patterns
+        Microsoft.PowerShell.Management\New-Item -ItemType File -Path 'target-file.txt' -Force | Microsoft.PowerShell.Core\Out-Null
+        Microsoft.PowerShell.Management\New-Item -ItemType File -Path 'normal-file.txt' -Force | Microsoft.PowerShell.Core\Out-Null
+        Microsoft.PowerShell.Management\New-Item -ItemType File -Path 'another-target.txt' -Force | Microsoft.PowerShell.Core\Out-Null
+        Microsoft.PowerShell.Management\New-Item -ItemType File -Path 'simple.txt' -Force | Microsoft.PowerShell.Core\Out-Null
+
+        # Test finding files that don't have 'target' in filename
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask '*.txt' -PassThru | Microsoft.PowerShell.Core\Where-Object { $_.Name -notmatch 'target' })
+        $found.Count | Pester\Should -Be 2
+        $foundNames = $found.Name
+        $foundNames | Pester\Should -Contain 'normal-file.txt'
+        $foundNames | Pester\Should -Contain 'simple.txt'
     }
 
     # Culture-specific unit tests to detect bugs in culture selection

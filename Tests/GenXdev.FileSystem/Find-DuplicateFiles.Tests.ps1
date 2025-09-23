@@ -1,7 +1,7 @@
 ﻿Pester\Describe 'Find-DuplicateFiles' {
 
     Pester\BeforeAll {
-        $testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\" -CreateDirectory
+        $testRoot = GenXdev.FileSystem\Expand-Path "$env:TEMP\GenXdev.FileSystem.Tests\$([DateTime]::UtcNow.Ticks)\" -CreateDirectory
         GenXdev.FileSystem\Remove-AllItems $testRoot
 
         # Setup test folders with duplicate files

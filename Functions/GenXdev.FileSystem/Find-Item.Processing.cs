@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Processing.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.280.2025
+// Version                   : 1.284.2025
 // ################################################################################
 // MIT License
 //
@@ -97,10 +97,13 @@ namespace GenXdev.FileSystem
              * this loop enables parallel processing of multiple directories.
              */
 
+            var maxDirectoryFunc = maxDirectoryWorkersInParallel; // cache delegate reference
+
             // loop while not canceled and dequeue succeeds
             while ((FileContentMatchQueue.Count <= baseMemoryPerWorker / 256) &&
                     !token.IsCancellationRequested && DirQueue.TryDequeue(out string name))
             {
+
                 try
                 {
                     // check for cancellation request
@@ -297,6 +300,18 @@ namespace GenXdev.FileSystem
                     Interlocked.Increment(ref dirsCompleted);
                 }
 
+                // dynamic throttling: check at end of iteration if we should exit
+                var currentDirectoryProcessors = Interlocked.Read(ref directoryProcessors);
+                var maxDirectoryProcessors = maxDirectoryWorkersInParallel();
+                if (currentDirectoryProcessors > maxDirectoryProcessors)
+                {
+                    if (UseVerboseOutput)
+                    {
+                        VerboseQueue.Enqueue($"Directory processor exiting: {currentDirectoryProcessors} > {maxDirectoryProcessors}");
+                    }
+                    break;
+                }
+
                 // check for cancellation after processing
                 token.ThrowIfCancellationRequested();
             }
@@ -474,6 +489,9 @@ namespace GenXdev.FileSystem
             {
                 AddWorkerTasksIfNeeded(cts.Token);
             }
+
+            // measure throughput and adjust workers every 1000ms
+            MeasureThroughputAndAdjustWorkers();
 
             // check all progress items in queue
             UpdateProgressStatus(true);
@@ -1359,7 +1377,7 @@ namespace GenXdev.FileSystem
                     // skip excluded patterns
 
                     // if have pattern
-                    if (usingSelectString)
+                    if (matchingFileContent)
                     {
 
                         // check if content search should be performed based on
@@ -1374,6 +1392,8 @@ namespace GenXdev.FileSystem
                             FileContentMatchQueue.Enqueue(fileInfo);
                             Interlocked.Increment(ref matchesQueued);
                             AddWorkerTasksIfNeeded(token);
+                            // Trigger throughput measurement for adaptive scaling
+                            MeasureThroughputAndAdjustWorkers();
                         }
                     }
                     else
@@ -1507,7 +1527,7 @@ namespace GenXdev.FileSystem
                                     var adsPath = $"{FilePath}:{streamName}";
 
                                     // if have pattern and search ads
-                                    if (usingSelectString && SearchADSContent.IsPresent)
+                                    if (matchingFileContent && SearchADSContent.IsPresent)
                                     {
 
                                         // perform content search in ads if enabled
@@ -1619,7 +1639,7 @@ namespace GenXdev.FileSystem
                 {
                     selectString = new MatchContentProcessor(
                             (int)baseMemoryPerWorker,
-                            new string[1] { Content },
+                            Content,
                             SimpleMatch.IsPresent,
                             AllMatches.IsPresent,
                             NotMatch.IsPresent,
@@ -1628,7 +1648,9 @@ namespace GenXdev.FileSystem
                             List.IsPresent,
                             Context,
                             Culture,
-                            this.cts.Token
+                            Quiet.IsPresent,
+                            NoEmphasis.IsPresent,
+                            token
                         );
                 }
 
@@ -1650,8 +1672,8 @@ namespace GenXdev.FileSystem
             {
                 // log failure if verbose
                 VerboseQueue.Enqueue((
-                    "Failed to read file: " + fileInfo + "\r\n Error: " + e.Message + "\r\n" + e.TargetSite + "\r\n" + e.StackTrace
-                ));
+                    "Failed to read file: " + fileInfo + "\r\n Error: " + e.Message + "\r\n" + e.TargetSite + "\r\n" + e.StackTrace + "\r\nSource:" + e.Source)
+                );
 
                 return;
             }
@@ -1724,14 +1746,12 @@ namespace GenXdev.FileSystem
             // handle leading recursive wildcard
             if (remainingFull.StartsWith("**\\"))
             {
-
                 // trim recursive prefix
                 remainingFull = remainingFull.Substring(3);
 
                 // clear if no more wildcards or default
                 if (NoMoreCustomWildcards || remainingFull == "*")
                 {
-
                     // set to empty
                     remainingFull = "";
                 }
@@ -1949,6 +1969,9 @@ namespace GenXdev.FileSystem
 
                         // add workers if needed
                         AddWorkerTasksIfNeeded(token);
+
+                        // Trigger throughput measurement for adaptive scaling
+                        MeasureThroughputAndAdjustWorkers();
                     }
                     else
                     {

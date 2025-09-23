@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Initialization.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.280.2025
+// Version                   : 1.284.2025
 // ################################################################################
 // MIT License
 //
@@ -46,8 +46,9 @@ namespace GenXdev.FileSystem
         private void InitializeParallelismConfiguration()
         {
             // determine actions
-            usingSelectString = !String.IsNullOrEmpty(Content) && (Content != ".*" || SimpleMatch.IsPresent) &&
-                 (Content != "*" || !SimpleMatch.IsPresent);
+            matchingFileContent = Content != null && Content.Length > 0 && (
+                (Content.Any(c => c != ".*" && !SimpleMatch.IsPresent) ||
+                (Content.Any(c => c != "*" && SimpleMatch.IsPresent))));
 
             // how many files at once? what user wants, or default to core count
             baseTargetWorkerCount =
@@ -55,47 +56,138 @@ namespace GenXdev.FileSystem
                 GetCoreCount() :
                 Math.Max(1, MaxDegreeOfParallelism / 2);
 
-            int baseLength = baseMemoryPerWorker / 125;
-            buffersFull = () =>  FileContentMatchQueue.Count <= baseLength ||
-                                VerboseQueue.Count <= baseLength ||
-                                DirQueue.Count <= baseLength ||
-                                OutputQueue.Count <= baseLength;
+            int baseFullLength = Math.Max(2, baseMemoryPerWorker / 125);
+            int baseEmptyLength = Math.Max(1, baseMemoryPerWorker / 500);
+
+            // Add intermediate thresholds to prevent oscillation
+            int baseHighLength = Math.Max(1, (baseFullLength + baseEmptyLength) / 2);  // ~75% threshold
+            int baseLowLength = Math.Max(1, baseEmptyLength + (baseHighLength - baseEmptyLength) / 3);  // ~40% threshold
+
+            bool wasFull = false;
+            bool wasHigh = false;
+            bool first = true;
+            long lastStateChange = 0;
+
+            buffersFull = () =>
+            {
+                // Cache queue counts to avoid multiple expensive .Count calls
+                int fileMatchCount = FileContentMatchQueue.Count;
+                int verboseCount = VerboseQueue.Count;
+                int dirCount = DirQueue.Count;
+                int outputCount = OutputQueue.Count;
+
+                // Find the maximum queue size for state determination
+                int maxQueueSize = Math.Max(Math.Max(fileMatchCount, verboseCount),
+                                          Math.Max(dirCount, outputCount));
+
+                // Rate limiting: prevent state changes more than once per 100ms
+                long now = DateTime.UtcNow.Ticks;
+                bool canChangeState = (now - lastStateChange) > TimeSpan.TicksPerMillisecond * 100;
+
+                // Multi-level state machine to prevent oscillation
+                if (first)
+                {
+                    // Initial state determination
+                    wasFull = maxQueueSize >= baseFullLength;
+                    wasHigh = maxQueueSize >= baseHighLength;
+                    first = false;
+                    lastStateChange = now;
+                    return wasFull;
+                }
+
+                // State transition logic with hysteresis
+                if (!wasFull && !wasHigh)
+                {
+                    // Currently in LOW state
+                    if (maxQueueSize >= baseHighLength && canChangeState)
+                    {
+                        wasHigh = true;
+                        lastStateChange = now;
+                    }
+                    else if (maxQueueSize >= baseFullLength && canChangeState)
+                    {
+                        wasFull = true;
+                        wasHigh = true;
+                        lastStateChange = now;
+                    }
+                }
+                else if (wasHigh && !wasFull)
+                {
+                    // Currently in MEDIUM state
+                    if (maxQueueSize >= baseFullLength && canChangeState)
+                    {
+                        wasFull = true;
+                        lastStateChange = now;
+                    }
+                    else if (maxQueueSize <= baseLowLength && canChangeState)
+                    {
+                        wasHigh = false;
+                        lastStateChange = now;
+                    }
+                }
+                else if (wasFull)
+                {
+                    // Currently in FULL state
+                    if (maxQueueSize <= baseEmptyLength && canChangeState)
+                    {
+                        wasFull = false;
+                        wasHigh = false;
+                        lastStateChange = now;
+                    }
+                    else if (maxQueueSize <= baseHighLength && canChangeState)
+                    {
+                        wasFull = false;
+                        lastStateChange = now;
+                    }
+                }
+
+                return wasFull;
+            };
 
             // stop finding files when the queues get too full
             maxDirectoryWorkersInParallel = () =>
-                            // we are thinking about the memory being used 
+                            // we are thinking about the memory being used
                             // for storing paths to process
                             // stop finding more files when queues get too full
-                            buffersFull() ?
-                            Math.Min(DirQueue.Count, baseTargetWorkerCount) : 0;
+                            buffersFull() ? 0 :
+                            Math.Min(
+                                DirQueue.Count,
+                                Math.Max(
+                                    baseTargetWorkerCount,
+                                    (int)Interlocked.Read(ref recommendedDirectoryWorkers)
+                                )
+                            );
 
 
             // dynamicly scale according to how full buffers are getting
             maxMatchWorkersInParallel = () =>
-            Math.Min(
-                Math.Min(
-                        // idealy as much as possible
-                        FileContentMatchQueue.Count,
-                        // if user wants one we take one
-                        MaxDegreeOfParallelism == 1 ? 1 : int.MaxValue
-                ),
-                Math.Max(
+            {
+                int recMatchWorkers = (int)Interlocked.Read(ref recommendedMatchWorkers);
+                return Math.Min(
                     Math.Min(
-                        // idealy as much as possible
-                        FileContentMatchQueue.Count,
-                        // limit to twice the target worker count
-                        baseTargetWorkerCount * 2
-                        // and share it with directory workers
-                        // so when they get throttled, we can use more for matching
-                        ) - maxDirectoryWorkersInParallel(),
-                    Math.Min(
-                        // idealy as much as possible
-                        FileContentMatchQueue.Count,
-                        // limit to twice the target worker count
-                        baseTargetWorkerCount
+                            // idealy as much as possible
+                            FileContentMatchQueue.Count,
+                            // if user wants one we take one
+                            MaxDegreeOfParallelism == 1 ? 1 : int.MaxValue
+                    ),
+                    Math.Max(
+                        Math.Min(
+                            // idealy as much as possible
+                            FileContentMatchQueue.Count,
+                            // limit to twice the target worker count (or throughput recommendation)
+                            Math.Max(baseTargetWorkerCount * 2, recMatchWorkers)
+                            // and share it with directory workers
+                            // so when they get throttled, we can use more for matching
+                            ) - maxDirectoryWorkersInParallel(),
+                        Math.Min(
+                            // idealy as much as possible
+                            FileContentMatchQueue.Count,
+                            // limit to twice the target worker count (or throughput recommendation)
+                            Math.Max(baseTargetWorkerCount, recMatchWorkers)
+                        )
                     )
-                )
-            );
+                );
+            };
 
             // we will only temporarily change the thread pool size
             ThreadPool.GetMaxThreads(out this.oldMaxWorkerThread, out this.oldMaxCompletionPorts);
@@ -103,7 +195,7 @@ namespace GenXdev.FileSystem
             int workerThreads = Math.Max(1, Math.Max(this.oldMaxWorkerThread, maxDirectoryWorkersInParallel() * 2));
             int completionPortThreads = Math.Max(1, Math.Max(this.oldMaxCompletionPorts, maxMatchWorkersInParallel()));
 
-            // increase thread pool size if needed  
+            // increase thread pool size if needed
             ThreadPool.SetMaxThreads(
 
                 // worker threads
@@ -118,13 +210,19 @@ namespace GenXdev.FileSystem
             {
                 VerboseQueue.Enqueue($"Max worker threads set to {workerThreads}, completion port threads set to {completionPortThreads}");
                 VerboseQueue.Enqueue($"Base target worker count: {baseTargetWorkerCount}");
-                VerboseQueue.Enqueue($"Using content matching: {usingSelectString}");
-                if (usingSelectString)
+                VerboseQueue.Enqueue($"Using content matching: {matchingFileContent}");
+                if (matchingFileContent)
                 {
                     VerboseQueue.Enqueue($"Max match workers in parallel: {maxMatchWorkersInParallel()}");
                 }
                 VerboseQueue.Enqueue($"Max directory workers in parallel: {maxDirectoryWorkersInParallel()}");
+                VerboseQueue.Enqueue($"Throughput-based adaptive scaling enabled with 1000ms measurement intervals");
             }
+
+            // Initialize throughput-based recommendations with baseline values (thread-safe)
+            Interlocked.Exchange(ref recommendedDirectoryWorkers, baseTargetWorkerCount);
+            Interlocked.Exchange(ref recommendedMatchWorkers, baseTargetWorkerCount);
+            Interlocked.Exchange(ref lastThroughputMeasurement, DateTime.UtcNow.Ticks);
         }
 
         /// <summary>
@@ -198,11 +296,11 @@ namespace GenXdev.FileSystem
                 1024 * 1024 * 2,
                 Math.Min(
                     // max 10 mb
-                    1024 * 1024 * 10,
+                    1024 * 1024 * 50,
 
                         (int)Math.Round(
 
-                            // shoot for approximately max 5% of free ram available 
+                            // shoot for approximately max 5% of free ram available
                             // for this user invoced PowerShell search
                             (
                                 GetFreeRamInBytes() * 0.05d
@@ -371,7 +469,7 @@ namespace GenXdev.FileSystem
                     VerboseQueue.Enqueue($" Defaulted to exclude pattern: '*.git'");
                 }
 
-                if (usingSelectString && !IncludeNonTextFileMatching.IsPresent)
+                if (matchingFileContent && !IncludeNonTextFileMatching.IsPresent)
                 {
                     VerboseQueue.Enqueue($"Skipping non text file content based ono file-extensions, use -IncludeNonTextFileMatching to disable");
                 }

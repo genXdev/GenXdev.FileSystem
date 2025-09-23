@@ -218,7 +218,7 @@ Find-Item [[-Name] <string[]>] [[-RelativeBasePath]
     | Compressed | Offline | NotContentIndexed | Encrypted |
     IntegrityStream | NoScrubData}] [-Exclude <string[]>]
     [<CommonParameters>]
-Find-Item [[-Name] <string[]>] [[-Content] <string>]
+Find-Item [[-Name] <string[]>] [[-Content] <string[]>]
     [[-RelativeBasePath] <string>] [-Input <string>]
     [-Category {Pictures | Videos | Music | Documents |
     Spreadsheets | Presentations | Archives | Installers |
@@ -247,7 +247,7 @@ Find-Item [[-Name] <string[]>] [[-Content] <string>]
     [-Culture <string>] [-Encoding {ASCII | ANSI |
     BigEndianUnicode | BigEndianUTF32 | OEM | Unicode | UTF7
     | UTF8 | UTF8BOM | UTF8NoBOM | UTF32 | Default}] [-List]
-    [-NotMatch] [-Quiet] [-Raw] [-SimpleMatch]
+    [-NoEmphasis] [-NotMatch] [-Quiet] [-Raw] [-SimpleMatch]
     [<CommonParameters>] 
 ```` 
 
@@ -305,7 +305,7 @@ Find-Item [[-Name] <string[]>] [[-Content] <string>]
         Aliases                      filetype  
         Dynamic?                     false  
         Accept wildcard characters?  false  
-    -Content <string>  
+    -Content <string[]>  
         Regular expression pattern to search within content  
         Required?                    false  
         Position?                    1  
@@ -491,9 +491,18 @@ Find-Item [[-Name] <string[]>] [[-Content] <string>]
         Position?                    0  
         Accept pipeline input?       false  
         Parameter set name           (All)  
-        Aliases                      like, l, Path, Query, SearchMask  
+        Aliases                      like, l, Path, LiteralPath, Query, SearchMask, Include  
         Dynamic?                     false  
         Accept wildcard characters?  true  
+    -NoEmphasis  
+        Disables highlighting of matching strings in output.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
     -NoLinks  
         Forces unattended mode and will not generate links  
         Required?                    false  
