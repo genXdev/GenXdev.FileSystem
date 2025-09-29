@@ -71,6 +71,14 @@ Pester\Describe 'Find-Item 1' {
         $found.Count | Pester\Should -GT 0
     }
 
+    Pester\It 'Should find some files in the root of \' {
+
+        $pattern = "\"
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask $pattern -NoRecurse)
+
+        $found.Count | Pester\Should -GT 0
+    }
+
     Pester\It 'Finds files by extension' {
         # setup test folder structure
         $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\Find-Item-test\" -CreateDirectory
@@ -83,6 +91,22 @@ Pester\Describe 'Find-Item 1' {
         $files = GenXdev.FileSystem\Find-Item -SearchMask './*.txt' -PassThru
         $files.Count | Pester\Should -Be 3
         $files.Name | Pester\Should -Contain 'file1.txt'
+    }
+
+    Pester\It 'Finds files by extension seperated by ;' {
+        # setup test folder structure
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\Find-Item-test\" -CreateDirectory
+        Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
+        Microsoft.PowerShell.Management\New-Item -ItemType Directory -Path 'dir1', 'dir2/subdir' -Force -ErrorAction SilentlyContinue
+        'test1' | Microsoft.PowerShell.Utility\Out-File 'dir1/file1.txt'
+        'test2' | Microsoft.PowerShell.Utility\Out-File 'dir2/file2.txt'
+        'test3' | Microsoft.PowerShell.Utility\Out-File 'dir2/subdir/file3.txt'
+
+        $files = GenXdev.FileSystem\Find-Item -SearchMask "$testRoot\Find-Item-test\file1.txt;$testRoot\Find-Item-test\file2.txt" -PassThru
+        $files.Count | Pester\Should -Be 2
+        $files.Name | Pester\Should -Contain 'file1.txt'
+        $files.Name | Pester\Should -Contain 'file2.txt'
+        $files.Name | Pester\Should -Not -Contain 'file3.txt'
     }
 
     Pester\It 'Finds files by content pattern' {
@@ -376,7 +400,7 @@ Pester\Describe 'Find-Item 1' {
 
     Pester\It 'Should match the pattern' {
 
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.286.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.288.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
 
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\EnsurePester.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Expand-Path.ps1")
@@ -391,9 +415,10 @@ Pester\Describe 'Find-Item 1' {
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Start-RoboCopy.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\WriteFileOutput.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\_EnsureTypes.ps1")
+        $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Confirm-InstallationConsent.ps1")
 
         # if this is failing right here, you added files to GenXdev.FileSystem, update the number accordingly
-        $found.Count | Pester\Should -Be 14
+        $found.Count | Pester\Should -Be 15
     }
 
     Pester\It 'Should find files with certain symbols in the filename' {

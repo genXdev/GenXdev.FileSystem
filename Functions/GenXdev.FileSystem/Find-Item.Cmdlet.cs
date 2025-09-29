@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Cmdlet.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.286.2025
+// Version                   : 1.288.2025
 // ################################################################################
 // MIT License
 //
@@ -952,16 +952,18 @@ namespace GenXdev.FileSystem
         {
             if (string.IsNullOrEmpty(Input)) return;
 
-            // add to visited if new and initialize search
-            if (VisitedNodes.TryAdd("start;" + Input, true))
+            foreach (var namePart in Input.Split(";"))
             {
-                InitializeSearchDirectory(Input);
-            }
-            else if (UseVerboseOutput)
-            {
-
-                // log skipping duplicate mask
-                WriteWarning($"Skipping duplicate name: {Input}");
+                // add to visited if new and initialize search
+                if (VisitedNodes.TryAdd("start;" + namePart, true))
+                {
+                    InitializeSearchDirectory(namePart);
+                }
+                else if (UseVerboseOutput)
+                {
+                    // log skipping duplicate mask
+                    WriteWarning($"Skipping duplicate name: {namePart}");
+                }
             }
         }
 

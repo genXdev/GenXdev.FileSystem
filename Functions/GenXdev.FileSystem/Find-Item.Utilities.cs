@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Utilities.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.286.2025
+// Version                   : 1.288.2025
 // ################################################################################
 // MIT License
 //
@@ -26,6 +26,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 // ################################################################################
+
 
 
 using Microsoft.PowerShell.Commands;
@@ -245,7 +246,6 @@ namespace GenXdev.FileSystem
             // check for local long path prefix
             if (path.StartsWith(@"\\?\"))
             {
-
                 // remove prefix
                 string result = path.Substring(4);
 
@@ -560,10 +560,10 @@ namespace GenXdev.FileSystem
                             var maxMatchers = maxMatchersFunc();
                             if (currentMatchers > maxMatchers)
                             {
-                                if (UseVerboseOutput)
-                                {
-                                    VerboseQueue.Enqueue($"Content matcher exiting: {currentMatchers} > {maxMatchers}");
-                                }
+                                // if (UseVerboseOutput)
+                                // {
+                                //     VerboseQueue.Enqueue($"Content matcher exiting: {currentMatchers} > {maxMatchers}");
+                                // }
                                 // ensure other workers can be spawned when needed
                                 AddWorkerTasksIfNeeded(ctx);
                                 break;
@@ -1421,7 +1421,7 @@ namespace GenXdev.FileSystem
             // Process head first, if present
             while (headEndIndex - headStartIndex > 0)
             {
-                var span = Head.AsSpan(headStartIndex, (headEndIndex - headStartIndex) - 1);
+                var span = Head.AsSpan(headStartIndex, headEndIndex - headStartIndex);
 
                 // process next line
                 int trimIndex;
@@ -1481,7 +1481,7 @@ namespace GenXdev.FileSystem
                     if (headStartIndex < headEndIndex)
                     {
                         // append remaining head
-                        var headSpan = Head.AsSpan(headStartIndex, (headEndIndex - headStartIndex) - 1);
+                        var headSpan = Head.AsSpan(headStartIndex, headEndIndex - headStartIndex);
                         lineEndIndex = CopySpanToCharBuffer(Line, lineEndIndex, headSpan);
 
                         // clear head

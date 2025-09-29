@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Initialization.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.286.2025
+// Version                   : 1.288.2025
 // ################################################################################
 // MIT License
 //
@@ -31,6 +31,7 @@
 
 using System.Collections.Concurrent;
 using System.Management.Automation;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace GenXdev.FileSystem
 {
@@ -236,24 +237,28 @@ namespace GenXdev.FileSystem
                 // loop through each mask
                 foreach (var name in Name)
                 {
-                    // check if mask already processed to avoid duplicates
-                    if (VisitedNodes.TryAdd("start;" + name, true))
+                    foreach (var namePart in name.Split(";"))
                     {
 
-                        // log processing of mask if verbose enabled
-                        if (UseVerboseOutput)
+                        // check if mask already processed to avoid duplicates
+                        if (VisitedNodes.TryAdd("start;" + namePart, true))
                         {
-                            VerboseQueue.Enqueue($"Processing name: {name}");
+
+                            // log processing of mask if verbose enabled
+                            if (UseVerboseOutput)
+                            {
+                                VerboseQueue.Enqueue($"Processing name: {namePart}");
+                            }
+
+                            // prepare search starting point
+                            InitializeSearchDirectory(namePart);
                         }
+                        else if (UseVerboseOutput)
+                        {
 
-                        // prepare search starting point
-                        InitializeSearchDirectory(name);
-                    }
-                    else if (UseVerboseOutput)
-                    {
-
-                        // log skipping duplicate mask
-                        WriteWarning($"Skipping duplicate name: {name}");
+                            // log skipping duplicate mask
+                            WriteWarning($"Skipping duplicate name: {namePart}");
+                        }
                     }
                 }
             }
@@ -376,6 +381,12 @@ namespace GenXdev.FileSystem
             // try to validate
             try
             {
+
+                if (psLocation.StartsWith("Microsoft.PowerShell.Core\\FileSystem::\\\\"))
+                {
+                    // For UNC paths, use the path as-is since Path.GetFullPath can modify UNC paths
+                    psLocation = psLocation.Substring("Microsoft.PowerShell.Core\\FileSystem::".Length);                    
+                }
 
                 // get full path
                 // Validate and get full path
@@ -568,9 +579,20 @@ namespace GenXdev.FileSystem
             // Normalize separators to backslashes for consistency
             name = name.Replace("/", "\\");
 
+            if (name.EndsWith("\\"))
+            {
+                name += "*";
+            }
+
             // normalize path
             // Normalize the path part for processing
             var normPath = NormalizePathForNonFileSystemUse(name);
+
+            // handle direct current root references
+            if (name.StartsWith("\\") && !name.StartsWith("\\\\"))
+            {
+                name = CurrentDirectory.Substring(0, 2) + name;
+            }
 
             // adjust trailing recurse
             // Adjust for trailing recursive patterns

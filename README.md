@@ -215,6 +215,7 @@ Update-Module
 ### GenXdev.FileSystem
 | Command | Aliases | Description |
 | :--- | :--- | :--- |
+| [Confirm-InstallationConsent](#confirm-installationconsent) | &nbsp; | Confirms user consent for installing third-party software, using preferences for persistent choices. |
 | [EnsurePester](#ensurepester) | &nbsp; | Ensures Pester testing framework is available for use. |
 | [Expand-Path](#expand-path) | ep | Expands any given file reference to a full pathname. |
 | [Find-DuplicateFiles](#find-duplicatefiles) | fdf | Find duplicate files across multiple directories based on configurable criteria. |
@@ -663,6 +664,74 @@ Find-Item [[-Name] <string[]>] [[-Content] <string[]>]
         Accept pipeline input?       false  
         Parameter set name           (All)  
         Aliases                      maxseconds  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    <CommonParameters>  
+        This cmdlet supports the common parameters: Verbose, Debug,  
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
+
+<br/><hr/><br/>
+ 
+
+##	Confirm-InstallationConsent 
+```PowerShell 
+
+   Confirm-InstallationConsent  
+```` 
+
+### SYNTAX 
+```PowerShell 
+Confirm-InstallationConsent [-ApplicationName] <string>
+    [-Source] <string> [-Description <string>] [-Publisher
+    <string>] [-ForcePrompt] [<CommonParameters>] 
+```` 
+
+### PARAMETERS 
+    -ApplicationName <string>  
+        The name of the application or software being installed.  
+        Required?                    true  
+        Position?                    0  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -Description <string>  
+        Optional description of the software and its purpose.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -ForcePrompt  
+        Force a prompt even if preference is set.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -Publisher <string>  
+        Optional publisher or vendor of the software.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -Source <string>  
+        The source of the installation (e.g., Winget, PowerShell Gallery).  
+        Required?                    true  
+        Position?                    1  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
         Dynamic?                     false  
         Accept wildcard characters?  false  
     <CommonParameters>  
