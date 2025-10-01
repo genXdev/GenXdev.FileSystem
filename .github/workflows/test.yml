@@ -1,0 +1,69 @@
+name: Run Unit Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup PowerShell modules
+      shell: pwsh
+      run: |
+        Write-Host "Installing required modules..."
+        # Install Pester if needed
+        if (-not (Get-Module -ListAvailable -Name Pester)) {
+          Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser
+        }
+
+        # Import your GenXdev modules
+        $modulePath = "${{ github.workspace }}/Modules"
+        if (Test-Path $modulePath) {
+          $env:PSModulePath = "$modulePath;$env:PSModulePath"
+          Write-Host "Added modules path: $modulePath"
+        }
+
+    - name: Run unit tests
+      shell: pwsh
+      run: |
+        Write-Host "Running Assert-GenXdevTest..."
+
+        # Import the GenXdev.Coding module which contains Assert-GenXdevTest
+        Import-Module GenXdev.Coding -ErrorAction SilentlyContinue
+
+        # Run tests with error handling
+        try {
+          $result = Assert-GenXdevTest -Verbosity Detailed -TestFailedAction Stop -SkipModuleImports
+
+          if (-not $result.Success) {
+            Write-Error "Tests failed!"
+
+            # Display analyzer results if any
+            if ($result.AnalyzerResults) {
+              Write-Host "`nPSScriptAnalyzer Results:" -ForegroundColor Yellow
+              $result.AnalyzerResults | Format-Table -AutoSize
+            }
+
+            # Display failed test names if any
+            if ($result.TestResults.Failed) {
+              Write-Host "`nFailed Tests:" -ForegroundColor Red
+              $result.TestResults.Failed.Name | ForEach-Object { Write-Host "  - $_" }
+            }
+
+            exit 1
+          }
+
+          Write-Host "`n✓ All tests passed!" -ForegroundColor Green
+          exit 0
+
+        } catch {
+          Write-Error "Error running tests: $($_.Exception.Message)"
+          exit 1
+        }
