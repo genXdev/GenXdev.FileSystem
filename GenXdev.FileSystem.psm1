@@ -20,6 +20,7 @@ if ($major -ne 10) {
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Invoke-Fasti.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Move-ItemWithTracking.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Move-ToRecycleBin.ps1"
+. "$PSScriptRoot\Functions\GenXdev.FileSystem\ReadJsonWithRetry.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Remove-AllItems.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Remove-ItemWithFallback.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Remove-OnReboot.ps1"
@@ -27,3 +28,4 @@ if ($major -ne 10) {
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\ResolveInputObjectFileNames.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\Start-RoboCopy.ps1"
 . "$PSScriptRoot\Functions\GenXdev.FileSystem\WriteFileOutput.ps1"
+. "$PSScriptRoot\Functions\GenXdev.FileSystem\WriteJsonAtomic.ps1"

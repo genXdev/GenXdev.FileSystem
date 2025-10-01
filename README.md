@@ -215,7 +215,7 @@ Update-Module
 ### GenXdev.FileSystem
 | Command | Aliases | Description |
 | :--- | :--- | :--- |
-| [Confirm-InstallationConsent](#confirm-installationconsent) | &nbsp; | Confirms user consent for installing third-party software, using preferences for persistent choices. |
+| [Confirm-InstallationConsent](#confirm-installationconsent) | &nbsp; | &nbsp; |
 | [EnsurePester](#ensurepester) | &nbsp; | Ensures Pester testing framework is available for use. |
 | [Expand-Path](#expand-path) | ep | Expands any given file reference to a full pathname. |
 | [Find-DuplicateFiles](#find-duplicatefiles) | fdf | Find duplicate files across multiple directories based on configurable criteria. |
@@ -223,6 +223,7 @@ Update-Module
 | [Invoke-Fasti](#invoke-fasti) | fasti | &nbsp; |
 | [Move-ItemWithTracking](#move-itemwithtracking) | &nbsp; | Moves files and directories while preserving filesystem links and references. |
 | [Move-ToRecycleBin](#move-torecyclebin) | recycle | Moves files and directories to the Windows Recycle Bin safely. |
+| [ReadJsonWithRetry](#readjsonwithretry) | &nbsp; | Reads JSON file with retry logic and automatic lock cleanup. |
 | [Remove-AllItems](#remove-allitems) | sdel | Recursively removes all content from a directory with advanced error handling. |
 | [Remove-ItemWithFallback](#remove-itemwithfallback) | rmf | Removes files or directories with multiple fallback mechanisms for reliable deletion. |
 | [Remove-OnReboot](#remove-onreboot) | &nbsp; | Marks files or directories for deletion during the next system boot. |
@@ -230,6 +231,7 @@ Update-Module
 | [ResolveInputObjectFileNames](#resolveinputobjectfilenames) | &nbsp; | &nbsp; |
 | [Start-RoboCopy](#start-robocopy) | rc, xc | Provides a PowerShell wrapper for Microsoft's Robust Copy (RoboCopy) utility. |
 | [WriteFileOutput](#writefileoutput) | &nbsp; | &nbsp; |
+| [WriteJsonAtomic](#writejsonatomic) | &nbsp; | &nbsp; |
 
 <br/><hr/><br/>
 
@@ -685,7 +687,9 @@ Find-Item [[-Name] <string[]>] [[-Content] <string[]>]
 ```PowerShell 
 Confirm-InstallationConsent [-ApplicationName] <string>
     [-Source] <string> [-Description <string>] [-Publisher
-    <string>] [-ForcePrompt] [<CommonParameters>] 
+    <string>] [-ForceConsent]
+    [-ConsentToThirdPartySoftwareInstallation]
+    [<CommonParameters>] 
 ```` 
 
 ### PARAMETERS 
@@ -693,6 +697,15 @@ Confirm-InstallationConsent [-ApplicationName] <string>
         The name of the application or software being installed.  
         Required?                    true  
         Position?                    0  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -ConsentToThirdPartySoftwareInstallation  
+        Automatically consent to third-party software installation and set persistent flag.  
+        Required?                    false  
+        Position?                    Named  
         Accept pipeline input?       false  
         Parameter set name           (All)  
         Aliases                      None  
@@ -707,7 +720,7 @@ Confirm-InstallationConsent [-ApplicationName] <string>
         Aliases                      None  
         Dynamic?                     false  
         Accept wildcard characters?  false  
-    -ForcePrompt  
+    -ForceConsent  
         Force a prompt even if preference is set.  
         Required?                    false  
         Position?                    Named  
@@ -1062,6 +1075,59 @@ Move-ToRecycleBin [-Path] <string[]> [-WhatIf] [-Confirm]
         Parameter set name           (All)  
         Aliases                      wi  
         Dynamic?                     false  
+        Accept wildcard characters?  false  
+    <CommonParameters>  
+        This cmdlet supports the common parameters: Verbose, Debug,  
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
+
+<br/><hr/><br/>
+ 
+
+##	ReadJsonWithRetry 
+```PowerShell 
+
+   ReadJsonWithRetry  
+```` 
+
+### SYNOPSIS 
+    Reads JSON file with retry logic and automatic lock cleanup.  
+
+### SYNTAX 
+```PowerShell 
+ReadJsonWithRetry [-FilePath] <String> [[-MaxRetries] <Int32>] [[-RetryDelayMs] <Int32>] [<CommonParameters>] 
+```` 
+
+### DESCRIPTION 
+    Attempts to read a JSON file with retry logic to handle concurrent access.  
+    Implements automatic cleanup of stale lock files. Returns empty hashtable if  
+    file doesn't exist.  
+
+### PARAMETERS 
+    -FilePath <String>  
+        The path to the JSON file to read.  
+        Required?                    true  
+        Position?                    1  
+        Default value                  
+        Accept pipeline input?       false  
+        Aliases                        
+        Accept wildcard characters?  false  
+    -MaxRetries <Int32>  
+        Maximum number of retry attempts. Defaults to 10.  
+        Required?                    false  
+        Position?                    2  
+        Default value                10  
+        Accept pipeline input?       false  
+        Aliases                        
+        Accept wildcard characters?  false  
+    -RetryDelayMs <Int32>  
+        Delay in milliseconds between retries. Defaults to 200.  
+        Required?                    false  
+        Position?                    3  
+        Default value                200  
+        Accept pipeline input?       false  
+        Aliases                        
         Accept wildcard characters?  false  
     <CommonParameters>  
         This cmdlet supports the common parameters: Verbose, Debug,  
@@ -1998,6 +2064,59 @@ WriteFileOutput [-CallerInvocation] <Object> [-Input] <Object> [-Prefix <string>
         Base path for generating relative file paths in output  
         Required?                    false  
         Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    <CommonParameters>  
+        This cmdlet supports the common parameters: Verbose, Debug,  
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
+
+<br/><hr/><br/>
+ 
+
+##	WriteJsonAtomic 
+```PowerShell 
+
+   WriteJsonAtomic  
+```` 
+
+### SYNTAX 
+```PowerShell 
+WriteJsonAtomic [-FilePath] <string> [-Data] <hashtable> [[-MaxRetries] <int>] [[-RetryDelayMs] <int>] [<CommonParameters>] 
+```` 
+
+### PARAMETERS 
+    -Data <hashtable>  
+        Required?                    true  
+        Position?                    1  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -FilePath <string>  
+        Required?                    true  
+        Position?                    0  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -MaxRetries <int>  
+        Required?                    false  
+        Position?                    2  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -RetryDelayMs <int>  
+        Required?                    false  
+        Position?                    3  
         Accept pipeline input?       false  
         Parameter set name           (All)  
         Aliases                      None  

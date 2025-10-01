@@ -11,8 +11,8 @@
     <PackageLicenseFile>license.txt</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <NeutralLanguage>en</NeutralLanguage>
-    <AssemblyVersion>1.288.2025</AssemblyVersion>
-    <FileVersion>1.288.2025</FileVersion>
+    <AssemblyVersion>1.290.2025</AssemblyVersion>
+    <FileVersion>1.290.2025</FileVersion>
     <Description>A Windows PowerShell module for basic and advanced file management tasks</Description>
     <Copyright>Copyright (c) 2024 GenXdev</Copyright>
     <PackageProjectUrl>https://github.com/genXdev/GenXdev.Helpers</PackageProjectUrl>
@@ -35,7 +35,7 @@
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <SupportedOSPlatformVersion>10.0.18362.0</SupportedOSPlatformVersion>
-    <Platforms>AnyCPU;x64</Platforms>
+    <Platforms>x64</Platforms>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DebugType>none</DebugType>
@@ -54,7 +54,7 @@
     <PackageReference Include="System.Management.Automation" Version="7.5.0" />
   </ItemGroup>
   <ItemGroup>
-   <None Update="LICENSE">
+    <None Update="LICENSE">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="license.txt">

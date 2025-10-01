@@ -2,7 +2,7 @@
 Part of PowerShell module : GenXdev.FileSystem
 Original cmdlet filename  : Invoke-Fasti.ps1
 Original author           : René Vaessen / GenXdev
-Version                   : 1.288.2025
+Version                   : 1.290.2025
 ################################################################################
 MIT License
 
@@ -29,7 +29,7 @@ SOFTWARE.
 ###############################################################################
 <#
 .SYNOPSIS
-Extracts archive files in the current directory to their own folders and deletes 
+Extracts archive files in the current directory to their own folders and deletes
 them afterwards.
 
 .DESCRIPTION
@@ -114,6 +114,17 @@ function Invoke-Fasti {
                         if ((Microsoft.PowerShell.Core\Get-Command winget -ErrorAction SilentlyContinue).Length -eq 0) {
 
                             throw "You need to install 7zip or winget first"
+                        }
+
+                        # request consent before installing 7-Zip
+                        $consent = GenXdev.FileSystem\Confirm-InstallationConsent `
+                            -ApplicationName "7-Zip" `
+                            -Source "Winget" `
+                            -Description "Archive extraction and compression utility required for processing archive files" `
+                            -Publisher "Igor Pavlov"
+
+                        if (-not $consent) {
+                            throw "7-Zip installation was denied by user. Cannot proceed with archive extraction."
                         }
 
                         Microsoft.PowerShell.Utility\Write-Verbose "Installing 7-Zip via winget..."
