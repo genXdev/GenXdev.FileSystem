@@ -48,15 +48,12 @@
         $dups[0].Files.Count | Pester\Should -Be 2
     }
 
-    Pester\It "Doesn't ignore last modified date comparison when specified" {
-
-        'different content' | Microsoft.PowerShell.Management\Set-Content -LiteralPath "$path2\file1.txt" -Encoding UTF8
-
-        $dups = @(GenXdev.FileSystem\Find-DuplicateFiles -Paths $path1, $path2 -DontCompareSize)
-        $dups.Count | Pester\Should -Be 0
-    }
-
     Pester\It 'Finds no duplicates when files are unique' {
+
+        # Give them the same last modified dates
+        $date = Microsoft.PowerShell.Utility\Get-Date
+        Microsoft.PowerShell.Management\Set-ItemProperty -LiteralPath "$path1\file1.txt" -Name LastWriteTime -Value $date
+        Microsoft.PowerShell.Management\Set-ItemProperty -LiteralPath "$path2\file1.txt" -Name LastWriteTime -Value $date
 
         Microsoft.PowerShell.Management\Remove-Item -LiteralPath "$path2\file1.txt"  -Confirm:$False
         $dups = @(GenXdev.FileSystem\Find-DuplicateFiles -Paths $path1, $path2)

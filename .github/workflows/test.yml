@@ -18,52 +18,72 @@ jobs:
       shell: pwsh
       run: |
         Write-Host "Installing required modules..."
+
         # Install Pester if needed
         if (-not (Get-Module -ListAvailable -Name Pester)) {
           Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser
         }
 
-        # Import your GenXdev modules
-        $modulePath = "${{ github.workspace }}/Modules"
-        if (Test-Path $modulePath) {
-          $env:PSModulePath = "$modulePath;$env:PSModulePath"
-          Write-Host "Added modules path: $modulePath"
+        # Install PSScriptAnalyzer if needed
+        if (-not (Get-Module -ListAvailable -Name PSScriptAnalyzer)) {
+          Install-Module -Name PSScriptAnalyzer -Force -SkipPublisherCheck -Scope CurrentUser
         }
 
-    - name: Run unit tests
+    - name: Run PSScriptAnalyzer
       shell: pwsh
       run: |
-        Write-Host "Running Assert-GenXdevTest..."
+        Write-Host "Running PSScriptAnalyzer..." -ForegroundColor Cyan
 
-        # Import the GenXdev.Coding module which contains Assert-GenXdevTest
-        Import-Module GenXdev.Coding -ErrorAction SilentlyContinue
+        # Find all .ps1 and .psm1 files in Functions directory
+        $scriptFiles = Get-ChildItem -Path "${{ github.workspace }}/Functions" -Filter "*.ps1" -Recurse -ErrorAction SilentlyContinue
+        $moduleFiles = Get-ChildItem -Path "${{ github.workspace }}" -Filter "*.psm1" -Recurse -ErrorAction SilentlyContinue
 
-        # Run tests with error handling
-        try {
-          $result = Assert-GenXdevTest -Verbosity Detailed -TestFailedAction Stop -SkipModuleImports
+        $allFiles = @($scriptFiles) + @($moduleFiles)
+        $issuesFound = $false
 
-          if (-not $result.Success) {
-            Write-Error "Tests failed!"
+        foreach ($file in $allFiles) {
+          Write-Host "`nAnalyzing: $($file.FullName)" -ForegroundColor Yellow
+          $results = Invoke-ScriptAnalyzer -Path $file.FullName -Severity Warning,Error
 
-            # Display analyzer results if any
-            if ($result.AnalyzerResults) {
-              Write-Host "`nPSScriptAnalyzer Results:" -ForegroundColor Yellow
-              $result.AnalyzerResults | Format-Table -AutoSize
-            }
-
-            # Display failed test names if any
-            if ($result.TestResults.Failed) {
-              Write-Host "`nFailed Tests:" -ForegroundColor Red
-              $result.TestResults.Failed.Name | ForEach-Object { Write-Host "  - $_" }
-            }
-
-            exit 1
+          if ($results) {
+            $issuesFound = $true
+            $results | Format-Table -AutoSize -Property Severity, Line, RuleName, Message
           }
+        }
 
-          Write-Host "`n✓ All tests passed!" -ForegroundColor Green
-          exit 0
-
-        } catch {
-          Write-Error "Error running tests: $($_.Exception.Message)"
+        if ($issuesFound) {
+          Write-Error "PSScriptAnalyzer found issues!"
           exit 1
         }
+
+        Write-Host "`n✓ PSScriptAnalyzer passed!" -ForegroundColor Green
+
+    - name: Run Pester tests
+      shell: pwsh
+      run: |
+        Write-Host "Running Pester tests..." -ForegroundColor Cyan
+
+        # Check if Tests directory exists
+        $testsPath = "${{ github.workspace }}/Tests"
+        if (-not (Test-Path $testsPath)) {
+          Write-Host "No Tests directory found, skipping Pester tests" -ForegroundColor Yellow
+          exit 0
+        }
+
+        # Configure Pester
+        $config = New-PesterConfiguration
+        $config.Run.Path = $testsPath
+        $config.Run.PassThru = $true
+        $config.Output.Verbosity = 'Detailed'
+        $config.TestResult.Enabled = $false
+
+        # Run tests
+        $result = Invoke-Pester -Configuration $config
+
+        # Check results
+        if ($result.FailedCount -gt 0) {
+          Write-Error "Pester tests failed: $($result.FailedCount) test(s) failed"
+          exit 1
+        }
+
+        Write-Host "`n✓ All Pester tests passed! ($($result.PassedCount) tests)" -ForegroundColor Green
