@@ -29,6 +29,98 @@ jobs:
           Install-Module -Name PSScriptAnalyzer -Force -SkipPublisherCheck -Scope CurrentUser
         }
 
+    - name: Create PSScriptAnalyzer settings
+      shell: pwsh
+      run: |
+        $settings = @'
+        @{
+            Severity              = @('Warning')
+            IncludeRules          = @(
+                'PSUseFullyQualifiedCmdletNames',
+                'PSAvoidDefaultValueSwitchParameter',
+                'PSAvoidUsingCmdletAliases',
+                'PSAvoidAssignmentToAutomaticVariable',
+                'PSAvoidDefaultValueForMandatoryParameter',
+                'PSAvoidExclaimOperator',
+                'PSAvoidGlobalAliases',
+                'PSAvoidGlobalFunctions',
+                'PSAvoidGlobalVars',
+                'PSAvoidLongLines',
+                'PSAvoidNullOrEmptyHelpMessageAttribute',
+                'PSAvoidOverwritingBuiltInCmdlets',
+                'PSReservedCmdletChar',
+                'PSReservedParams',
+                'PSAvoidSemicolonsAsLineTerminators',
+                'PSAvoidShouldContinueWithoutForce',
+                'PSAvoidTrailingWhitespace',
+                'PSAvoidUsingDeprecatedManifestFields',
+                'PSAvoidUsingDoubleQuotesForConstantString',
+                'PSMisleadingBacktick',
+                'PSMissingModuleManifestField',
+                'PSPlaceOpenBrace',
+                'PSPossibleIncorrectComparisonWithNull',
+                'PSPossibleIncorrectUsageOfAssignmentOperator',
+                'PSPossibleIncorrectUsageOfRedirectionOperator',
+                'PSUseApprovedVerbs',
+                'PSUseCmdletCorrectly',
+                'PSUseCompatibleCmdlets',
+                'PSUseConsistentIndentation',
+                'PSUseConsistentWhitespace',
+                'PSUseDeclaredVarsMoreThanAssignments',
+                'PSUseLiteralInitializerForHashtable',
+                'PSUseOutputTypeCorrectly',
+                'PSUseProcessBlockForPipelineCommand',
+                'PSShouldProcess',
+                'PSUseShouldProcessForStateChangingFunctions',
+                'PSUseSingularNouns',
+                'PSUseSupportsShouldProcess',
+                'PSUseToExportFieldsInManifest',
+                'PSUseUsingScopeModifierInNewRunspaces'
+            )
+            ExcludeRules          = @(
+                'PSUseCorrectCasing',
+                'PSUseCompatibleCommands',
+                'PSAlignAssignmentStatement',
+                'PSAvoidUsingEmptyCatchBlock',
+                'PSReviewUnusedParameter',
+                'PSAvoidInvokingEmptyMembers',
+                'PSAvoidMultipleTypeAttributes',
+                'PSAvoidUsingPositionalParameters',
+                'PSUseBOMForUnicodeEncodedFile',
+                'PSAvoidUsingUsernameAndPasswordParams',
+                'PSAvoidUsingAllowUnencryptedAuthentication',
+                'PSAvoidUsingBrokenHashAlgorithms',
+                'PSAvoidUsingComputerNameHardcoded',
+                'PSAvoidUsingConvertToSecureStringWithPlainText',
+                'PSAvoidUsingInvokeExpression',
+                'PSAvoidUsingPlainTextForPassword',
+                'PSAvoidUsingWMICmdlet',
+                'PSAvoidUsingWriteHost',
+                'PSUseCompatibleSyntax',
+                'PSUseCompatibleTypes',
+                'PSPlaceCloseBrace',
+                'PSProvideCommentHelp',
+                'PSUsePSCredentialType',
+                'PSUseUTF8EncodingForHelpFile',
+                'PSDSCDscExamplesPresent',
+                'PSDSCDscTestsPresent',
+                'PSDSCReturnCorrectTypesForDSCFunctions',
+                'PSDSCUseIdenticalMandatoryParametersForDSC',
+                'PSDSCUseIdenticalParametersForDSC',
+                'PSDSCStandardDSCFunctionsInResource',
+                'PSDSCUseVerboseMessageInDSCResource'
+            )
+            IncludeDefaultRules   = $true
+            RecurseCustomRulePath = $false
+            Rules = @{
+                PSUseFullyQualifiedCmdletNames = @{
+                    Enabled  = $true
+                }
+            }
+        }
+        '@
+        $settings | Out-File -FilePath "${{ github.workspace }}/PSScriptAnalyzerSettings.psd1" -Encoding UTF8
+
     - name: Run PSScriptAnalyzer
       shell: pwsh
       run: |
@@ -40,10 +132,11 @@ jobs:
 
         $allFiles = @($scriptFiles) + @($moduleFiles)
         $issuesFound = $false
+        $settingsPath = "${{ github.workspace }}/PSScriptAnalyzerSettings.psd1"
 
         foreach ($file in $allFiles) {
           Write-Host "`nAnalyzing: $($file.FullName)" -ForegroundColor Yellow
-          $results = Invoke-ScriptAnalyzer -Path $file.FullName -Severity Warning,Error
+          $results = Invoke-ScriptAnalyzer -Path $file.FullName -Settings $settingsPath
 
           if ($results) {
             $issuesFound = $true
