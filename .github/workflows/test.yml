@@ -289,15 +289,15 @@ jobs:
                   Write-Host "Running PSScriptAnalyzer..." -ForegroundColor Cyan
 
                   # Find all .ps1 and .psm1 files in Functions directory
-                  $scriptFiles = Get-ChildItem -Path "${{ github.workspace }}/current-module/Functions" -Filter "*.ps1" -Recurse -ErrorAction SilentlyContinue
-                  $moduleFiles = Get-ChildItem -Path "${{ github.workspace }}/current-module" -Filter "*.psm1" -Recurse -ErrorAction SilentlyContinue
+                  $scriptFiles = Get-ChildItem -LiteralPath "${{ github.workspace }}/current-module/Functions" -Filter "*.ps1" -Recurse -ErrorAction SilentlyContinue
+                  $moduleFiles = Get-ChildItem -LiteralPath "${{ github.workspace }}/current-module" -Filter "*.psm1" -Recurse -ErrorAction SilentlyContinue
 
                   $allFiles = @($scriptFiles) + @($moduleFiles)
                   $issuesFound = $false
 
                   foreach ($file in $allFiles) {
                     Write-Host "\nAnalyzing: $($file.FullName)" -ForegroundColor Yellow
-                    $results = Invoke-ScriptAnalyzer -Path $file.FullName -Settings $settings
+                    $results = Invoke-ScriptAnalyzer -Path ($file.FullName) -Settings $settings
 
                     if ($results) {
                       $issuesFound = $true
