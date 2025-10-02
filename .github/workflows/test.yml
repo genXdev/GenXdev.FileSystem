@@ -1,340 +1,343 @@
 name: Run Unit Tests
 
 on:
-  push:
-    branches: [main, master]
-  pull_request:
-    branches: [main, master]
+    push:
+        branches: [main, master]
+    pull_request:
+        branches: [main, master]
 
 jobs:
-  test:
-    runs-on: windows-latest
+    test:
+        runs-on: windows-latest
 
-    steps:
-      - name: Wait for dependencies to be available
-        if: github.event_name == 'push'
-        shell: pwsh
-        run: |
-          Write-Host "Waiting 5 minutes to ensure dependency modules are available..." -ForegroundColor Yellow
-          Start-Sleep -Seconds 300
-          Write-Host "Proceeding with tests" -ForegroundColor Green
+        steps:
+            - name: Wait for dependencies to be available
+              if: github.event_name == 'push'
+              shell: pwsh
+              run: |
+                  Write-Host "Waiting 5 minutes to ensure dependency modules are available..." -ForegroundColor Yellow
+                  Start-Sleep -Seconds 300
+                  Write-Host "Proceeding with tests" -ForegroundColor Green
 
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          path: current-module
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  path: current-module
 
-      - name: Checkout GenXdev.Helpers
-        uses: actions/checkout@v4
-        with:
-          repository: genXdev/GenXdev.Helpers
-          path: modules/GenXdev.Helpers
+            - name: Checkout GenXdev.Helpers
+              uses: actions/checkout@v4
+              with:
+                  repository: genXdev/GenXdev.Helpers
+                  path: modules/GenXdev.Helpers
 
-      - name: Checkout GenXdev.Windows
-        uses: actions/checkout@v4
-        with:
-          repository: genXdev/GenXdev.Windows
-          path: modules/GenXdev.Windows
+            - name: Checkout GenXdev.Windows
+              uses: actions/checkout@v4
+              with:
+                  repository: genXdev/GenXdev.Windows
+                  path: modules/GenXdev.Windows
 
-      - name: Setup PowerShell modules
-        shell: pwsh
-        run: |
-          if (-not [IO.Directory]::Exists("$ENV:LOCALAPPDATA\GenXdev.PowerShell")) {
+            - name: Setup PowerShell modules
+              shell: pwsh
+              run: |
+                  if (-not [IO.Directory]::Exists("$ENV:LOCALAPPDATA\GenXdev.PowerShell")) {
 
-            [IO.Directory]::CreateDirectory("$ENV:LOCALAPPDATA\GenXdev.PowerShell")
-          }
-          '{"AllowInstall_GenXdevGlobal": "true"}' | Out-File "$ENV:LOCALAPPDATA\GenXdev.PowerShell\SoftwareConsent.json" -Force
+                    [IO.Directory]::CreateDirectory("$ENV:LOCALAPPDATA\GenXdev.PowerShell")
+                  }
+                  '{"AllowInstall_GenXdevGlobal": "true"}' | Out-File "$ENV:LOCALAPPDATA\GenXdev.PowerShell\SoftwareConsent.json" -Force
 
-          Write-Host "Installing required modules..."
+                  Write-Host "Installing required modules..."
 
-          # Install Pester if needed
-          if (-not (Get-Module -ListAvailable -Name Pester)) {
-            Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser
-          }
+                  # Install Pester if needed
+                  if (-not (Get-Module -ListAvailable -Name Pester)) {
+                    Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser
+                  }
 
-          # Install PSScriptAnalyzer if needed
-          if (-not (Get-Module -ListAvailable -Name PSScriptAnalyzer)) {
-            Install-Module -Name PSScriptAnalyzer -Force -SkipPublisherCheck -Scope CurrentUser
-          }
+                  # Install PSScriptAnalyzer if needed
+                  if (-not (Get-Module -ListAvailable -Name PSScriptAnalyzer)) {
+                    Install-Module -Name PSScriptAnalyzer -Force -SkipPublisherCheck -Scope CurrentUser
+                  }
 
-          # Setup module path and import dependencies
-          $modulesPath = "${{ github.workspace }}/modules"
-          $env:PSModulePath = "$modulesPath;$env:PSModulePath"
-          Write-Host "PSModulePath: $env:PSModulePath" -ForegroundColor Cyan
+                  # Setup module path and import dependencies
+                  $modulesPath = "${{ github.workspace }}/modules"
+                  $env:PSModulePath = "$modulesPath;$env:PSModulePath"
+                  Write-Host "PSModulePath: $env:PSModulePath" -ForegroundColor Cyan
 
-          # Import dependency modules
-          $dependencies = @('GenXdev.Helpers', 'GenXdev.Windows')
-          foreach ($dep in $dependencies) {
-            $depPath = Join-Path $modulesPath $dep
-            if (Test-Path $depPath) {
-              Write-Host "Importing $dep..." -ForegroundColor Yellow
-              try {
-                Import-Module $depPath -Force -ErrorAction Stop
-                Write-Host "  ✓ Imported $dep" -ForegroundColor Green
-              } catch {
-                Write-Warning "  Failed to import ${dep}: $($_.Exception.Message)"
-              }
-            }
-          }
+                  # Import dependency modules in correct order (dependencies first)
+                  $dependencies = @(
+                      'GenXdev.Helpers',    # No dependencies
+                      'GenXdev.Windows'     # Depends on Helpers
+                  )
+                  foreach ($dep in $dependencies) {
+                    $depPath = Join-Path $modulesPath $dep
+                    if (Test-Path $depPath) {
+                      Write-Host "Importing $dep..." -ForegroundColor Yellow
+                      try {
+                        Import-Module $depPath -Force -ErrorAction Stop
+                        Write-Host "  ✓ Imported $dep" -ForegroundColor Green
+                      } catch {
+                        Write-Warning "  Failed to import ${dep}: $($_.Exception.Message)"
+                      }
+                    }
+                  }
 
-      - name: Run PSScriptAnalyzer
-        shell: pwsh
-        run: |
-          $settings = @{
-              Severity              = @('Warning')
-              IncludeRules          = @(
-                  'PSUseFullyQualifiedCmdletNames',
-                  'PSAvoidDefaultValueSwitchParameter',
-                  'PSAvoidUsingCmdletAliases',
-                  'PSAvoidAssignmentToAutomaticVariable',
-                  'PSAvoidDefaultValueForMandatoryParameter',
-                  'PSAvoidExclaimOperator',
-                  'PSAvoidGlobalAliases',
-                  'PSAvoidGlobalFunctions',
-                  'PSAvoidGlobalVars',
-                  'PSAvoidLongLines',
-                  'PSAvoidNullOrEmptyHelpMessageAttribute',
-                  'PSAvoidOverwritingBuiltInCmdlets',
-                  'PSReservedCmdletChar',
-                  'PSReservedParams',
-                  'PSAvoidSemicolonsAsLineTerminators',
-                  'PSAvoidShouldContinueWithoutForce',
-                  'PSAvoidTrailingWhitespace',
-                  'PSAvoidUsingDeprecatedManifestFields',
-                  'PSAvoidUsingDoubleQuotesForConstantString',
-                  'PSMisleadingBacktick',
-                  'PSMissingModuleManifestField',
-                  'PSPlaceOpenBrace',
-                  'PSPossibleIncorrectComparisonWithNull',
-                  'PSPossibleIncorrectUsageOfAssignmentOperator',
-                  'PSPossibleIncorrectUsageOfRedirectionOperator',
-                  'PSUseApprovedVerbs',
-                  'PSUseCmdletCorrectly',
-                  'PSUseCompatibleCmdlets',
-                  'PSUseConsistentIndentation',
-                  'PSUseConsistentWhitespace',
-                  'PSUseDeclaredVarsMoreThanAssignments',
-                  'PSUseLiteralInitializerForHashtable',
-                  'PSUseOutputTypeCorrectly',
-                  'PSUseProcessBlockForPipelineCommand',
-                  'PSShouldProcess',
-                  'PSUseShouldProcessForStateChangingFunctions',
-                  'PSUseSingularNouns',
-                  'PSUseSupportsShouldProcess',
-                  'PSUseToExportFieldsInManifest',
-                  'PSUseUsingScopeModifierInNewRunspaces'
-              )
-              ExcludeRules          = @(
-                  'PSUseCorrectCasing',
-                  'PSUseCompatibleCommands',
-                  'PSAlignAssignmentStatement',
-                  'PSAvoidUsingEmptyCatchBlock',
-                  'PSReviewUnusedParameter',
-                  'PSAvoidInvokingEmptyMembers',
-                  'PSAvoidMultipleTypeAttributes',
-                  'PSAvoidUsingPositionalParameters',
-                  'PSUseBOMForUnicodeEncodedFile',
-                  'PSAvoidUsingUsernameAndPasswordParams',
-                  'PSAvoidUsingAllowUnencryptedAuthentication',
-                  'PSAvoidUsingBrokenHashAlgorithms',
-                  'PSAvoidUsingComputerNameHardcoded',
-                  'PSAvoidUsingConvertToSecureStringWithPlainText',
-                  'PSAvoidUsingInvokeExpression',
-                  'PSAvoidUsingPlainTextForPassword',
-                  'PSAvoidUsingWMICmdlet',
-                  'PSAvoidUsingWriteHost',
-                  'PSUseCompatibleSyntax',
-                  'PSUseCompatibleTypes',
-                  'PSPlaceCloseBrace',
-                  'PSProvideCommentHelp',
-                  'PSUsePSCredentialType',
-                  'PSUseUTF8EncodingForHelpFile',
-                  'PSDSCDscExamplesPresent',
-                  'PSDSCDscTestsPresent',
-                  'PSDSCReturnCorrectTypesForDSCFunctions',
-                  'PSDSCUseIdenticalMandatoryParametersForDSC',
-                  'PSDSCUseIdenticalParametersForDSC',
-                  'PSDSCStandardDSCFunctionsInResource',
-                  'PSDSCUseVerboseMessageInDSCResource'
-              )
-              IncludeDefaultRules   = $true
-              RecurseCustomRulePath = $false
-              Rules = @{
-                    PSUseFullyQualifiedCmdletNames = @{
-                        Enabled  = $true
-                    }
-                    PSAvoidDefaultValueSwitchParameter = @{
-                        Enabled = $true
-                    }
-                    PSAvoidUsingCmdletAliases = @{
-                        Enabled = $true
-                    }
-                    PSAvoidAssignmentToAutomaticVariable = @{
-                        Enabled = $true
-                    }
-                    PSAvoidDefaultValueForMandatoryParameter = @{
-                        Enabled = $true
-                    }
-                    PSAvoidExclaimOperator = @{
-                        Enabled = $true
-                    }
-                    PSAvoidGlobalAliases = @{
-                        Enabled = $true
-                    }
-                    PSAvoidGlobalFunctions = @{
-                        Enabled = $true
-                    }
-                    PSAvoidGlobalVars = @{
-                        Enabled = $true
-                    }
-                    PSAvoidLongLines = @{
-                        Enabled = $true
-                    }
-                    PSAvoidNullOrEmptyHelpMessageAttribute = @{
-                        Enabled = $true
-                    }
-                    PSAvoidOverwritingBuiltInCmdlets = @{
-                        Enabled = $true
-                    }
-                    PSReservedCmdletChar = @{
-                        Enabled = $true
-                    }
-                    PSReservedParams = @{
-                        Enabled = $true
-                    }
-                    PSAvoidSemicolonsAsLineTerminators = @{
-                        Enabled = $true
-                    }
-                    PSAvoidShouldContinueWithoutForce = @{
-                        Enabled = $true
-                    }
-                    PSAvoidTrailingWhitespace = @{
-                        Enabled = $true
-                    }
-                    PSAvoidUsingDeprecatedManifestFields = @{
-                        Enabled = $true
-                    }
-                    PSAvoidUsingDoubleQuotesForConstantString = @{
-                        Enabled = $true
-                    }
-                    PSMisleadingBacktick = @{
-                        Enabled = $true
-                    }
-                    PSMissingModuleManifestField = @{
-                        Enabled = $true
-                    }
-                    PSPlaceOpenBrace = @{
-                        Enabled = $true
-                    }
-                    PSPossibleIncorrectComparisonWithNull = @{
-                        Enabled = $true
-                    }
-                    PSPossibleIncorrectUsageOfAssignmentOperator = @{
-                        Enabled = $true
-                    }
-                    PSPossibleIncorrectUsageOfRedirectionOperator = @{
-                        Enabled = $true
-                    }
-                    PSUseApprovedVerbs = @{
-                        Enabled = $true
-                    }
-                    PSUseCmdletCorrectly = @{
-                        Enabled = $true
-                    }
-                    PSUseCompatibleCmdlets = @{
-                        Enabled = $true
-                    }
-                    PSUseConsistentIndentation = @{
-                        Enabled = $true
-                    }
-                    PSUseConsistentWhitespace = @{
-                        Enabled = $true
-                    }
-                    PSUseDeclaredVarsMoreThanAssignments = @{
-                        Enabled = $true
-                    }
-                    PSUseLiteralInitializerForHashtable = @{
-                        Enabled = $true
-                    }
-                    PSUseOutputTypeCorrectly = @{
-                        Enabled = $true
-                    }
-                    PSUseProcessBlockForPipelineCommand = @{
-                        Enabled = $true
-                    }
-                    PSShouldProcess = @{
-                        Enabled = $true
-                    }
-                    PSUseShouldProcessForStateChangingFunctions = @{
-                        Enabled = $true
-                    }
-                    PSUseSingularNouns = @{
-                        Enabled = $true
-                    }
-                    PSUseSupportsShouldProcess = @{
-                        Enabled = $true
-                    }
-                    PSUseToExportFieldsInManifest = @{
-                        Enabled = $true
-                    }
-                    PSUseUsingScopeModifierInNewRunspaces = @{
-                        Enabled = $true
-                    }
-              }
-          }
+            - name: Run PSScriptAnalyzer
+              shell: pwsh
+              run: |
+                  $settings = @{
+                      Severity              = @('Warning')
+                      IncludeRules          = @(
+                          'PSUseFullyQualifiedCmdletNames',
+                          'PSAvoidDefaultValueSwitchParameter',
+                          'PSAvoidUsingCmdletAliases',
+                          'PSAvoidAssignmentToAutomaticVariable',
+                          'PSAvoidDefaultValueForMandatoryParameter',
+                          'PSAvoidExclaimOperator',
+                          'PSAvoidGlobalAliases',
+                          'PSAvoidGlobalFunctions',
+                          'PSAvoidGlobalVars',
+                          'PSAvoidLongLines',
+                          'PSAvoidNullOrEmptyHelpMessageAttribute',
+                          'PSAvoidOverwritingBuiltInCmdlets',
+                          'PSReservedCmdletChar',
+                          'PSReservedParams',
+                          'PSAvoidSemicolonsAsLineTerminators',
+                          'PSAvoidShouldContinueWithoutForce',
+                          'PSAvoidTrailingWhitespace',
+                          'PSAvoidUsingDeprecatedManifestFields',
+                          'PSAvoidUsingDoubleQuotesForConstantString',
+                          'PSMisleadingBacktick',
+                          'PSMissingModuleManifestField',
+                          'PSPlaceOpenBrace',
+                          'PSPossibleIncorrectComparisonWithNull',
+                          'PSPossibleIncorrectUsageOfAssignmentOperator',
+                          'PSPossibleIncorrectUsageOfRedirectionOperator',
+                          'PSUseApprovedVerbs',
+                          'PSUseCmdletCorrectly',
+                          'PSUseCompatibleCmdlets',
+                          'PSUseConsistentIndentation',
+                          'PSUseConsistentWhitespace',
+                          'PSUseDeclaredVarsMoreThanAssignments',
+                          'PSUseLiteralInitializerForHashtable',
+                          'PSUseOutputTypeCorrectly',
+                          'PSUseProcessBlockForPipelineCommand',
+                          'PSShouldProcess',
+                          'PSUseShouldProcessForStateChangingFunctions',
+                          'PSUseSingularNouns',
+                          'PSUseSupportsShouldProcess',
+                          'PSUseToExportFieldsInManifest',
+                          'PSUseUsingScopeModifierInNewRunspaces'
+                      )
+                      ExcludeRules          = @(
+                          'PSUseCorrectCasing',
+                          'PSUseCompatibleCommands',
+                          'PSAlignAssignmentStatement',
+                          'PSAvoidUsingEmptyCatchBlock',
+                          'PSReviewUnusedParameter',
+                          'PSAvoidInvokingEmptyMembers',
+                          'PSAvoidMultipleTypeAttributes',
+                          'PSAvoidUsingPositionalParameters',
+                          'PSUseBOMForUnicodeEncodedFile',
+                          'PSAvoidUsingUsernameAndPasswordParams',
+                          'PSAvoidUsingAllowUnencryptedAuthentication',
+                          'PSAvoidUsingBrokenHashAlgorithms',
+                          'PSAvoidUsingComputerNameHardcoded',
+                          'PSAvoidUsingConvertToSecureStringWithPlainText',
+                          'PSAvoidUsingInvokeExpression',
+                          'PSAvoidUsingPlainTextForPassword',
+                          'PSAvoidUsingWMICmdlet',
+                          'PSAvoidUsingWriteHost',
+                          'PSUseCompatibleSyntax',
+                          'PSUseCompatibleTypes',
+                          'PSPlaceCloseBrace',
+                          'PSProvideCommentHelp',
+                          'PSUsePSCredentialType',
+                          'PSUseUTF8EncodingForHelpFile',
+                          'PSDSCDscExamplesPresent',
+                          'PSDSCDscTestsPresent',
+                          'PSDSCReturnCorrectTypesForDSCFunctions',
+                          'PSDSCUseIdenticalMandatoryParametersForDSC',
+                          'PSDSCUseIdenticalParametersForDSC',
+                          'PSDSCStandardDSCFunctionsInResource',
+                          'PSDSCUseVerboseMessageInDSCResource'
+                      )
+                      IncludeDefaultRules   = $true
+                      RecurseCustomRulePath = $false
+                      Rules = @{
+                            PSUseFullyQualifiedCmdletNames = @{
+                                Enabled  = $true
+                            }
+                            PSAvoidDefaultValueSwitchParameter = @{
+                                Enabled = $true
+                            }
+                            PSAvoidUsingCmdletAliases = @{
+                                Enabled = $true
+                            }
+                            PSAvoidAssignmentToAutomaticVariable = @{
+                                Enabled = $true
+                            }
+                            PSAvoidDefaultValueForMandatoryParameter = @{
+                                Enabled = $true
+                            }
+                            PSAvoidExclaimOperator = @{
+                                Enabled = $true
+                            }
+                            PSAvoidGlobalAliases = @{
+                                Enabled = $true
+                            }
+                            PSAvoidGlobalFunctions = @{
+                                Enabled = $true
+                            }
+                            PSAvoidGlobalVars = @{
+                                Enabled = $true
+                            }
+                            PSAvoidLongLines = @{
+                                Enabled = $true
+                            }
+                            PSAvoidNullOrEmptyHelpMessageAttribute = @{
+                                Enabled = $true
+                            }
+                            PSAvoidOverwritingBuiltInCmdlets = @{
+                                Enabled = $true
+                            }
+                            PSReservedCmdletChar = @{
+                                Enabled = $true
+                            }
+                            PSReservedParams = @{
+                                Enabled = $true
+                            }
+                            PSAvoidSemicolonsAsLineTerminators = @{
+                                Enabled = $true
+                            }
+                            PSAvoidShouldContinueWithoutForce = @{
+                                Enabled = $true
+                            }
+                            PSAvoidTrailingWhitespace = @{
+                                Enabled = $true
+                            }
+                            PSAvoidUsingDeprecatedManifestFields = @{
+                                Enabled = $true
+                            }
+                            PSAvoidUsingDoubleQuotesForConstantString = @{
+                                Enabled = $true
+                            }
+                            PSMisleadingBacktick = @{
+                                Enabled = $true
+                            }
+                            PSMissingModuleManifestField = @{
+                                Enabled = $true
+                            }
+                            PSPlaceOpenBrace = @{
+                                Enabled = $true
+                            }
+                            PSPossibleIncorrectComparisonWithNull = @{
+                                Enabled = $true
+                            }
+                            PSPossibleIncorrectUsageOfAssignmentOperator = @{
+                                Enabled = $true
+                            }
+                            PSPossibleIncorrectUsageOfRedirectionOperator = @{
+                                Enabled = $true
+                            }
+                            PSUseApprovedVerbs = @{
+                                Enabled = $true
+                            }
+                            PSUseCmdletCorrectly = @{
+                                Enabled = $true
+                            }
+                            PSUseCompatibleCmdlets = @{
+                                Enabled = $true
+                            }
+                            PSUseConsistentIndentation = @{
+                                Enabled = $true
+                            }
+                            PSUseConsistentWhitespace = @{
+                                Enabled = $true
+                            }
+                            PSUseDeclaredVarsMoreThanAssignments = @{
+                                Enabled = $true
+                            }
+                            PSUseLiteralInitializerForHashtable = @{
+                                Enabled = $true
+                            }
+                            PSUseOutputTypeCorrectly = @{
+                                Enabled = $true
+                            }
+                            PSUseProcessBlockForPipelineCommand = @{
+                                Enabled = $true
+                            }
+                            PSShouldProcess = @{
+                                Enabled = $true
+                            }
+                            PSUseShouldProcessForStateChangingFunctions = @{
+                                Enabled = $true
+                            }
+                            PSUseSingularNouns = @{
+                                Enabled = $true
+                            }
+                            PSUseSupportsShouldProcess = @{
+                                Enabled = $true
+                            }
+                            PSUseToExportFieldsInManifest = @{
+                                Enabled = $true
+                            }
+                            PSUseUsingScopeModifierInNewRunspaces = @{
+                                Enabled = $true
+                            }
+                      }
+                  }
 
-          Write-Host "Running PSScriptAnalyzer..." -ForegroundColor Cyan
+                  Write-Host "Running PSScriptAnalyzer..." -ForegroundColor Cyan
 
-          # Find all .ps1 and .psm1 files in Functions directory
-          $scriptFiles = Get-ChildItem -Path "${{ github.workspace }}/current-module/Functions" -Filter "*.ps1" -Recurse -ErrorAction SilentlyContinue
-          $moduleFiles = Get-ChildItem -Path "${{ github.workspace }}/current-module" -Filter "*.psm1" -Recurse -ErrorAction SilentlyContinue
+                  # Find all .ps1 and .psm1 files in Functions directory
+                  $scriptFiles = Get-ChildItem -Path "${{ github.workspace }}/current-module/Functions" -Filter "*.ps1" -Recurse -ErrorAction SilentlyContinue
+                  $moduleFiles = Get-ChildItem -Path "${{ github.workspace }}/current-module" -Filter "*.psm1" -Recurse -ErrorAction SilentlyContinue
 
-          $allFiles = @($scriptFiles) + @($moduleFiles)
-          $issuesFound = $false
+                  $allFiles = @($scriptFiles) + @($moduleFiles)
+                  $issuesFound = $false
 
-          foreach ($file in $allFiles) {
-            Write-Host "\nAnalyzing: $($file.FullName)" -ForegroundColor Yellow
-            $results = Invoke-ScriptAnalyzer -Path $file.FullName -Settings $settings
+                  foreach ($file in $allFiles) {
+                    Write-Host "\nAnalyzing: $($file.FullName)" -ForegroundColor Yellow
+                    $results = Invoke-ScriptAnalyzer -Path $file.FullName -Settings $settings
 
-            if ($results) {
-              $issuesFound = $true
-              $results | Format-Table -AutoSize -Property Severity, Line, RuleName, Message
-            }
-          }
+                    if ($results) {
+                      $issuesFound = $true
+                      $results | Format-Table -AutoSize -Property Severity, Line, RuleName, Message
+                    }
+                  }
 
-          if ($issuesFound) {
-            Write-Error "PSScriptAnalyzer found issues!"
-            exit 1
-          }
+                  if ($issuesFound) {
+                    Write-Error "PSScriptAnalyzer found issues!"
+                    exit 1
+                  }
 
-          Write-Host "`n✓ PSScriptAnalyzer passed!" -ForegroundColor Green
+                  Write-Host "`n✓ PSScriptAnalyzer passed!" -ForegroundColor Green
 
-      - name: Run Pester tests
-        shell: pwsh
-        run: |
-          Write-Host "Running Pester tests..." -ForegroundColor Cyan
+            - name: Run Pester tests
+              shell: pwsh
+              run: |
+                  Write-Host "Running Pester tests..." -ForegroundColor Cyan
 
-          # Check if Tests directory exists
-          $testsPath = "${{ github.workspace }}/current-module/Tests"
-          if (-not (Test-Path $testsPath)) {
-            Write-Host "No Tests directory found, skipping Pester tests" -ForegroundColor Yellow
-            exit 0
-          }
+                  # Check if Tests directory exists
+                  $testsPath = "${{ github.workspace }}/current-module/Tests"
+                  if (-not (Test-Path $testsPath)) {
+                    Write-Host "No Tests directory found, skipping Pester tests" -ForegroundColor Yellow
+                    exit 0
+                  }
 
-          # Configure Pester
-          $config = New-PesterConfiguration
-          $config.Run.Path = $testsPath
-          $config.Run.PassThru = $true
-          $config.Output.Verbosity = 'Detailed'
-          $config.TestResult.Enabled = $false
+                  # Configure Pester
+                  $config = New-PesterConfiguration
+                  $config.Run.Path = $testsPath
+                  $config.Run.PassThru = $true
+                  $config.Output.Verbosity = 'Detailed'
+                  $config.TestResult.Enabled = $false
 
-          # Run tests
-          $result = Invoke-Pester -Configuration $config
+                  # Run tests
+                  $result = Invoke-Pester -Configuration $config
 
-          # Check results
-          if ($result.FailedCount -gt 0) {
-            Write-Error "Pester tests failed: $($result.FailedCount) test(s) failed"
-            exit 1
-          }
+                  # Check results
+                  if ($result.FailedCount -gt 0) {
+                    Write-Error "Pester tests failed: $($result.FailedCount) test(s) failed"
+                    exit 1
+                  }
 
-          Write-Host "`n✓ All Pester tests passed! ($($result.PassedCount) tests)" -ForegroundColor Green
+                  Write-Host "`n✓ All Pester tests passed! ($($result.PassedCount) tests)" -ForegroundColor Green
