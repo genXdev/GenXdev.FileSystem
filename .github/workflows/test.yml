@@ -39,6 +39,10 @@ jobs:
       - name: Setup PowerShell modules
         shell: pwsh
         run: |
+          if (-not [IO.Directory]::Exists("$ENV:LOCALAPPDATA\GenXdev.PowerShell")) {
+
+            [IO.Directory]::CreateDirectory("$ENV:LOCALAPPDATA\GenXdev.PowerShell")
+          }
           '{"AllowInstall_GenXdevGlobal": "true"}' | Out-File "$ENV:LOCALAPPDATA\GenXdev.PowerShell\SoftwareConsent.json" -Force
 
           Write-Host "Installing required modules..."
