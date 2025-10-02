@@ -54,18 +54,4 @@
         # File should still exist after failed deletion
         Microsoft.PowerShell.Management\Test-Path -LiteralPath $script:testFile | Pester\Should -BeTrue
     }
-
-    # Pester\It 'Returns false when deletion fails without ErrorAction Stop' {
-    #     # Should return false without throwing when ErrorAction is not Stop
-    #     $result = GenXdev.FileSystem\Remove-ItemWithFallback -Path $testFile -ErrorAction SilentlyContinue
-    #     $result | Pester\Should -BeFalse -Because "immediate deletion fails and CountRebootDeletionAsSuccess is false by default"
-    #     Microsoft.PowerShell.Management\Test-Path -LiteralPath $testFile | Pester\Should -BeTrue
-    # }
-
-    # Pester\It 'Returns true when deletion fails but CountRebootDeletionAsSuccess is true' {
-    #     # Should return true when CountRebootDeletionAsSuccess is specified
-    #     $result = GenXdev.FileSystem\Remove-ItemWithFallback -Path $testFile -ErrorAction SilentlyContinue -CountRebootDeletionAsSuccess
-    #     $result | Pester\Should -BeTrue -Because "file is marked for deletion on reboot and CountRebootDeletionAsSuccess is true"
-    #     Microsoft.PowerShell.Management\Test-Path -LiteralPath $testFile | Pester\Should -BeTrue
-    # }
 }
