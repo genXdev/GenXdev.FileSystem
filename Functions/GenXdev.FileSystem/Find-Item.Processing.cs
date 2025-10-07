@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Processing.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.290.2025
+// Version                   : 1.292.2025
 // ################################################################################
 // MIT License
 //
@@ -1234,48 +1234,7 @@ namespace GenXdev.FileSystem
                 // create file info
                 var fileInfo = new FileInfo(normalizedFilePath);
 
-                // check size constraints
-                if ((MaxFileSize > 0 && fileInfo.Length > MaxFileSize) ||
-                    (MinFileSize > 0 && fileInfo.Length < MinFileSize))
-                {
 
-                    // log skip size if verbose
-                    if (UseVerboseOutput)
-                    {
-                        // enqueue skip size
-                        VerboseQueue.Enqueue((
-                            "Skipping file " + normalizedFilePath +
-                            " due to size constraints. Size: " +
-                            fileInfo.Length + " bytes"
-                        ));
-                    }
-
-                    // skip
-                    continue;
-                }
-
-                // check mod dates
-                if ((ModifiedAfter.HasValue &&
-                    fileInfo.LastWriteTimeUtc < ModifiedAfter.Value) ||
-                    (ModifiedBefore.HasValue &&
-                    fileInfo.LastWriteTimeUtc > ModifiedBefore.Value))
-                {
-
-                    // log skip date if verbose
-                    if (UseVerboseOutput)
-                    {
-
-                        // enqueue skip date
-                        VerboseQueue.Enqueue((
-                            "Skipping file " + normalizedFilePath +
-                            " due to modification date constraints. " +
-                            "LastWriteTimeUtc: " + fileInfo.LastWriteTimeUtc
-                        ));
-                    }
-
-                    // skip
-                    continue;
-                }
 
                 // check exclusion
                 bool noExclusion = NoMoreCustomWildcards ||
@@ -1304,62 +1263,7 @@ namespace GenXdev.FileSystem
                     continue;
                 }
 
-                // check exclude patterns
-                foreach (var pattern in FileExcludePatterns)
-                {
-
-                    // if match
-                    if (pattern.IsMatch(WildcardPattern.Escape(normalizedFilePath)))
-                    {
-
-                        // set exclusion
-                        haveExclusion = true;
-
-                        // log exclude if verbose
-                        if (UseVerboseOutput)
-                        {
-
-                            // enqueue exclude
-                            VerboseQueue.Enqueue((
-                                "Excluding file " + normalizedFilePath +
-                                " due to pattern " + pattern
-                            ));
-                        }
-
-                        // break
-                        break;
-                    }
-                }
-
-                // check file categories
-                if (Category != null && Category.Length > 0)
-                {
-                    haveExclusion = true;
-                    var extension = Path.GetExtension(normalizedFilePath);
-
-                    foreach (var pattern in Category)
-                    {
-                        if (FileGroups.Groups.TryGetValue(pattern, out var group))
-                        {
-                            if (group.Contains(extension))
-                            {
-
-                                if (UseVerboseOutput)
-                                {
-                                    // enqueue exclude
-                                    VerboseQueue.Enqueue((
-                                        "Including file " + normalizedFilePath +
-                                        " for being member of: " + pattern
-                                    ));
-
-                                }
-
-                                haveExclusion = false;
-                                break;
-                            }
-                        }
-                    }
-                }
+                haveExclusion = ShouldFileBeExcluded(fileInfo);
 
                 // skip if exclusion
                 if (haveExclusion)
@@ -1429,6 +1333,114 @@ namespace GenXdev.FileSystem
             }
         }
 
+        private bool ShouldFileBeExcluded(FileInfo fileInfo)
+        {
+            bool haveExclusion = false;
+
+            // check size constraints
+            if ((MaxFileSize > 0 && fileInfo.Length > MaxFileSize) ||
+                (MinFileSize > 0 && fileInfo.Length < MinFileSize))
+            {
+
+                // log skip size if verbose
+                if (UseVerboseOutput)
+                {
+                    // enqueue skip size
+                    VerboseQueue.Enqueue((
+                        "Skipping file " + fileInfo.FullName +
+                        " due to size constraints. Size: " +
+                        fileInfo.Length + " bytes"
+                    ));
+                }
+
+                // skip
+                haveExclusion = true;
+            }
+
+            // check mod dates
+            if (!haveExclusion && (ModifiedAfter.HasValue &&
+                fileInfo.LastWriteTimeUtc < ModifiedAfter.Value) ||
+                (ModifiedBefore.HasValue &&
+                fileInfo.LastWriteTimeUtc > ModifiedBefore.Value))
+            {
+
+                // log skip date if verbose
+                if (UseVerboseOutput)
+                {
+
+                    // enqueue skip date
+                    VerboseQueue.Enqueue((
+                        "Skipping file " + fileInfo.FullName +
+                        " due to modification date constraints. " +
+                        "LastWriteTimeUtc: " + fileInfo.LastWriteTimeUtc
+                    ));
+                }
+
+                // skip
+                haveExclusion = true;
+            }
+
+            // check exclude patterns
+            if (!haveExclusion)
+                foreach (var pattern in FileExcludePatterns)
+                {
+
+                    // if match
+                    if (pattern.IsMatch(WildcardPattern.Escape(fileInfo.FullName)))
+                    {
+
+                        // set exclusion
+                        haveExclusion = true;
+
+                        // log exclude if verbose
+                        if (UseVerboseOutput)
+                        {
+
+                            // enqueue exclude
+                            VerboseQueue.Enqueue((
+                                "Excluding file " + fileInfo.FullName +
+                                " due to pattern " + pattern
+                            ));
+                        }
+
+                        // break
+                        break;
+                    }
+                }
+
+            // check file categories
+            if (!haveExclusion && Category != null && Category.Length > 0)
+            {
+                haveExclusion = true;
+                var extension = Path.GetExtension(fileInfo.FullName);
+
+                foreach (var pattern in Category)
+                {
+                    if (FileGroups.Groups.TryGetValue(pattern, out var group))
+                    {
+                        if (group.Contains(extension))
+                        {
+
+                            if (UseVerboseOutput)
+                            {
+                                // enqueue exclude
+                                VerboseQueue.Enqueue((
+                                    "Including file " + fileInfo.FullName +
+                                    " for being member of: " + pattern
+                                ));
+
+                            }
+
+                            haveExclusion = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return haveExclusion;
+        }
+
         /// <summary>
         /// Gets file alternate data streams.
         /// </summary>
@@ -1443,7 +1455,7 @@ namespace GenXdev.FileSystem
             WildcardPattern wildcardPattern = string.IsNullOrEmpty(StreamName) ?
                 null :
               new WildcardPattern(
-                  EscapeBracketsInPattern(StreamName), 
+                  EscapeBracketsInPattern(StreamName),
                   CurrentWildCardOptions
             );
 

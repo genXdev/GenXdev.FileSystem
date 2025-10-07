@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Fields.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.290.2025
+// Version                   : 1.292.2025
 // ################################################################################
 // MIT License
 //
@@ -231,7 +231,9 @@ namespace GenXdev.FileSystem
 
         protected int oldMaxWorkerThreads;
         protected bool isStarted;
+        protected bool hadInput;
         protected bool matchingFileContent;
+        protected bool initialWorkerStarted;
 
         /// <summary>
         /// Flag for enabling verbose output based on user preferences

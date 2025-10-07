@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Cmdlet.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.290.2025
+// Version                   : 1.292.2025
 // ################################################################################
 // MIT License
 //
@@ -29,7 +29,13 @@
 
 
 
+using Microsoft.PowerShell.Commands;
+using System.Collections;
+using System.IO;
 using System.Management.Automation;
+using System.Text.RegularExpressions;
+using System.Xml.Linq;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace GenXdev.FileSystem
 {
@@ -590,7 +596,7 @@ namespace GenXdev.FileSystem
         /// <para type="description">File name or pattern to search for. Supports wildcards (*,?). Default is '*'</para>
         /// </summary>
         [Parameter(Position = 0, Mandatory = false, HelpMessage = "File name or pattern to search for. Default is '*'")]
-        [Alias("like", "l", "Path", "LiteralPath", "Query", "SearchMask", "Include")]
+        [Alias("like", "Path", "LiteralPath", "Query", "SearchMask", "Include")]
         [ValidateNotNullOrEmpty()]
         [SupportsWildcards()]
         public string[] Name { get; set; }
@@ -601,7 +607,7 @@ namespace GenXdev.FileSystem
         [Parameter(Mandatory = false, ValueFromPipeline = true, ValueFromPipelineByPropertyName = true, HelpMessage = "File name or pattern to search for. Default is '*'")]
         [Alias("FullName")]
         [SupportsWildcards()]
-        public string Input { get; set; }
+        public object Input { get; set; }
 
         /// <summary>
         /// <para type="description">Regular expression pattern to search within file contents</para>
@@ -946,71 +952,168 @@ namespace GenXdev.FileSystem
 
             // initialize provided names for searching
             InitializeProvidedNames();
+
+            hadInput = MyInvocation.BoundParameters.ContainsKey("Input") ||
+                (MyInvocation.PipelineLength > 1 && MyInvocation.PipelinePosition > 1);
         }
 
         protected override void ProcessRecord()
         {
-            if (string.IsNullOrEmpty(Input)) return;
+            ProcessInputObject(Input);
+        }
 
-            foreach (var namePart in Input.Split(";"))
+        private bool ProcessInputObject(object o)
+        {
+            if (o == null) return false;
+
+            if (UseVerboseOutput)
+            {
+                VerboseQueue.Enqueue($"Processing input object of type: {o?.GetType().FullName ?? "null"}");
+            }
+
+            if (o is System.Management.Automation.PSObject)
+            {
+                o = (o as System.Management.Automation.PSObject).ImmediateBaseObject;
+            }
+
+            if (o is MatchInfo)
+            {
+                if (processInputString((o as MatchInfo).Path)) return false;
+            }
+
+            if (o is string)
+            {
+                if (processInputString(o as string)) return false;
+            }
+
+            if (o is System.IO.FileInfo)
+            {
+                if (processInputString((o as System.IO.FileInfo).FullName)) return false;
+            }
+
+            if (o is System.IO.DirectoryInfo)
+            {
+                if (processInputString((o as System.IO.DirectoryInfo).FullName)) return false;
+            }
+
+            if (o is IEnumerable)
+            {
+                foreach (var obj in (IEnumerable)o)
+                {
+                    ProcessInputObject(obj);
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool processInputString(string o)
+        {
+            if (string.IsNullOrEmpty(o)) return false;
+            hadInput = true;
+
+            foreach (var namePart in o.Split(";"))
             {
                 // add to visited if new and initialize search
                 if (VisitedNodes.TryAdd("start;" + namePart, true))
                 {
-                    InitializeSearchDirectory(namePart);
+                    string name = namePart;
+                    bool hasLongPathPrefix;
+                    bool isUncPath;
+                    string UncMachineNameToEnumerate;
+
+                    EnsureFullProvidedLocationAndNamePart(
+                        ref name,
+                        out hasLongPathPrefix,
+                        out isUncPath,
+                        out UncMachineNameToEnumerate
+                    );
+
+                    var fi = new FileInfo(name);
+
+                    if (string.IsNullOrWhiteSpace(UncMachineNameToEnumerate) && fi.Exists)
+                    {
+                        name = System.IO.Path.GetDirectoryName(name);
+
+                        if (!ShouldFileBeExcluded(fi))
+                        {
+                            AddToOutputQueue(fi);
+                        }
+                    }
+
+                    InitializeSearchDirectory(name);
                 }
-                else if (UseVerboseOutput)
+                else
+                if (UseVerboseOutput)
                 {
                     // log skipping duplicate mask
                     WriteWarning($"Skipping duplicate name: {namePart}");
                 }
             }
+
+            return true;
         }
 
         protected override void EndProcessing()
         {
-            // check for no params
-            if (DirQueue.Count == 0)
+            try
             {
-                if (UseVerboseOutput)
+                // check for no params
+                if (DirQueue.Count == 0)
                 {
+                    if (hadInput)
+                    {
+                        if (UseVerboseOutput)
+                        {
+                            VerboseQueue.Enqueue("Nothing to do");
+                        }
+                        return;
+                    }
+                    if (UseVerboseOutput)
+                    {
 
-                    // log skipping duplicate mask
-                    VerboseQueue.Enqueue($"No input, adding current directory to the queue: {CurrentDirectory}\\");
+                        // log skipping duplicate mask
+                        VerboseQueue.Enqueue($"No input, adding current directory to the queue: {CurrentDirectory}\\");
+                    }
+
+                    InitializeSearchDirectory(CurrentDirectory + "\\");
                 }
 
-                InitializeSearchDirectory(CurrentDirectory + "\\");
+                // allow new workers to be created
+                isStarted = true;
+
+                // run the search tasks
+                ProcessSearchTasks();
+
             }
-
-            // allow new workers to be created
-            isStarted = true;
-
-            // run the search tasks
-            ProcessSearchTasks();
-
-            // clear all queues
-            EmptyQueues();
-            MatchContentProcessor p; while (MatchContentProcessors.TryDequeue(out p)) ;
-            GC.Collect();
-
-            // create completion progress record
-            var completeRecord = new ProgressRecord(0, "FastFileSearch", "Completed")
+            finally
             {
-                // set completion percentage
-                PercentComplete = 100,
+                // clear all queues
+                EmptyQueues();
+                MatchContentProcessor p; while (MatchContentProcessors.TryDequeue(out p)) ;
+                GC.Collect();
 
-                // mark as completed
-                RecordType = ProgressRecordType.Completed
-            };
+                // create completion progress record
+                var completeRecord = new ProgressRecord(0, "FastFileSearch", "Completed")
+                {
+                    // set completion percentage
+                    PercentComplete = 100,
 
-            // output completion progress
-            WriteProgress(completeRecord);
+                    // mark as completed
+                    RecordType = ProgressRecordType.Completed
+                };
 
-            // restore configuration
-            ThreadPool.SetMaxThreads(this.oldMaxWorkerThread, this.oldMaxCompletionPorts);
+                // output completion progress
+                WriteProgress(completeRecord);
 
-            // clean up cancellation source
-            cts?.Dispose();
+                // restore configuration
+                ThreadPool.SetMaxThreads(this.oldMaxWorkerThread, this.oldMaxCompletionPorts);
+
+                // clean up cancellation source
+                cts?.Dispose();
+            }
         }
 
         protected override void StopProcessing()

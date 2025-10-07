@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Utilities.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.290.2025
+// Version                   : 1.292.2025
 // ################################################################################
 // MIT License
 //
@@ -492,6 +492,12 @@ namespace GenXdev.FileSystem
                 {
                     // start new directory processing worker task
                     AddWorkerTask(Workers, false, ctx);
+
+                    // Set flag after first directory worker is actually created
+                    if (!initialWorkerStarted)
+                    {
+                        initialWorkerStarted = true;
+                    }
                 }
 
                 // get current content matching processor count

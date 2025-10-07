@@ -2,7 +2,7 @@
 Part of PowerShell module : GenXdev.FileSystem
 Original cmdlet filename  : Move-ItemWithTracking.ps1
 Original author           : René Vaessen / GenXdev
-Version                   : 1.290.2025
+Version                   : 1.292.2025
 ################################################################################
 MIT License
 
@@ -30,7 +30,7 @@ SOFTWARE.
 Part of PowerShell module : GenXdev.FileSystem
 Original cmdlet filename  : Move-ItemWithTracking.ps1
 Original author           : René Vaessen / GenXdev
-Version                   : 1.290.2025
+Version                   : 1.292.2025
 ################################################################################
 MIT License
 

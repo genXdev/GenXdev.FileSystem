@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Initialization.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.290.2025
+// Version                   : 1.292.2025
 // ################################################################################
 // MIT License
 //
@@ -147,17 +147,32 @@ namespace GenXdev.FileSystem
 
             // stop finding files when the queues get too full
             maxDirectoryWorkersInParallel = () =>
-                            // we are thinking about the memory being used
-                            // for storing paths to process
-                            // stop finding more files when queues get too full
-                            buffersFull() ? 0 :
-                            Math.Min(
-                                DirQueue.Count,
-                                Math.Max(
-                                    baseTargetWorkerCount,
-                                    (int)Interlocked.Read(ref recommendedDirectoryWorkers)
-                                )
-                            );
+            {
+                // we are thinking about the memory being used
+                // for storing paths to process
+                // On first call (before initial workers start), skip buffer check
+                // After that, check all queues including verbose to prevent overflow
+                if (!initialWorkerStarted)
+                {
+                    return Math.Min(
+                        DirQueue.Count,
+                        Math.Max(
+                            baseTargetWorkerCount,
+                            (int)Interlocked.Read(ref recommendedDirectoryWorkers)
+                        )
+                    );
+                }
+
+                // After initial worker started, check buffers before allowing more
+                return buffersFull() ? 0 :
+                    Math.Min(
+                        DirQueue.Count,
+                        Math.Max(
+                            baseTargetWorkerCount,
+                            (int)Interlocked.Read(ref recommendedDirectoryWorkers)
+                        )
+                    );
+            };
 
 
             // dynamicly scale according to how full buffers are getting
@@ -274,8 +289,8 @@ namespace GenXdev.FileSystem
             // Set up cancellation with optional timeout
             cts = new CancellationTokenSource();
 
-            // apply timeout if specified
-            if (TimeoutSeconds.HasValue)
+            // apply timeout if specified and greater than 0
+            if (TimeoutSeconds.HasValue && TimeoutSeconds.Value > 0)
             {
                 cts.CancelAfter(TimeSpan.FromSeconds(TimeoutSeconds.Value));
 
@@ -284,6 +299,10 @@ namespace GenXdev.FileSystem
                 {
                     VerboseQueue.Enqueue($"Search timeout set to {TimeoutSeconds.Value} seconds");
                 }
+            }
+            else if (UseVerboseOutput && TimeoutSeconds.HasValue)
+            {
+                VerboseQueue.Enqueue($"Search timeout set to 0 seconds (no timeout)");
             }
         }
 
@@ -385,7 +404,7 @@ namespace GenXdev.FileSystem
                 if (psLocation.StartsWith("Microsoft.PowerShell.Core\\FileSystem::\\\\"))
                 {
                     // For UNC paths, use the path as-is since Path.GetFullPath can modify UNC paths
-                    psLocation = psLocation.Substring("Microsoft.PowerShell.Core\\FileSystem::".Length);                    
+                    psLocation = psLocation.Substring("Microsoft.PowerShell.Core\\FileSystem::".Length);
                 }
 
                 // get full path

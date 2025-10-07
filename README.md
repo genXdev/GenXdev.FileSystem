@@ -250,7 +250,7 @@ Update-Module
 ### SYNTAX 
 ```PowerShell 
 Find-Item [[-Name] <string[]>] [[-RelativeBasePath]
-    <string>] [-Input <string>] [-Category {Pictures |
+    <string>] [-Input <Object>] [-Category {Pictures |
     Videos | Music | Documents | Spreadsheets |
     Presentations | Archives | Installers | Executables |
     Databases | DesignFiles | Ebooks | Subtitles | Fonts |
@@ -276,7 +276,7 @@ Find-Item [[-Name] <string[]>] [[-RelativeBasePath]
     IntegrityStream | NoScrubData}] [-Exclude <string[]>]
     [<CommonParameters>]
 Find-Item [[-Name] <string[]>] [[-Content] <string[]>]
-    [[-RelativeBasePath] <string>] [-Input <string>]
+    [[-RelativeBasePath] <string>] [-Input <Object>]
     [-Category {Pictures | Videos | Music | Documents |
     Spreadsheets | Presentations | Archives | Installers |
     Executables | Databases | DesignFiles | Ebooks |
@@ -470,7 +470,7 @@ Find-Item [[-Name] <string[]>] [[-Content] <string[]>]
         Aliases                      None  
         Dynamic?                     false  
         Accept wildcard characters?  false  
-    -Input <string>  
+    -Input <Object>  
         File name or pattern to search for. Default is '*'  
         Required?                    false  
         Position?                    Named  
@@ -548,7 +548,7 @@ Find-Item [[-Name] <string[]>] [[-Content] <string[]>]
         Position?                    0  
         Accept pipeline input?       false  
         Parameter set name           (All)  
-        Aliases                      like, l, Path, LiteralPath, Query, SearchMask, Include  
+        Aliases                      like, Path, LiteralPath, Query, SearchMask, Include  
         Dynamic?                     false  
         Accept wildcard characters?  true  
     -NoEmphasis  
