@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Cmdlet.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.296.2025
+// Version                   : 1.298.2025
 // ################################################################################
 // MIT License
 //
@@ -205,6 +205,13 @@ namespace GenXdev.FileSystem
     /// -MaxRecursionDepth &lt;Int32&gt;<br/>
     /// Maximum recursion depth for directory traversal. 0 means unlimited.<br/>
     /// - <b>Aliases</b>: md, depth, maxdepth<br/>
+    /// - <b>Default</b>: 0<br/>
+    /// </para>
+
+    /// <para type="description">
+    /// -MaxSearchUpDepth &lt;Int32&gt;<br/>
+    /// Maximum recursion depth for continuing searching upwards the tree for relative searches, while no items are found. 0 means disabled.<br/>
+    /// - <b>Aliases</b>: maxupward<br/>
     /// - <b>Default</b>: 0<br/>
     /// </para>
 
@@ -697,7 +704,7 @@ namespace GenXdev.FileSystem
         /// <para type="description">Include both files and directories</para>
         /// </summary>
         [Parameter(Mandatory = false, HelpMessage = "Include both files and directories")]
-        [Alias("both")]
+        [Alias("both", "DirectoriesAndFiles")]
         public SwitchParameter FilesAndDirectories { get; set; }
 
         /// <summary>
@@ -795,6 +802,14 @@ namespace GenXdev.FileSystem
         [Parameter(Mandatory = false, HelpMessage = "Maximum recursion depth for directory traversal. 0 means unlimited.")]
         [Alias("md", "depth", "maxdepth")]
         public int MaxRecursionDepth { get; set; } = 0;
+
+
+        /// <summary>
+        /// <para type="description">Maximum recursion depth for searching upwards the tree. 0 means disabled.</para>
+        /// </summary>
+        [Parameter(Mandatory = false, HelpMessage = "Maximum recursion depth for continuing searching upwards the tree for relative searches, while no items are found. 0 means disabled.")]
+        [Alias("maxupward")]
+        public int MaxSearchUpDepth { get; set; } = 0;
 
         /// <summary>
         /// <para type="description">Maximum file size in bytes to include in results. 0
@@ -1043,7 +1058,7 @@ namespace GenXdev.FileSystem
                         }
                     }
 
-                    InitializeSearchDirectory(name);
+                    InitializeSearchDirectory(name, false);
                 }
                 else
                 if (UseVerboseOutput)
@@ -1078,7 +1093,7 @@ namespace GenXdev.FileSystem
                         VerboseQueue.Enqueue($"No input, adding current directory to the queue: {CurrentDirectory}\\");
                     }
 
-                    InitializeSearchDirectory(CurrentDirectory + "\\");
+                    InitializeSearchDirectory(CurrentDirectory + "\\", true);
                 }
 
                 // allow new workers to be created

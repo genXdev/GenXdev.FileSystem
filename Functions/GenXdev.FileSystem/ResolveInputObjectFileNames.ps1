@@ -2,7 +2,7 @@
 Part of PowerShell module : GenXdev.FileSystem
 Original cmdlet filename  : ResolveInputObjectFileNames.ps1
 Original author           : René Vaessen / GenXdev
-Version                   : 1.296.2025
+Version                   : 1.298.2025
 ################################################################################
 MIT License
 
@@ -188,7 +188,7 @@ function ResolveInputObjectFileNames  {
     if ($InputObject -is [System.IO.FileInfo]) {
 
             # copy parameters for Find-Item call
-            $findParams = GenXdev.Helpers\Copy-IdenticalParamValues `
+            $findParams = GenXdev.FileSystem\Copy-IdenticalParamValues `
                 -BoundParameters $PSBoundParameters `
                 -FunctionName 'GenXdev.FileSystem\Find-Item' `
                 -DefaultValues (Microsoft.PowerShell.Utility\Get-Variable -Scope Local -ErrorAction SilentlyContinue)
@@ -223,7 +223,7 @@ function ResolveInputObjectFileNames  {
                 if ($Filter.Count -gt 1) {
                     foreach ($f in $Filter) {
                         # copy parameters for Find-Item call
-                        $params = GenXdev.Helpers\Copy-IdenticalParamValues `
+                        $params = GenXdev.FileSystem\Copy-IdenticalParamValues `
                             -BoundParameters $PSBoundParameters `
                             -FunctionName 'GenXdev.FileSystem\Find-Item' `
                             -DefaultValues (Microsoft.PowerShell.Utility\Get-Variable -Scope Local -ErrorAction SilentlyContinue)
@@ -234,7 +234,7 @@ function ResolveInputObjectFileNames  {
                             Microsoft.PowerShell.Core\ForEach-Object {
 
                                 # copy parameters for recursive expansion
-                                $expandParams = GenXdev.Helpers\Copy-IdenticalParamValues `
+                                $expandParams = GenXdev.FileSystem\Copy-IdenticalParamValues `
                                     -BoundParameters $PSBoundParameters `
                                     -FunctionName 'GenXdev.FileSystem\ResolveInputObjectFileNames' `
                                     -DefaultValues (Microsoft.PowerShell.Utility\Get-Variable -Scope Local -ErrorAction SilentlyContinue);
@@ -251,7 +251,7 @@ function ResolveInputObjectFileNames  {
             }
 
             # copy parameters for Find-Item call
-            $params = GenXdev.Helpers\Copy-IdenticalParamValues `
+            $params = GenXdev.FileSystem\Copy-IdenticalParamValues `
                     -BoundParameters $PSBoundParameters `
                     -FunctionName 'GenXdev.FileSystem\Find-Item' `
                     -DefaultValues (Microsoft.PowerShell.Utility\Get-Variable -Scope Local -ErrorAction SilentlyContinue)
@@ -288,7 +288,7 @@ function ResolveInputObjectFileNames  {
                 }
                 $a | Microsoft.PowerShell.Core\ForEach-Object {
 
-                    $expandParams = GenXdev.Helpers\Copy-IdenticalParamValues `
+                    $expandParams = GenXdev.FileSystem\Copy-IdenticalParamValues `
                         -BoundParameters $PSBoundParameters `
                         -FunctionName 'GenXdev.FileSystem\ResolveInputObjectFileNames' `
                         -DefaultValues (Microsoft.PowerShell.Utility\Get-Variable -Scope Local -ErrorAction SilentlyContinue);
@@ -308,7 +308,7 @@ function ResolveInputObjectFileNames  {
         }
 
         # copy parameters for Find-Item call
-        $params = GenXdev.Helpers\Copy-IdenticalParamValues `
+        $params = GenXdev.FileSystem\Copy-IdenticalParamValues `
                 -BoundParameters $PSBoundParameters `
                 -FunctionName 'GenXdev.FileSystem\Find-Item' `
                 -DefaultValues (Microsoft.PowerShell.Utility\Get-Variable -Scope Local -ErrorAction SilentlyContinue)

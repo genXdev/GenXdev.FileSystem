@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Initialization.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.296.2025
+// Version                   : 1.298.2025
 // ################################################################################
 // MIT License
 //
@@ -155,7 +155,7 @@ namespace GenXdev.FileSystem
                 if (!initialWorkerStarted)
                 {
                     return Math.Min(
-                        DirQueue.Count,
+                        DirQueue.Count + (DirQueue.Count > 0 ? 0 : Interlocked.Read(ref filesFound) > 0 ? 0 : UpwardsDirQueue.Count),
                         Math.Max(
                             baseTargetWorkerCount,
                             (int)Interlocked.Read(ref recommendedDirectoryWorkers)
@@ -166,7 +166,7 @@ namespace GenXdev.FileSystem
                 // After initial worker started, check buffers before allowing more
                 return buffersFull() ? 0 :
                     Math.Min(
-                        DirQueue.Count,
+                        DirQueue.Count + (DirQueue.Count > 0 ? 0 : Interlocked.Read(ref filesFound) > 0 ? 0 : UpwardsDirQueue.Count),
                         Math.Max(
                             baseTargetWorkerCount,
                             (int)Interlocked.Read(ref recommendedDirectoryWorkers)
@@ -266,7 +266,7 @@ namespace GenXdev.FileSystem
                             }
 
                             // prepare search starting point
-                            InitializeSearchDirectory(namePart);
+                            InitializeSearchDirectory(namePart, true);
                         }
                         else if (UseVerboseOutput)
                         {
@@ -592,7 +592,7 @@ namespace GenXdev.FileSystem
         /// Prepares search directory from mask.
         /// </summary>
         /// <param name="name">The search mask.</param>
-        protected void InitializeSearchDirectory(string name)
+        protected void InitializeSearchDirectory(string name, bool allowUpwardsSearch)
         {
             // normalize separators
             // Normalize separators to backslashes for consistency
@@ -624,12 +624,18 @@ namespace GenXdev.FileSystem
             // Determine path type for correct handling
             bool isRooted = Path.IsPathRooted(normPath);
             bool isUncPath = normPath.StartsWith(@"\\");
-
             bool isRelative = !isRooted && !isUncPath && !normPath.StartsWith("~");
 
             // add it
             if (UseVerboseOutput) { VerboseQueue.Enqueue($"Adding name: '{name}'"); }
+
             AddToSearchQueue(name);
+
+            // prepare upwards searches
+            if (isRelative && allowUpwardsSearch && MaxSearchUpDepth > 0)
+            {
+                UpwardsDirQueue[name] = 0;
+            }
 
             // add more roots?
             if (isRelative && Root != null && Root.Length > 0)

@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Fields.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.296.2025
+// Version                   : 1.298.2025
 // ################################################################################
 // MIT License
 //
@@ -178,6 +178,7 @@ namespace GenXdev.FileSystem
          * and coordinated output handling.
          */
         protected readonly ConcurrentQueue<string> DirQueue = new();
+        protected readonly ConcurrentDictionary<string, int> UpwardsDirQueue = new();
         protected readonly ConcurrentQueue<object> OutputQueue = new();
         protected readonly ConcurrentQueue<string> VerboseQueue = new();
         protected readonly ConcurrentQueue<FileInfo> FileContentMatchQueue = new();

@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Utilities.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.296.2025
+// Version                   : 1.298.2025
 // ################################################################################
 // MIT License
 //
@@ -125,7 +125,7 @@ namespace GenXdev.FileSystem
         private void CalculateRecommendedWorkerCounts(long dirsDelta, long matchesDelta, double secondsElapsed)
         {
             // Get current queue sizes and worker counts atomically
-            int dirQueueSize = DirQueue.Count;
+            int dirQueueSize = DirQueue.Count + (DirQueue.Count > 0 ? 0 : Interlocked.Read(ref filesFound) > 0 ? 0 : UpwardsDirQueue.Count);
             int matchQueueSize = FileContentMatchQueue.Count;
             long currentDirWorkers = Interlocked.Read(ref directoryProcessors);
             long currentMatchWorkers = Interlocked.Read(ref matchProcessors);
@@ -794,7 +794,7 @@ namespace GenXdev.FileSystem
             statusBuilder.Append("Folders: ")
             .Append(formatStat(dirsDone, true))
             .Append("/")
-            .Append(formatStat(DirQueue.Count, false))
+            .Append(formatStat(DirQueue.Count+UpwardsDirQueue.Count, false))
             .Append(" [")
             .Append(formatStat(directoryProcessorsCount, false))
             .Append("] | Found: ")
@@ -905,6 +905,14 @@ namespace GenXdev.FileSystem
                         OutputQueue.Enqueue($"\u001b]8;;file://{name}\u001b\\{relativePath}\u001b]8;;\u001b\\");
                     }
 
+                    return;
+                }
+
+                if (item is MatchInfo && Raw.IsPresent)
+                {
+                    // in raw mode, output only the matched line text
+                    var match = (MatchInfo)item;
+                    OutputQueue.Enqueue(match.Line);
                     return;
                 }
 

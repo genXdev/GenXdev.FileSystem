@@ -104,6 +104,12 @@ SOFTWARE.
         * ✅ Safety Features: Timeout support (-TimeoutSeconds), ignores inaccessible items,
               skips system attributes by default, and prevents infinite loops with visited node tracking.
 
+    * ✅ Easily change directories with Set-FoundLocation -> lcd
+        * ✅ Find directories by name/wildcard
+        * ✅ Supports most of Find-Items parameters, like searching in file contents to match
+              the directory to change location too
+        * ✅ Has autocompletion, just type the first letters and press Tab or CTRL-SPACE
+
     * ✅ Delete complete directory contents with Remove-AllItems -> sdel
         * ✅ Optionally delete the root folder as well
 
@@ -229,6 +235,12 @@ Update-Module
 | [Remove-OnReboot](#remove-onreboot) | &nbsp; | Marks files or directories for deletion during the next system boot. |
 | [Rename-InProject](#rename-inproject) | rip | Performs text replacement throughout a project directory. |
 | [ResolveInputObjectFileNames](#resolveinputobjectfilenames) | &nbsp; | &nbsp; |
+| [Set-FoundLocation](#set-foundlocation) | lcd | Finds the first matching file or folder and sets the location to it. |
+| [Set-LocationParent](#set-locationparent) | .. | Changes the current location to the parent directory and lists its contents. |
+| [Set-LocationParent2](#set-locationparent2) | ... | Navigates up two directory levels in the file system hierarchy. |
+| [Set-LocationParent3](#set-locationparent3) | .... | Navigates up three directory levels in the file system hierarchy. |
+| [Set-LocationParent4](#set-locationparent4) | ..... | Navigates up four directory levels in the filesystem hierarchy. |
+| [Set-LocationParent5](#set-locationparent5) | ...... | Navigates up five directory levels in the file system hierarchy. |
 | [Start-RoboCopy](#start-robocopy) | rc, xc | Provides a PowerShell wrapper for Microsoft's Robust Copy (RoboCopy) utility. |
 | [WriteFileOutput](#writefileoutput) | &nbsp; | &nbsp; |
 | [WriteJsonAtomic](#writejsonatomic) | &nbsp; | &nbsp; |
@@ -267,14 +279,14 @@ Find-Item [[-Name] <string[]>] [[-RelativeBasePath]
     [-Root <string[]>] [-IncludeNonTextFileMatching]
     [-NoLinks] [-CaseNameMatching {PlatformDefault |
     CaseSensitive | CaseInsensitive}] [-SearchADSContent]
-    [-MaxRecursionDepth <int>] [-MaxFileSize <long>]
-    [-MinFileSize <long>] [-ModifiedAfter <datetime>]
-    [-ModifiedBefore <datetime>] [-AttributesToSkip {None |
-    ReadOnly | Hidden | System | Directory | Archive |
-    Device | Normal | Temporary | SparseFile | ReparsePoint
-    | Compressed | Offline | NotContentIndexed | Encrypted |
-    IntegrityStream | NoScrubData}] [-Exclude <string[]>]
-    [<CommonParameters>]
+    [-MaxRecursionDepth <int>] [-MaxSearchUpDepth <int>]
+    [-MaxFileSize <long>] [-MinFileSize <long>]
+    [-ModifiedAfter <datetime>] [-ModifiedBefore <datetime>]
+    [-AttributesToSkip {None | ReadOnly | Hidden | System |
+    Directory | Archive | Device | Normal | Temporary |
+    SparseFile | ReparsePoint | Compressed | Offline |
+    NotContentIndexed | Encrypted | IntegrityStream |
+    NoScrubData}] [-Exclude <string[]>] [<CommonParameters>]
 Find-Item [[-Name] <string[]>] [[-Content] <string[]>]
     [[-RelativeBasePath] <string>] [-Input <Object>]
     [-Category {Pictures | Videos | Music | Documents |
@@ -293,18 +305,19 @@ Find-Item [[-Name] <string[]>] [[-Content] <string[]>]
     [-Root <string[]>] [-IncludeNonTextFileMatching]
     [-NoLinks] [-CaseNameMatching {PlatformDefault |
     CaseSensitive | CaseInsensitive}] [-SearchADSContent]
-    [-MaxRecursionDepth <int>] [-MaxFileSize <long>]
-    [-MinFileSize <long>] [-ModifiedAfter <datetime>]
-    [-ModifiedBefore <datetime>] [-AttributesToSkip {None |
-    ReadOnly | Hidden | System | Directory | Archive |
-    Device | Normal | Temporary | SparseFile | ReparsePoint
-    | Compressed | Offline | NotContentIndexed | Encrypted |
-    IntegrityStream | NoScrubData}] [-Exclude <string[]>]
-    [-AllMatches] [-CaseSensitive] [-Context <int[]>]
-    [-Culture <string>] [-Encoding {ASCII | ANSI |
-    BigEndianUnicode | BigEndianUTF32 | OEM | Unicode | UTF7
-    | UTF8 | UTF8BOM | UTF8NoBOM | UTF32 | Default}] [-List]
-    [-NoEmphasis] [-NotMatch] [-Quiet] [-Raw] [-SimpleMatch]
+    [-MaxRecursionDepth <int>] [-MaxSearchUpDepth <int>]
+    [-MaxFileSize <long>] [-MinFileSize <long>]
+    [-ModifiedAfter <datetime>] [-ModifiedBefore <datetime>]
+    [-AttributesToSkip {None | ReadOnly | Hidden | System |
+    Directory | Archive | Device | Normal | Temporary |
+    SparseFile | ReparsePoint | Compressed | Offline |
+    NotContentIndexed | Encrypted | IntegrityStream |
+    NoScrubData}] [-Exclude <string[]>] [-AllMatches]
+    [-CaseSensitive] [-Context <int[]>] [-Culture <string>]
+    [-Encoding {ASCII | ANSI | BigEndianUnicode |
+    BigEndianUTF32 | OEM | Unicode | UTF7 | UTF8 | UTF8BOM |
+    UTF8NoBOM | UTF32 | Default}] [-List] [-NoEmphasis]
+    [-NotMatch] [-Quiet] [-Raw] [-SimpleMatch]
     [<CommonParameters>] 
 ```` 
 
@@ -431,7 +444,7 @@ Find-Item [[-Name] <string[]>] [[-Content] <string[]>]
         Position?                    Named  
         Accept pipeline input?       false  
         Parameter set name           (All)  
-        Aliases                      both  
+        Aliases                      both, DirectoriesAndFiles  
         Dynamic?                     false  
         Accept wildcard characters?  false  
     -FollowSymlinkAndJunctions  
@@ -513,6 +526,15 @@ Find-Item [[-Name] <string[]>] [[-Content] <string[]>]
         Accept pipeline input?       false  
         Parameter set name           (All)  
         Aliases                      md, depth, maxdepth  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -MaxSearchUpDepth <int>  
+        Maximum recursion depth for continuing searching upwards the tree for relative searches, while no items are found. 0 means disabled.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      maxupward  
         Dynamic?                     false  
         Accept wildcard characters?  false  
     -MinFileSize <long>  
@@ -1489,6 +1511,583 @@ ResolveInputObjectFileNames [[-InputObject] <Object>] [[-RelativeBasePath] <stri
         Accept pipeline input?       false  
         Parameter set name           (All)  
         Aliases                      base  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    <CommonParameters>  
+        This cmdlet supports the common parameters: Verbose, Debug,  
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
+
+<br/><hr/><br/>
+ 
+
+##	Set-FoundLocation 
+```PowerShell 
+
+   Set-FoundLocation                    --> lcd  
+```` 
+
+### SYNTAX 
+```PowerShell 
+Set-FoundLocation [-Name] <string> -InputObject <Object>
+    [-Category {Pictures | Videos | Music | Documents |
+    Spreadsheets | Presentations | Archives | Installers |
+    Executables | Databases | DesignFiles | Ebooks |
+    Subtitles | Fonts | EmailFiles | 3DModels | GameAssets |
+    MedicalFiles | FinancialFiles | LegalFiles | SourceCode
+    | Scripts | MarkupAndData | Configuration | Logs |
+    TextFiles | WebFiles | MusicLyricsAndChords |
+    CreativeWriting | Recipes | ResearchFiles}]
+    [-MaxDegreeOfParallelism <int>] [-TimeoutSeconds <int>]
+    [-AllDrives] [-File] [-DirectoriesAndFiles]
+    [-IncludeAlternateFileStreams] [-NoRecurse]
+    [-FollowSymlinkAndJunctions] [-IncludeOpticalDiskDrives]
+    [-SearchDrives <string[]>] [-DriveLetter <char[]>]
+    [-Root <string[]>] [-IncludeNonTextFileMatching]
+    [-CaseNameMatching {PlatformDefault | CaseSensitive |
+    CaseInsensitive}] [-SearchADSContent]
+    [-MaxRecursionDepth <int>] [-MaxFileSize <long>]
+    [-MinFileSize <long>] [-ModifiedAfter <datetime>]
+    [-ModifiedBefore <datetime>] [-AttributesToSkip {None |
+    ReadOnly | Hidden | System | Directory | Archive |
+    Device | Normal | Temporary | SparseFile | ReparsePoint
+    | Compressed | Offline | NotContentIndexed | Encrypted |
+    IntegrityStream | NoScrubData}] [-Exclude <string[]>]
+    [-Push] [-ExactMatch] [-WhatIf] [-Confirm]
+    [<CommonParameters>]
+Set-FoundLocation [-Name] <string> [[-Content] <string[]>]
+    [-Category {Pictures | Videos | Music | Documents |
+    Spreadsheets | Presentations | Archives | Installers |
+    Executables | Databases | DesignFiles | Ebooks |
+    Subtitles | Fonts | EmailFiles | 3DModels | GameAssets |
+    MedicalFiles | FinancialFiles | LegalFiles | SourceCode
+    | Scripts | MarkupAndData | Configuration | Logs |
+    TextFiles | WebFiles | MusicLyricsAndChords |
+    CreativeWriting | Recipes | ResearchFiles}]
+    [-MaxDegreeOfParallelism <int>] [-TimeoutSeconds <int>]
+    [-AllDrives] [-File] [-DirectoriesAndFiles]
+    [-IncludeAlternateFileStreams] [-NoRecurse]
+    [-FollowSymlinkAndJunctions] [-IncludeOpticalDiskDrives]
+    [-SearchDrives <string[]>] [-DriveLetter <char[]>]
+    [-Root <string[]>] [-IncludeNonTextFileMatching]
+    [-CaseNameMatching {PlatformDefault | CaseSensitive |
+    CaseInsensitive}] [-SearchADSContent]
+    [-MaxRecursionDepth <int>] [-MaxFileSize <long>]
+    [-MinFileSize <long>] [-ModifiedAfter <datetime>]
+    [-ModifiedBefore <datetime>] [-AttributesToSkip {None |
+    ReadOnly | Hidden | System | Directory | Archive |
+    Device | Normal | Temporary | SparseFile | ReparsePoint
+    | Compressed | Offline | NotContentIndexed | Encrypted |
+    IntegrityStream | NoScrubData}] [-Exclude <string[]>]
+    [-CaseSensitive] [-Culture <string>] [-Encoding {ASCII |
+    ANSI | BigEndianUnicode | BigEndianUTF32 | OEM | Unicode
+    | UTF7 | UTF8 | UTF8BOM | UTF8NoBOM | UTF32 | Default}]
+    [-NotMatch] [-SimpleMatch] [-Push] [-ExactMatch]
+    [-WhatIf] [-Confirm] [<CommonParameters>] 
+```` 
+
+### PARAMETERS 
+    -AllDrives  
+        Search across all available drives  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -AttributesToSkip <FileAttributes>  
+        File attributes to skip (e.g., System, Hidden or None).  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      skipattr  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -CaseNameMatching <MatchCasing>  
+        Gets or sets the case-sensitivity for files and directories  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      casing, CaseSearchMaskMatching  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -CaseSensitive  
+        Indicates that the cmdlet matches are case-sensitive. By default, matches aren't case-sensitive.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -Category <string[]>  
+        Only output files belonging to selected categories  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      filetype  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -Confirm  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      cf  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -Content <string[]>  
+        Regular expression pattern to search within file contents  
+        Required?                    false  
+        Position?                    1  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      mc, matchcontent, regex, Pattern  
+        Dynamic?                     false  
+        Accept wildcard characters?  true  
+    -Culture <string>  
+        Specifies a culture name to match the specified pattern. The Culture parameter must be used with the SimpleMatch parameter. The default behavior uses the culture of the current PowerShell runspace (session).  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -DirectoriesAndFiles  
+        Include filename matching and change to folder of first found file  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      both, FilesAndDirectories  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -DriveLetter <char[]>  
+        Optional: search specific drives  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -Encoding <string>  
+        Specifies the type of encoding for the target file. The default value is utf8NoBOM.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -ExactMatch  
+        When set, only exact name matches are considered. By default, wildcard matching is used unless the Name contains wildcard characters.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -Exclude <string[]>  
+        Exclude files or directories matching these wildcard patterns (e.g., *.tmp, *\\bin\\*).  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      skiplike  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -File  
+        Search for filenames only and change to folder of first found file  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      filename  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -FollowSymlinkAndJunctions  
+        Follow symlinks and junctions during directory traversal  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      symlinks, sl  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -IncludeAlternateFileStreams  
+        Include alternate data streams in search results  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      ads  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -IncludeNonTextFileMatching  
+        Include non-text files (binaries, images, etc.) when searching file contents  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      binary  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -IncludeOpticalDiskDrives  
+        Include optical disk drives  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -InputObject <Object>  
+        File name or pattern to search for from pipeline input. Default is '*'  
+        Required?                    true  
+        Position?                    Named  
+        Accept pipeline input?       true (ByValue, ByPropertyName)  
+        Parameter set name           InputObject  
+        Aliases                      FullName  
+        Dynamic?                     false  
+        Accept wildcard characters?  true  
+    -MaxDegreeOfParallelism <int>  
+        Maximum degree of parallelism for directory tasks  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      threads  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -MaxFileSize <long>  
+        Maximum file size in bytes to include in results. 0 means unlimited.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      maxlength, maxsize  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -MaxRecursionDepth <int>  
+        Maximum recursion depth for directory traversal. 0 means unlimited.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      md, depth, maxdepth  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -MinFileSize <long>  
+        Minimum file size in bytes to include in results. 0 means no minimum.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      minsize, minlength  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -ModifiedAfter <datetime>  
+        Only include files modified after this date/time (UTC).  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      ma, after  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -ModifiedBefore <datetime>  
+        Only include files modified before this date/time (UTC).  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      before, mb  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -Name <string>  
+        File name or pattern to search for.  
+        Required?                    true  
+        Position?                    0  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      like, Path, LiteralPath, Query, SearchMask, Include  
+        Dynamic?                     false  
+        Accept wildcard characters?  true  
+    -NoRecurse  
+        Do not recurse into subdirectories  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      nr  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -NotMatch  
+        The NotMatch parameter finds text that doesn't match the specified pattern.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -Push  
+        Use Push-Location instead of Set-Location and push the location onto the location stack  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -Root <string[]>  
+        Optional: search specific base folders combined with provided Names  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -SearchADSContent  
+        When set, performs content search within alternate data streams (ADS). When not set, outputs ADS file info without searching their content.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      sads  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -SearchDrives <string[]>  
+        Optional: search specific drives  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      drives  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -SimpleMatch  
+        Indicates that the cmdlet uses a simple match rather than a regular expression match. In a simple match, Select-String searches the input for the text in the Pattern parameter. It doesn't interpret the value of the Pattern parameter as a regular expression statement.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -TimeoutSeconds <int>  
+        Optional: cancellation timeout in seconds  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      maxseconds  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -WhatIf  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      wi  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    <CommonParameters>  
+        This cmdlet supports the common parameters: Verbose, Debug,  
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
+
+<br/><hr/><br/>
+ 
+
+##	Set-LocationParent 
+```PowerShell 
+
+   Set-LocationParent                   --> ..  
+```` 
+
+### SYNTAX 
+```PowerShell 
+Set-LocationParent [-WhatIf] [-Confirm] [<CommonParameters>] 
+```` 
+
+### PARAMETERS 
+    -Confirm  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      cf  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -WhatIf  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      wi  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    <CommonParameters>  
+        This cmdlet supports the common parameters: Verbose, Debug,  
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
+
+<br/><hr/><br/>
+ 
+
+##	Set-LocationParent2 
+```PowerShell 
+
+   Set-LocationParent2                  --> ...  
+```` 
+
+### SYNTAX 
+```PowerShell 
+Set-LocationParent2 [-WhatIf] [-Confirm]
+    [<CommonParameters>] 
+```` 
+
+### PARAMETERS 
+    -Confirm  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      cf  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -WhatIf  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      wi  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    <CommonParameters>  
+        This cmdlet supports the common parameters: Verbose, Debug,  
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
+
+<br/><hr/><br/>
+ 
+
+##	Set-LocationParent3 
+```PowerShell 
+
+   Set-LocationParent3                  --> ....  
+```` 
+
+### SYNTAX 
+```PowerShell 
+Set-LocationParent3 [-WhatIf] [-Confirm]
+    [<CommonParameters>] 
+```` 
+
+### PARAMETERS 
+    -Confirm  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      cf  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -WhatIf  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      wi  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    <CommonParameters>  
+        This cmdlet supports the common parameters: Verbose, Debug,  
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
+
+<br/><hr/><br/>
+ 
+
+##	Set-LocationParent4 
+```PowerShell 
+
+   Set-LocationParent4                  --> .....  
+```` 
+
+### SYNTAX 
+```PowerShell 
+Set-LocationParent4 [-WhatIf] [-Confirm]
+    [<CommonParameters>] 
+```` 
+
+### PARAMETERS 
+    -Confirm  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      cf  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -WhatIf  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      wi  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    <CommonParameters>  
+        This cmdlet supports the common parameters: Verbose, Debug,  
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
+
+<br/><hr/><br/>
+ 
+
+##	Set-LocationParent5 
+```PowerShell 
+
+   Set-LocationParent5                  --> ......  
+```` 
+
+### SYNTAX 
+```PowerShell 
+Set-LocationParent5 [-WhatIf] [-Confirm]
+    [<CommonParameters>] 
+```` 
+
+### PARAMETERS 
+    -Confirm  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      cf  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+    -WhatIf  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      wi  
         Dynamic?                     false  
         Accept wildcard characters?  false  
     <CommonParameters>  
