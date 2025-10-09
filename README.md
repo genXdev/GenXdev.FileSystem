@@ -10,54 +10,47 @@
     A Windows PowerShell module for basic and advanced file management tasks
 [![GenXdev.FileSystem](https://img.shields.io/powershellgallery/v/GenXdev.FileSystem.svg?style=flat-square&label=GenXdev.FileSystem)](https://www.powershellgallery.com/packages/GenXdev.FileSystem/) [![License](https://img.shields.io/github/license/genXdev/GenXdev.FileSystem?style=flat-square)](./LICENSE)
 
-## MIT License
+## APACHE 2.0 License
 
 ````text
-MIT License
+Copyright (c) 2025 René Vaessen / GenXdev
 
-Copyright (c) 2025 GenXdev
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+     http://www.apache.org/licenses/LICENSE-2.0
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 ````
 
 ### FEATURES
 
-    * ✅ Simple but agile utility for renaming text throughout a project directory,
+    * Simple but agile utility for renaming text throughout a project directory,
           including file- and directory- names: Rename-InProject -> rip
 
-    * ✅ Pretty good wrapper for robocopy, Microsoft's robuust file copy utility: Start-RoboCopy -> rc, xc
-        * ✅ Folder synchronization
-        * ✅ Support for extra long pathnames > 256 characters
-        * ✅ Restartable mode backups
-        * ✅ Support for copying and fixing security settings
-        * ✅ Advanced file attribute features
-        * ✅ Advanced symbolic link and junction support
-        * ✅ Monitor mode (restart copying after change threshold)
-        * ✅ Optimization features for LargeFiles, multithreaded copying and
+    * Pretty good wrapper for robocopy, Microsoft's robuust file copy utility: Start-RoboCopy -> rc, xc
+        * Folder synchronization
+        * Support for extra long pathnames > 256 characters
+        * Restartable mode backups
+        * Support for copying and fixing security settings
+        * Advanced file attribute features
+        * Advanced symbolic link and junction support
+        * Monitor mode (restart copying after change threshold)
+        * Optimization features for LargeFiles, multithreaded copying and
              network compression
-        * ✅ Recovery mode (copy from failing disks)
+        * Recovery mode (copy from failing disks)
 
-    * ✅ Find files with Find-Item -> l
-        * ✅ Fast multi-threaded search: utilizes parallel and asynchronous
+    * Find files with Find-Item -> l
+        * Fast multi-threaded search: utilizes parallel and asynchronous
               IO processing with configurable maximum degree of parallelism
               (default based on CPU cores) for efficient file and directory scanning.
-        * ✅ Advanced Pattern Matching: Supports wildcards (*, ?), recursive patterns
+        * Advanced Pattern Matching: Supports wildcards (*, ?), recursive patterns
               like **, and complex path structures for precise file and directory queries.
               **/filename will only recurse until filename is matched. multiple of these
               patterns are allowed, as long as the are preceeded with a filename or
@@ -68,52 +61,52 @@ SOFTWARE.
               the need for -LiteralPath parameter, while maintaining integrity
               for paths sections without wildcards, unlike a wildcard match on the
               whole full path.
-        * ✅ Enhanced Content Searching: Comprehensive Select-String integration
+        * Enhanced Content Searching: Comprehensive Select-String integration
               with regular expression patterns within file contents using the
               -Content parameter.
-            * ✅ Large File Optimization: Handles extremely large files with smart
+            * Large File Optimization: Handles extremely large files with smart
                   overlapping buffers and minimal heap allocation
-            * ✅ Multiple Match Options: Find all matches per line (-AllMatches) or
+            * Multiple Match Options: Find all matches per line (-AllMatches) or
                   just the first match per file (-List)
-            * ✅ Case Sensitivity Control: Case-sensitive matching (-CaseSensitive)
+            * Case Sensitivity Control: Case-sensitive matching (-CaseSensitive)
                   with culture-specific options (-Culture)
-            * ✅ Context Capture: Show lines before and after matches (-Context) for
+            * Context Capture: Show lines before and after matches (-Context) for
                   better understanding
-            * ✅ Inverse Matching: Find files that don't contain the pattern (-NotMatch)
-            * ✅ Output Formats: Raw string output (-Raw), quiet boolean response (-Quiet),
+            * Inverse Matching: Find files that don't contain the pattern (-NotMatch)
+            * Output Formats: Raw string output (-Raw), quiet boolean response (-Quiet),
                   or full MatchInfo objects
-            * ✅ Pattern Types: Regular expressions (default) or simple literal string
+            * Pattern Types: Regular expressions (default) or simple literal string
                   matching (-SimpleMatch)
-            * ✅ Encoding Support: Specify file encoding (-Encoding) for accurate text
+            * Encoding Support: Specify file encoding (-Encoding) for accurate text
                   processing
-        * ✅ Path Type Flexibility: Handles relative, absolute, UNC, rooted paths, and
+        * Path Type Flexibility: Handles relative, absolute, UNC, rooted paths, and
               NTFS alternate data streams (ADS) with optional content search in streams.
-        * ✅ Multi-Drive Support: Searches across all drives with -AllDrives or specific
+        * Multi-Drive Support: Searches across all drives with -AllDrives or specific
               drives via -SearchDrives, including optical disks if specified.
-        * ✅ Directory and File Filtering: Options to search directories only (-Directory),
+        * Directory and File Filtering: Options to search directories only (-Directory),
               both files and directories (-FilesAndDirectories), or files with content matching.
-        * ✅ Exclusion and Limits: Exclude patterns with -Exclude, set max recursion depth
+        * Exclusion and Limits: Exclude patterns with -Exclude, set max recursion depth
               -MaxRecursionDepth), file size limits (-MaxFileSize, -MinFileSize), and modified
               date filters (-ModifiedAfter, -ModifiedBefore).
-        * ✅ Output Customization: Supports PassThru for FileInfo/DirectoryInfo objects,
+        * Output Customization: Supports PassThru for FileInfo/DirectoryInfo objects,
               relative paths, hyperlinks in attended mode, or plain paths in unattended mode
               (use -NoLinks in case of mishaps to enforce unattended mode).
-        * ✅ Performance Optimizations: Skips non-text files by default for content search
+        * Performance Optimizations: Skips non-text files by default for content search
               (override with -IncludeNonTextFileMatching), handles long paths (>260 chars),
               and follows symlinks/junctions.
-        * ✅ Safety Features: Timeout support (-TimeoutSeconds), ignores inaccessible items,
+        * Safety Features: Timeout support (-TimeoutSeconds), ignores inaccessible items,
               skips system attributes by default, and prevents infinite loops with visited node tracking.
 
-    * ✅ Easily change directories with Set-FoundLocation -> lcd
-        * ✅ Find directories by name/wildcard
-        * ✅ Supports most of Find-Items parameters, like searching in file contents to match
+    * Easily change directories with Set-FoundLocation -> lcd
+        * Find directories by name/wildcard
+        * Supports most of Find-Items parameters, like searching in file contents to match
               the directory to change location too
-        * ✅ Has autocompletion, just type the first letters and press Tab or CTRL-SPACE
+        * Has autocompletion, just type the first letters and press Tab or CTRL-SPACE
 
-    * ✅ Delete complete directory contents with Remove-AllItems -> sdel
-        * ✅ Optionally delete the root folder as well
+    * Delete complete directory contents with Remove-AllItems -> sdel
+        * Optionally delete the root folder as well
 
-    * ✅ Move files and directories with Move-ItemWithTracking
+    * Move files and directories with Move-ItemWithTracking
 
 ### SYNTAX
 

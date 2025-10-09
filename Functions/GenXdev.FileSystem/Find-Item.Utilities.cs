@@ -2,29 +2,21 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Utilities.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.298.2025
+// Version                   : 1.300.2025
 // ################################################################################
-// MIT License
+// Copyright (c)  René Vaessen / GenXdev
 //
-// Copyright 2021-2025 GenXdev
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 // ################################################################################
 
 
@@ -306,17 +298,82 @@ namespace GenXdev.FileSystem
         /// <returns>Available bytes of RAM.</returns>
         protected long GetFreeRamInBytes()
         {
-            // use PerformanceCounter for real-time memory availability
-            // provides more accurate current values than static WMI queries
-            using (var counter = new PerformanceCounter("Memory", "Available Bytes"))
+            try
             {
-                // get current available memory snapshot
-                long result = (long)counter.NextValue();
+                // Use direct Windows API call for better performance
+                if (NativeMethods.GlobalMemoryStatusEx(out MEMORYSTATUSEX memStatus))
+                {
+                    return (long)memStatus.ullAvailPhys;
+                }
+            }
+            catch
+            {
+                // Fall back to managed approach if P/Invoke fails
+            }
 
-                return result;
+            // Fallback: Use GC for approximate available memory
+            // This is less accurate but has no external dependencies
+            try
+            {
+                GC.Collect(0, GCCollectionMode.Optimized);
+                long totalMemory = GC.GetTotalMemory(false);
+                
+                // Estimate available memory based on process working set
+                using (var process = Process.GetCurrentProcess())
+                {
+                    long workingSet = process.WorkingSet64;
+                    long maxWorkingSet = process.MaxWorkingSet.ToInt64();
+                    
+                    // Conservative estimate: assume we can use up to 80% of remaining working set
+                    return (long)((maxWorkingSet - workingSet) * 0.8);
+                }
+            }
+            catch
+            {
+                // Ultimate fallback: return conservative estimate
+                return 1024 * 1024 * 512; // 512 MB
             }
         }
 
+        /// <summary>
+        /// Native Windows API methods for memory information.
+        /// </summary>
+        private static class NativeMethods
+        {
+            [DllImport("kernel32.dll", SetLastError = true)]
+            [return: MarshalAs(UnmanagedType.Bool)]
+            internal static extern bool GlobalMemoryStatusEx(out MEMORYSTATUSEX lpBuffer);
+        }
+
+        /// <summary>
+        /// Memory status structure for Windows API calls.
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MEMORYSTATUSEX
+        {
+            public uint dwLength;
+            public uint dwMemoryLoad;
+            public ulong ullTotalPhys;
+            public ulong ullAvailPhys;
+            public ulong ullTotalPageFile;
+            public ulong ullAvailPageFile;
+            public ulong ullTotalVirtual;
+            public ulong ullAvailVirtual;
+            public ulong ullAvailExtendedVirtual;
+
+            public MEMORYSTATUSEX()
+            {
+                dwLength = (uint)Marshal.SizeOf<MEMORYSTATUSEX>();
+                dwMemoryLoad = 0;
+                ullTotalPhys = 0;
+                ullAvailPhys = 0;
+                ullTotalPageFile = 0;
+                ullAvailPageFile = 0;
+                ullTotalVirtual = 0;
+                ullAvailVirtual = 0;
+                ullAvailExtendedVirtual = 0;
+            }
+        }
         /// <summary>
         /// Lists disk shares on a machine using UNC paths.
         /// </summary>
