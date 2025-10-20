@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Fields.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.300.2025
+// Version                   : 1.302.2025
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -30,7 +30,7 @@ using System.Text.RegularExpressions;
 namespace GenXdev.FileSystem
 {
 
-    public partial class FindItem : PSCmdlet
+    public partial class FindItem : PSGenXdevCmdlet
     {
 
         // current wildcard options for matching
@@ -224,6 +224,7 @@ namespace GenXdev.FileSystem
 
         protected int oldMaxWorkerThreads;
         protected bool isStarted;
+        protected DateTime startTime = DateTime.UtcNow;
         protected bool hadInput;
         protected bool matchingFileContent;
         protected bool initialWorkerStarted;

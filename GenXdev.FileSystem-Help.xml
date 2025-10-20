@@ -1,0 +1,972 @@
+<?xml version="1.0" encoding="utf-8"?>
+<helpItems schema="maml" xmlns="http://msh">
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>-</maml:name>
+      <command:verb></command:verb>
+      <command:noun></command:noun>
+    </command:details>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>None
+</maml:name>
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>System.Boolean
+</maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>-</maml:name>
+      <command:verb></command:verb>
+      <command:noun></command:noun>
+    </command:details>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>None
+</maml:name>
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>System.Object</maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>-</maml:name>
+      <command:verb></command:verb>
+      <command:noun></command:noun>
+    </command:details>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>System.String
+</maml:name>
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>System.Object</maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>-</maml:name>
+      <command:verb></command:verb>
+      <command:noun></command:noun>
+    </command:details>
+    <maml:description>
+      <maml:para>Recursively searches specified directories for duplicate files. Files are
+considered duplicates if they share the same name and optionally match on size
+and modification date. Returns groups of duplicate files for further processing.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <command:syntaxItem>
+        <command:name></command:name>
+        <command:parameter required="false" position="1">
+          <maml:name></maml:name>
+          <command:parameterValue></command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named">
+          <maml:name></maml:name>
+          <command:parameterValue></command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named">
+          <maml:name></maml:name>
+          <command:parameterValue></command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named">
+          <maml:name></maml:name>
+          <command:parameterValue></command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named">
+          <maml:name></maml:name>
+          <command:parameterValue></command:parameterValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <command:parameter>
+        <maml:name></maml:name>
+        <maml:description>
+          <maml:para>Array of directory paths to recursively search for duplicate files. Accepts
+pipeline input and wildcard paths.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false"></command:parameterValue>
+        <dev:defaultValue></dev:defaultValue>
+        <dev:variableLength>false</dev:variableLength>
+        <dev:globbing>false</dev:globbing>
+        <dev:pipelineInput>false</dev:pipelineInput>
+        <dev:position>1</dev:position>
+        <dev:aliases></dev:aliases>
+      </command:parameter>
+      <command:parameter>
+        <maml:name></maml:name>
+        <command:parameterValue required="false"></command:parameterValue>
+        <dev:defaultValue></dev:defaultValue>
+        <dev:variableLength>false</dev:variableLength>
+        <dev:globbing>false</dev:globbing>
+        <dev:pipelineInput>true (ByValue, ByPropertyName)</dev:pipelineInput>
+        <dev:position>named</dev:position>
+        <dev:aliases></dev:aliases>
+      </command:parameter>
+      <command:parameter>
+        <maml:name></maml:name>
+        <maml:description>
+          <maml:para>When specified, file size is not used as a comparison criterion, only names
+are matched.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false"></command:parameterValue>
+        <dev:defaultValue></dev:defaultValue>
+        <dev:variableLength>false</dev:variableLength>
+        <dev:globbing>false</dev:globbing>
+        <dev:pipelineInput>false</dev:pipelineInput>
+        <dev:position>named</dev:position>
+        <dev:aliases></dev:aliases>
+      </command:parameter>
+      <command:parameter>
+        <maml:name></maml:name>
+        <maml:description>
+          <maml:para>When specified, file modification dates are not used as a comparison criterion.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false"></command:parameterValue>
+        <dev:defaultValue></dev:defaultValue>
+        <dev:variableLength>false</dev:variableLength>
+        <dev:globbing>false</dev:globbing>
+        <dev:pipelineInput>false</dev:pipelineInput>
+        <dev:position>named</dev:position>
+        <dev:aliases></dev:aliases>
+      </command:parameter>
+      <command:parameter>
+        <maml:name></maml:name>
+        <maml:description>
+          <maml:para>Recurse into subdirectories.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false"></command:parameterValue>
+        <dev:defaultValue></dev:defaultValue>
+        <dev:variableLength>false</dev:variableLength>
+        <dev:globbing>false</dev:globbing>
+        <dev:pipelineInput>false</dev:pipelineInput>
+        <dev:position>named</dev:position>
+        <dev:aliases></dev:aliases>
+      </command:parameter>
+    </command:parameters>
+    <command:examples>
+      <command:example>
+        <maml:title></maml:title>
+        <dev:code></dev:code>
+        <dev:remarks>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+      <command:example>
+        <maml:title></maml:title>
+        <dev:code></dev:code>
+        <dev:remarks>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+    </command:examples>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>-</maml:name>
+      <command:verb></command:verb>
+      <command:noun></command:noun>
+    </command:details>
+    <maml:description>
+      <maml:para>Automatically extracts common archive formats (zip, 7z, tar, etc.) found in the
+current directory into individual folders named after each archive. After
+successful extraction, the original archive files are deleted. Requires 7-Zip
+to be installed on the system.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <command:syntaxItem>
+        <command:name></command:name>
+        <command:parameter required="false" position="1">
+          <maml:name></maml:name>
+          <command:parameterValue></command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named">
+          <maml:name></maml:name>
+          <command:parameterValue></command:parameterValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <command:parameter>
+        <maml:name></maml:name>
+        <command:parameterValue required="false"></command:parameterValue>
+        <dev:defaultValue></dev:defaultValue>
+        <dev:variableLength>false</dev:variableLength>
+        <dev:globbing>false</dev:globbing>
+        <dev:pipelineInput>false</dev:pipelineInput>
+        <dev:position>1</dev:position>
+        <dev:aliases></dev:aliases>
+      </command:parameter>
+      <command:parameter>
+        <maml:name></maml:name>
+        <command:parameterValue required="false"></command:parameterValue>
+        <dev:defaultValue></dev:defaultValue>
+        <dev:variableLength>false</dev:variableLength>
+        <dev:globbing>false</dev:globbing>
+        <dev:pipelineInput>false</dev:pipelineInput>
+        <dev:position>named</dev:position>
+        <dev:aliases></dev:aliases>
+      </command:parameter>
+    </command:parameters>
+    <maml:alertSet>
+      <maml:alert><maml:para>Supported formats: 7z, zip, rar, tar, iso and many others.
+Requires 7-Zip installation (will attempt auto-install via winget if missing).</maml:para></maml:alert>
+    </maml:alertSet>
+    <command:examples>
+      <command:example>
+        <maml:title></maml:title>
+        <dev:code></dev:code>
+        <dev:remarks>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+      <command:example>
+        <maml:title></maml:title>
+        <dev:code></dev:code>
+        <dev:remarks>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+    </command:examples>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>-</maml:name>
+      <command:verb></command:verb>
+      <command:noun></command:noun>
+    </command:details>
+    <maml:description>
+      <maml:para>Attempts to read a JSON file with retry logic to handle concurrent access.
+Implements automatic cleanup of stale lock files. Returns empty hashtable if
+file doesn&apos;t exist.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <command:syntaxItem>
+        <command:name></command:name>
+        <command:parameter required="true" position="1">
+          <maml:name></maml:name>
+          <command:parameterValue></command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="2">
+          <maml:name></maml:name>
+          <command:parameterValue></command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="3">
+          <maml:name></maml:name>
+          <command:parameterValue></command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named">
+          <maml:name></maml:name>
+          <command:parameterValue></command:parameterValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <command:parameter>
+        <maml:name></maml:name>
+        <maml:description>
+          <maml:para>The path to the JSON file to read.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true"></command:parameterValue>
+        <dev:defaultValue></dev:defaultValue>
+        <dev:variableLength>false</dev:variableLength>
+        <dev:globbing>false</dev:globbing>
+        <dev:pipelineInput>false</dev:pipelineInput>
+        <dev:position>1</dev:position>
+        <dev:aliases></dev:aliases>
+      </command:parameter>
+      <command:parameter>
+        <maml:name></maml:name>
+        <maml:description>
+          <maml:para>Maximum number of retry attempts. Defaults to 10.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false"></command:parameterValue>
+        <dev:defaultValue></dev:defaultValue>
+        <dev:variableLength>false</dev:variableLength>
+        <dev:globbing>false</dev:globbing>
+        <dev:pipelineInput>false</dev:pipelineInput>
+        <dev:position>2</dev:position>
+        <dev:aliases></dev:aliases>
+      </command:parameter>
+      <command:parameter>
+        <maml:name></maml:name>
+        <maml:description>
+          <maml:para>Delay in milliseconds between retries. Defaults to 200.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false"></command:parameterValue>
+        <dev:defaultValue></dev:defaultValue>
+        <dev:variableLength>false</dev:variableLength>
+        <dev:globbing>false</dev:globbing>
+        <dev:pipelineInput>false</dev:pipelineInput>
+        <dev:position>3</dev:position>
+        <dev:aliases></dev:aliases>
+      </command:parameter>
+      <command:parameter>
+        <maml:name></maml:name>
+        <maml:description>
+          <maml:para>Return the parsed JSON as a hashtable instead of PSCustomObject. Defaults to true.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false"></command:parameterValue>
+        <dev:defaultValue></dev:defaultValue>
+        <dev:variableLength>false</dev:variableLength>
+        <dev:globbing>false</dev:globbing>
+        <dev:pipelineInput>false</dev:pipelineInput>
+        <dev:position>named</dev:position>
+        <dev:aliases></dev:aliases>
+      </command:parameter>
+    </command:parameters>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>-</maml:name>
+      <command:verb></command:verb>
+      <command:noun></command:noun>
+    </command:details>
+    <maml:description>
+      <maml:para>Safely removes all files and subdirectories within a specified directory using
+a reverse-order deletion strategy to handle deep paths. Includes WhatIf support,
+verbose logging, and fallback deletion methods for locked files.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <command:syntaxItem>
+        <command:name></command:name>
+        <command:parameter required="true" position="1">
+          <maml:name></maml:name>
+          <command:parameterValue></command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="2">
+          <maml:name></maml:name>
+          <command:parameterValue></command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named">
+          <maml:name></maml:name>
+          <command:parameterValue></command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named">
+          <maml:name></maml:name>
+          <command:parameterValue></command:parameterValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <command:parameter>
+        <maml:name></maml:name>
+        <maml:description>
+          <maml:para>The directory path to clear. Can be relative or absolute path. Will be normalized
+and expanded before processing.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true"></command:parameterValue>
+        <dev:defaultValue></dev:defaultValue>
+        <dev:variableLength>false</dev:variableLength>
+        <dev:globbing>false</dev:globbing>
+        <dev:pipelineInput>true (ByValue, ByPropertyName)</dev:pipelineInput>
+        <dev:position>1</dev:position>
+        <dev:aliases></dev:aliases>
+      </command:parameter>
+      <command:parameter>
+        <maml:name></maml:name>
+        <maml:description>
+          <maml:para>When specified, also removes the root directory specified by Path after clearing
+its contents.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false"></command:parameterValue>
+        <dev:defaultValue></dev:defaultValue>
+        <dev:variableLength>false</dev:variableLength>
+        <dev:globbing>false</dev:globbing>
+        <dev:pipelineInput>false</dev:pipelineInput>
+        <dev:position>2</dev:position>
+        <dev:aliases></dev:aliases>
+      </command:parameter>
+      <command:parameter>
+        <maml:name></maml:name>
+        <maml:description>
+          <maml:para>Shows what would happen if the cmdlet runs. The cmdlet is not run.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false"></command:parameterValue>
+        <dev:defaultValue></dev:defaultValue>
+        <dev:variableLength>false</dev:variableLength>
+        <dev:globbing>false</dev:globbing>
+        <dev:pipelineInput>false</dev:pipelineInput>
+        <dev:position>named</dev:position>
+        <dev:aliases></dev:aliases>
+      </command:parameter>
+      <command:parameter>
+        <maml:name></maml:name>
+        <command:parameterValue required="false"></command:parameterValue>
+        <dev:defaultValue></dev:defaultValue>
+        <dev:variableLength>false</dev:variableLength>
+        <dev:globbing>false</dev:globbing>
+        <dev:pipelineInput>false</dev:pipelineInput>
+        <dev:position>named</dev:position>
+        <dev:aliases></dev:aliases>
+      </command:parameter>
+    </command:parameters>
+    <command:examples>
+      <command:example>
+        <maml:title></maml:title>
+        <dev:code></dev:code>
+        <dev:remarks>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+      <command:example>
+        <maml:title></maml:title>
+        <dev:code></dev:code>
+        <dev:remarks>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+    </command:examples>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>-</maml:name>
+      <command:verb></command:verb>
+      <command:noun></command:noun>
+    </command:details>
+    <maml:description>
+      <maml:para>This function provides a robust way to delete files and directories by attempting
+multiple deletion methods in sequence:
+1. Direct deletion via System.IO methods for best performance
+2. PowerShell provider-aware Remove-Item cmdlet as fallback
+3. Mark for deletion on next system reboot if other methods fail
+This ensures maximum reliability when removing items across different providers.</maml:para>
+    </maml:description>
+    <command:syntax>
+      <command:syntaxItem>
+        <command:name></command:name>
+        <command:parameter required="true" position="1">
+          <maml:name></maml:name>
+          <command:parameterValue></command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named">
+          <maml:name></maml:name>
+          <command:parameterValue></command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named">
+          <maml:name></maml:name>
+          <command:parameterValue></command:parameterValue>
+        </command:parameter>
+        <command:parameter required="false" position="named">
+          <maml:name></maml:name>
+          <command:parameterValue></command:parameterValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <command:parameter>
+        <maml:name></maml:name>
+        <maml:description>
+          <maml:para>The file or directory path to remove. Can be a filesystem path or provider path.
+Accepts pipeline input and wildcards. Must be a valid, non-empty path.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true"></command:parameterValue>
+        <dev:defaultValue></dev:defaultValue>
+        <dev:variableLength>false</dev:variableLength>
+        <dev:globbing>false</dev:globbing>
+        <dev:pipelineInput>true (ByValue, ByPropertyName)</dev:pipelineInput>
+        <dev:position>1</dev:position>
+        <dev:aliases></dev:aliases>
+      </command:parameter>
+      <command:parameter>
+        <maml:name></maml:name>
+        <maml:description>
+          <maml:para>If specified, the function returns $true when a file is successfully marked for deletion on reboot.
+By default ($false), the function returns $false in this scenario.</maml:para>
+        </maml:description>
+        <command:parameterValue required="false"></command:parameterValue>
+        <dev:defaultValue></dev:defaultValue>
+        <dev:variableLength>false</dev:variableLength>
+        <dev:globbing>false</dev:globbing>
+        <dev:pipelineInput>false</dev:pipelineInput>
+        <dev:position>named</dev:position>
+        <dev:aliases></dev:aliases>
+      </command:parameter>
+      <command:parameter>
+        <maml:name></maml:name>
+        <command:parameterValue required="false"></command:parameterValue>
+        <dev:defaultValue></dev:defaultValue>
+        <dev:variableLength>false</dev:variableLength>
+        <dev:globbing>false</dev:globbing>
+        <dev:pipelineInput>false</dev:pipelineInput>
+        <dev:position>named</dev:position>
+        <dev:aliases></dev:aliases>
+      </command:parameter>
+      <command:parameter>
+        <maml:name></maml:name>
+        <command:parameterValue required="false"></command:parameterValue>
+        <dev:defaultValue></dev:defaultValue>
+        <dev:variableLength>false</dev:variableLength>
+        <dev:globbing>false</dev:globbing>
+        <dev:pipelineInput>false</dev:pipelineInput>
+        <dev:position>named</dev:position>
+        <dev:aliases></dev:aliases>
+      </command:parameter>
+    </command:parameters>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name></maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:examples>
+      <command:example>
+        <maml:title></maml:title>
+        <dev:code></dev:code>
+        <dev:remarks>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+      <command:example>
+        <maml:title></maml:title>
+        <dev:code></dev:code>
+        <dev:remarks>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+          <maml:para></maml:para>
+        </dev:remarks>
+      </command:example>
+    </command:examples>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>-</maml:name>
+      <command:verb></command:verb>
+      <command:noun></command:noun>
+    </command:details>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>None
+</maml:name>
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>System.Object</maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>-</maml:name>
+      <command:verb></command:verb>
+      <command:noun></command:noun>
+    </command:details>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>System.Object
+</maml:name>
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>System.Object</maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>-</maml:name>
+      <command:verb></command:verb>
+      <command:noun></command:noun>
+    </command:details>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>System.Object
+</maml:name>
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>System.Object</maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>-</maml:name>
+      <command:verb></command:verb>
+      <command:noun></command:noun>
+    </command:details>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>None
+</maml:name>
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>System.Object</maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>-</maml:name>
+      <command:verb></command:verb>
+      <command:noun></command:noun>
+    </command:details>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>System.Object
+</maml:name>
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>System.Object</maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>-</maml:name>
+      <command:verb></command:verb>
+      <command:noun></command:noun>
+    </command:details>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>None
+</maml:name>
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>System.Object</maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>Copy-IdenticalParamValues</maml:name>
+      <command:verb>Copy</command:verb>
+      <command:noun>IdenticalParamValues</command:noun>
+    </command:details>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>None
+</maml:name>
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>System.Collections.Hashtable
+</maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>Find-Item</maml:name>
+      <command:verb>Find</command:verb>
+      <command:noun>Item</command:noun>
+    </command:details>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>System.Object
+</maml:name>
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>System.Object</maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>Move-ItemWithTracking</maml:name>
+      <command:verb>Move</command:verb>
+      <command:noun>ItemWithTracking</command:noun>
+    </command:details>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>System.String
+</maml:name>
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>System.Boolean
+</maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>Move-ToRecycleBin</maml:name>
+      <command:verb>Move</command:verb>
+      <command:noun>ToRecycleBin</command:noun>
+    </command:details>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>System.String[]
+</maml:name>
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>System.Boolean
+</maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>Remove-OnReboot</maml:name>
+      <command:verb>Remove</command:verb>
+      <command:noun>OnReboot</command:noun>
+    </command:details>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>System.String[]
+</maml:name>
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>System.Boolean
+</maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>Set-LocationParent</maml:name>
+      <command:verb>Set</command:verb>
+      <command:noun>LocationParent</command:noun>
+    </command:details>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>None
+</maml:name>
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.PSObject
+</maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>Set-LocationParent2</maml:name>
+      <command:verb>Set</command:verb>
+      <command:noun>LocationParent2</command:noun>
+    </command:details>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>None
+</maml:name>
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.PSObject
+</maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>Set-LocationParent3</maml:name>
+      <command:verb>Set</command:verb>
+      <command:noun>LocationParent3</command:noun>
+    </command:details>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>None
+</maml:name>
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.PSObject
+</maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>Set-LocationParent4</maml:name>
+      <command:verb>Set</command:verb>
+      <command:noun>LocationParent4</command:noun>
+    </command:details>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>None
+</maml:name>
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.PSObject
+</maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:relatedLinks />
+  </command:command>
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10" xmlns:MSHelp="http://msdn.microsoft.com/mshelp">
+    <command:details>
+      <maml:name>Set-LocationParent5</maml:name>
+      <command:verb>Set</command:verb>
+      <command:noun>LocationParent5</command:noun>
+    </command:details>
+    <command:inputTypes>
+      <command:inputType>
+        <dev:type>
+          <maml:name>None
+</maml:name>
+        </dev:type>
+      </command:inputType>
+    </command:inputTypes>
+    <command:returnValues>
+      <command:returnValue>
+        <dev:type>
+          <maml:name>System.Management.Automation.PSObject
+</maml:name>
+        </dev:type>
+      </command:returnValue>
+    </command:returnValues>
+    <command:relatedLinks />
+  </command:command>
+</helpItems>

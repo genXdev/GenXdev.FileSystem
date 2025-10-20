@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Cmdlet.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.300.2025
+// Version                   : 1.302.2025
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -589,7 +589,7 @@ namespace GenXdev.FileSystem
     /// </para>
     [Cmdlet(VerbsCommon.Find, "Item", DefaultParameterSetName = "Default")]
     [Alias("l")]
-    public partial class FindItem : PSCmdlet
+    public partial class FindItem : PSGenXdevCmdlet
     {
         /// <summary>
         /// <para type="description">File name or pattern to search for. Supports wildcards (*,?). Default is '*'</para>
@@ -937,7 +937,7 @@ namespace GenXdev.FileSystem
             InitializeParallelismConfiguration();
 
             // detect if running in unattended mode for output formatting
-            UnattendedMode = NoLinks.IsPresent || UnattendedModeHelper.IsUnattendedMode(MyInvocation);
+            UnattendedMode = NoLinks.ToBool() || UnattendedModeHelper.IsUnattendedMode(MyInvocation);
 
             // prepare dictionary to track visited nodes for loop prevention
             InitializeVisitedNodes();

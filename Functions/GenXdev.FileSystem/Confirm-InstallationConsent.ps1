@@ -2,7 +2,7 @@
 Part of PowerShell module : GenXdev.FileSystem
 Original cmdlet filename  : Confirm-InstallationConsent.ps1
 Original author           : René Vaessen / GenXdev
-Version                   : 1.300.2025
+Version                   : 1.302.2025
 ################################################################################
 Copyright (c)  René Vaessen / GenXdev
 
@@ -109,50 +109,72 @@ function Confirm-InstallationConsent {
     [OutputType([System.Boolean])]
 
     param(
-        [Parameter(Mandatory = $true, Position = 0,
-            HelpMessage = "The name of the application or software being installed.")]
+        ###############################################################################
+        [Parameter(
+            Mandatory = $true,
+            Position = 0,
+            HelpMessage = "The name of the application or software being installed."
+        )]
         [ValidateNotNullOrEmpty()]
         [string] $ApplicationName,
 
-        [Parameter(Mandatory = $true, Position = 1,
-            HelpMessage = "The source of the installation (e.g., Winget, PowerShell Gallery).")]
+        ###############################################################################
+        [Parameter(
+            Mandatory = $true,
+            Position = 1,
+            HelpMessage = "The source of the installation (e.g., Winget, PowerShell Gallery)."
+        )]
         [ValidateNotNullOrEmpty()]
         [string] $Source,
 
-        [Parameter(Mandatory = $false,
-            HelpMessage = "Optional description of the software and its purpose.")]
+        ###############################################################################
+        [Parameter(
+            Mandatory = $false,
+            HelpMessage = "Optional description of the software and its purpose."
+        )]
         [ValidateNotNullOrEmpty()]
         [string] $Description = "This software is required for certain features in the GenXdev modules.",
 
         ###############################################################################
-        [Parameter(Mandatory = $false,
-            HelpMessage = "Optional publisher or vendor of the software.")]
+        [Parameter(
+            Mandatory = $false,
+            HelpMessage = "Optional publisher or vendor of the software."
+        )]
         [ValidateNotNullOrEmpty()]
         [string] $Publisher = "Third-party vendor",
 
         ###############################################################################
-        [Parameter(Mandatory = $false,
-            HelpMessage = "Force a prompt even if preference is set.")]
+        [Parameter(
+            Mandatory = $false,
+            HelpMessage = "Force a prompt even if preference is set."
+        )]
         [switch] $ForceConsent,
 
         ###############################################################################
-        [Parameter(Mandatory = $false,
-            HelpMessage = "Automatically consent to third-party software installation and set persistent flag.")]
+        [Parameter(
+            Mandatory = $false,
+            HelpMessage = "Automatically consent to third-party software installation and set persistent flag."
+        )]
         [switch] $ConsentToThirdPartySoftwareInstallation
     )
 
     begin {
-        # Normalize ApplicationName for preference key (remove spaces, make it safe)
+
+        # normalize application name by removing spaces to create safe key
         $safeAppName = $ApplicationName -replace '\s+', ''
+
+        # create preference key for this application
         $preferenceKey = "AllowInstall_${safeAppName}"
 
-        # Setup JSON file path for storing consent preferences
+        # set directory path for storing consent preferences
         $consentDir = Microsoft.PowerShell.Management\Join-Path $Env:LOCALAPPDATA "GenXdev.PowerShell"
+
+        # set full file path for consent json file
         $consentFile = Microsoft.PowerShell.Management\Join-Path $consentDir "SoftwareConsent.json"
 
         Microsoft.PowerShell.Utility\Write-Verbose "Checking consent for installing '${ApplicationName}' from '${Source}'."
 
-        # Helper function to read consent data
+        # define helper function to read consent data from json file
         function GetConsentData {
             try {
                 if (Microsoft.PowerShell.Management\Test-Path $consentFile) {
@@ -160,13 +182,14 @@ function Confirm-InstallationConsent {
                         Microsoft.PowerShell.Utility\ConvertFrom-Json -AsHashtable -ErrorAction Stop
                     if ($data) { return $data }
                 }
-            } catch {
+            }
+            catch {
                 Microsoft.PowerShell.Utility\Write-Verbose "Could not read consent file: ${_}"
             }
             return @{}
         }
 
-        # Helper function to save consent data
+        # define helper function to save consent data to json file
         function SaveConsentData {
             param([hashtable]$Data, [string]$Key, [string]$Value)
             try {
@@ -178,7 +201,8 @@ function Confirm-InstallationConsent {
                 $Data | Microsoft.PowerShell.Utility\ConvertTo-Json -Depth 10 |
                     Microsoft.PowerShell.Management\Set-Content $consentFile -Encoding UTF8 -ErrorAction Stop
                 return $true
-            } catch {
+            }
+            catch {
                 Microsoft.PowerShell.Utility\Write-Warning "Could not save consent preference: ${_}"
                 return $false
             }
@@ -186,7 +210,8 @@ function Confirm-InstallationConsent {
     }
 
     process {
-        # Check for global GenXdev consent first
+
+        # check if global genxdev consent is set
         $globalConsentKey = "AllowInstall_GenXdevGlobal"
         $consentData = GetConsentData
 
@@ -195,20 +220,21 @@ function Confirm-InstallationConsent {
             return $true
         }
 
-        # Check existing preference from JSON file
+        # check existing preference for this application
         $existingPref = $consentData[$preferenceKey]
 
         if ($existingPref -and -not $ForceConsent) {
             if ($existingPref -eq 'true') {
                 Microsoft.PowerShell.Utility\Write-Verbose "Existing preference allows installation of '${ApplicationName}'."
                 return $true
-            } elseif ($existingPref -eq 'false') {
+            }
+            elseif ($existingPref -eq 'false') {
                 Microsoft.PowerShell.Utility\Write-Warning "Installation of '${ApplicationName}' denied by user preference."
                 return $false
             }
         }
 
-        # Handle automatic consent parameter
+        # handle automatic consent parameter
         if ($ConsentToThirdPartySoftwareInstallation) {
             if (SaveConsentData -Data $consentData -Key $preferenceKey -Value 'true') {
                 Microsoft.PowerShell.Utility\Write-Verbose "Automatic consent granted and persistent allowance set for '${ApplicationName}'."
@@ -216,16 +242,17 @@ function Confirm-InstallationConsent {
             return $true
         }
 
-        # If no preference or ForceConsent, explain and prompt
-
-        # Display colorized header
+        # prepare to prompt user for consent
+        # display header for the consent prompt
         Microsoft.PowerShell.Utility\Write-Host "`n" -NoNewline
         Microsoft.PowerShell.Utility\Write-Host "### " -ForegroundColor Cyan -NoNewline
         Microsoft.PowerShell.Utility\Write-Host "Installation Consent Required" -ForegroundColor Cyan -NoNewline
         Microsoft.PowerShell.Utility\Write-Host " ###`n" -ForegroundColor Cyan
 
-        # Display software details with colors
-        Microsoft.PowerShell.Utility\Write-Host "This PowerShell module (GenXdev) needs to install third-party software:" -ForegroundColor White
+        # display software details
+        Microsoft.PowerShell.Utility\Write-Host (
+            "This PowerShell module (GenXdev) needs to install third-party software:"
+        ) -ForegroundColor White
         Microsoft.PowerShell.Utility\Write-Host "  Software: " -ForegroundColor White -NoNewline
         Microsoft.PowerShell.Utility\Write-Host "${ApplicationName}" -ForegroundColor Green
         Microsoft.PowerShell.Utility\Write-Host "  Publisher: " -ForegroundColor White -NoNewline
@@ -235,25 +262,29 @@ function Confirm-InstallationConsent {
         Microsoft.PowerShell.Utility\Write-Host "  Purpose: " -ForegroundColor White -NoNewline
         Microsoft.PowerShell.Utility\Write-Host "${Description}" -ForegroundColor Cyan
 
-        # Display legal notes with warning colors
+        # display legal notes
         Microsoft.PowerShell.Utility\Write-Host "`nImportant Legal and Safety Notes:" -ForegroundColor Yellow
-        Microsoft.PowerShell.Utility\Write-Host "• This software is provided by a third party (" -ForegroundColor White -NoNewline
-        Microsoft.PowerShell.Utility\Write-Host "${Publisher}" -ForegroundColor Yellow -NoNewline
-        Microsoft.PowerShell.Utility\Write-Host "), not by GenXdev or its author." -ForegroundColor White
-        Microsoft.PowerShell.Utility\Write-Host "• By consenting, you agree to download and install this software " -ForegroundColor White -NoNewline
-        Microsoft.PowerShell.Utility\Write-Host "at your own risk" -ForegroundColor Yellow -NoNewline
-        Microsoft.PowerShell.Utility\Write-Host "." -ForegroundColor White
-        Microsoft.PowerShell.Utility\Write-Host "• GenXdev makes " -ForegroundColor White -NoNewline
-        Microsoft.PowerShell.Utility\Write-Host "no warranties" -ForegroundColor Yellow -NoNewline
-        Microsoft.PowerShell.Utility\Write-Host " about the software's safety, functionality, or compliance." -ForegroundColor White
-        Microsoft.PowerShell.Utility\Write-Host "• Third-party software may have its own license terms, privacy policies, and potential risks." -ForegroundColor White
-        Microsoft.PowerShell.Utility\Write-Host "• You are responsible for reviewing the software's terms and ensuring compliance." -ForegroundColor White
-        Microsoft.PowerShell.Utility\Write-Host "• " -ForegroundColor White -NoNewline
-        Microsoft.PowerShell.Utility\Write-Host "No liability:" -ForegroundColor Yellow -NoNewline
-        Microsoft.PowerShell.Utility\Write-Host " The author of GenXdev assumes no responsibility for any issues." -ForegroundColor White
+        Microsoft.PowerShell.Utility\Write-Host (
+            "• This software is provided by a third party (${Publisher}), not by GenXdev or its author."
+        ) -ForegroundColor White
+        Microsoft.PowerShell.Utility\Write-Host (
+            "• By consenting, you agree to download and install this software at your own risk."
+        ) -ForegroundColor White
+        Microsoft.PowerShell.Utility\Write-Host (
+            "• GenXdev makes no warranties about the software's safety, functionality, or compliance."
+        ) -ForegroundColor White
+        Microsoft.PowerShell.Utility\Write-Host (
+            "• Third-party software may have its own license terms, privacy policies, and potential risks."
+        ) -ForegroundColor White
+        Microsoft.PowerShell.Utility\Write-Host (
+            "• You are responsible for reviewing the software's terms and ensuring compliance."
+        ) -ForegroundColor White
+        Microsoft.PowerShell.Utility\Write-Host (
+            "• No liability: The author of GenXdev assumes no responsibility for any issues."
+        ) -ForegroundColor White
         Microsoft.PowerShell.Utility\Write-Host ""
 
-        # Use $Host.UI.PromptForChoice for professional prompt
+        # set up prompt for user choice
         $title = "Installation Consent for '${ApplicationName}'"
         $message = "Do you consent to install this third-party software?"
 
@@ -268,43 +299,60 @@ function Confirm-InstallationConsent {
         $defaultChoice = 3  # Default to "No"
         $choice = $Host.UI.PromptForChoice($title, $message, $choices, $defaultChoice)
 
+        # handle user choice
         switch ($choice) {
-            0 {  # Yes
+            0 {
+                # Yes
                 Microsoft.PowerShell.Utility\Write-Verbose "User consented for this installation only."
                 return $true
             }
-            1 {  # Always
+            1 {
+                # Always
                 if (SaveConsentData -Data $consentData -Key $preferenceKey -Value 'true') {
                     Microsoft.PowerShell.Utility\Write-Host "Persistent allowance set for '${ApplicationName}'." -ForegroundColor Green
                     Microsoft.PowerShell.Utility\Write-Verbose "User set persistent allowance for '${ApplicationName}'."
                 }
                 return $true
             }
-            2 {  # Global
+            2 {
+                # Global
                 if (SaveConsentData -Data $consentData -Key $globalConsentKey -Value 'true') {
-                    Microsoft.PowerShell.Utility\Write-Host "Global GenXdev consent enabled for all third-party software installations." -ForegroundColor Green
+                    Microsoft.PowerShell.Utility\Write-Host (
+                        "Global GenXdev consent enabled for all third-party software installations."
+                    ) -ForegroundColor Green
                     Microsoft.PowerShell.Utility\Write-Verbose "User enabled global GenXdev consent for all third-party installations."
                 }
                 return $true
             }
-            3 {  # No
+            3 {
+                # No
                 Microsoft.PowerShell.Utility\Write-Host "Installation denied for this time." -ForegroundColor Yellow
                 return $false
             }
-            4 {  # Help
+            4 {
+                # Help
                 Microsoft.PowerShell.Utility\Write-Host "`nAdditional Help:" -ForegroundColor Cyan
-                Microsoft.PowerShell.Utility\Write-Host "• Choosing 'Always' options saves your preference to: " -ForegroundColor White -NoNewline
-                Microsoft.PowerShell.Utility\Write-Host "${consentFile}" -ForegroundColor Green
-                Microsoft.PowerShell.Utility\Write-Host "• 'Global' option enables automatic consent for ALL GenXdev third-party installations." -ForegroundColor White
-                Microsoft.PowerShell.Utility\Write-Host "• You can manually edit the JSON file or delete it to reset all preferences." -ForegroundColor White
-                Microsoft.PowerShell.Utility\Write-Host "• This prompt ensures your explicit consent to avoid any automatic installations." -ForegroundColor White
-                Microsoft.PowerShell.Utility\Write-Host "• The preference key for this application is: " -ForegroundColor White -NoNewline
-                Microsoft.PowerShell.Utility\Write-Host "${preferenceKey}" -ForegroundColor Green
-                Microsoft.PowerShell.Utility\Write-Host "• The global preference key is: " -ForegroundColor White -NoNewline
-                Microsoft.PowerShell.Utility\Write-Host "${globalConsentKey}" -ForegroundColor Green
+                Microsoft.PowerShell.Utility\Write-Host (
+                    "• Choosing 'Always' options saves your preference to: ${consentFile}"
+                ) -ForegroundColor White
+                Microsoft.PowerShell.Utility\Write-Host (
+                    "• 'Global' option enables automatic consent for ALL GenXdev third-party installations."
+                ) -ForegroundColor White
+                Microsoft.PowerShell.Utility\Write-Host (
+                    "• You can manually edit the JSON file or delete it to reset all preferences."
+                ) -ForegroundColor White
+                Microsoft.PowerShell.Utility\Write-Host (
+                    "• This prompt ensures your explicit consent to avoid any automatic installations."
+                ) -ForegroundColor White
+                Microsoft.PowerShell.Utility\Write-Host (
+                    "• The preference key for this application is: ${preferenceKey}"
+                ) -ForegroundColor White
+                Microsoft.PowerShell.Utility\Write-Host (
+                    "• The global preference key is: ${globalConsentKey}"
+                ) -ForegroundColor White
                 Microsoft.PowerShell.Utility\Write-Host ""
 
-                # Re-prompt after help
+                # re-prompt after showing help
                 return GenXdev.FileSystem\Confirm-InstallationConsent @PSBoundParameters
             }
             default {
@@ -312,5 +360,8 @@ function Confirm-InstallationConsent {
                 return $false
             }
         }
+    }
+
+    end {
     }
 }

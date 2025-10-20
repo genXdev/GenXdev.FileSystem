@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Utilities.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.300.2025
+// Version                   : 1.302.2025
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -38,7 +38,7 @@ using System.Text.RegularExpressions;
 
 namespace GenXdev.FileSystem
 {
-    public partial class FindItem : PSCmdlet
+    public partial class FindItem : PSGenXdevCmdlet
     {
 
         /// <summary>
@@ -55,15 +55,11 @@ namespace GenXdev.FileSystem
             // Only measure every 1000ms (10,000,000 ticks = 1 second)
             if (timeSinceLastMeasurement < TimeSpan.TicksPerSecond)
                 return;
+            Interlocked.Exchange(ref lastThroughputMeasurement, now);
 
             // Use lock to ensure only one thread performs measurement at a time
             lock (throughputLock)
             {
-                // Double-check pattern: verify time hasn't been updated by another thread
-                long currentLastMeasurement = Interlocked.Read(ref lastThroughputMeasurement);
-                if (now - currentLastMeasurement < TimeSpan.TicksPerSecond)
-                    return;
-
                 // Get current counters atomically
                 long currentDirsCompleted = Interlocked.Read(ref dirsCompleted);
                 long currentMatchesCompleted = Interlocked.Read(ref fileMatchesCompleted);
@@ -91,7 +87,6 @@ namespace GenXdev.FileSystem
                 CalculateRecommendedWorkerCounts(dirsDelta, matchesDelta, secondsElapsed);
 
                 // Update measurement baseline atomically
-                Interlocked.Exchange(ref lastThroughputMeasurement, now);
                 Interlocked.Exchange(ref lastDirsCompleted, currentDirsCompleted);
                 Interlocked.Exchange(ref lastMatchesCompleted, currentMatchesCompleted);
                 Interlocked.Exchange(ref lastOutputCount, currentOutputs);
@@ -116,90 +111,97 @@ namespace GenXdev.FileSystem
         /// </summary>
         private void CalculateRecommendedWorkerCounts(long dirsDelta, long matchesDelta, double secondsElapsed)
         {
-            // Get current queue sizes and worker counts atomically
-            int dirQueueSize = DirQueue.Count + (DirQueue.Count > 0 ? 0 : Interlocked.Read(ref filesFound) > 0 ? 0 : UpwardsDirQueue.Count);
-            int matchQueueSize = FileContentMatchQueue.Count;
-            long currentDirWorkers = Interlocked.Read(ref directoryProcessors);
-            long currentMatchWorkers = Interlocked.Read(ref matchProcessors);
-
-            // Calculate throughput from parameters (avoid reading non-atomic fields)
-            double currentDirThroughput = dirsDelta / secondsElapsed;
-            double currentMatchThroughput = matchesDelta / secondsElapsed;
+            bool started = this.isStarted &&
+                (DateTime.UtcNow - this.startTime).TotalSeconds > 10;
 
             // Calculate directory worker recommendations
-            long newRecommendedDirWorkers;
-            if (currentDirThroughput > 0 && dirQueueSize > 0)
-            {
-                // Estimate time to clear queue at current rate
-                double timeToClearDirs = dirQueueSize / currentDirThroughput;
+            long newRecommendedDirWorkers = baseTargetWorkerCount;
+            long newRecommendedMatchWorkers = baseTargetWorkerCount;
 
-                // If it would take > 10 seconds, increase workers
-                // If it would take < 2 seconds, decrease workers
-                if (timeToClearDirs > 10.0 && currentDirWorkers < baseTargetWorkerCount * 2)
+            if (started)
+            {
+                // Get current queue sizes and worker counts atomically
+                int dirQueueSize = DirQueue.Count + (DirQueue.Count > 0 ? 0 : Interlocked.Read(ref filesFound) > 0 ? 0 : UpwardsDirQueue.Count);
+                int matchQueueSize = FileContentMatchQueue.Count;
+                long currentDirWorkers = Interlocked.Read(ref directoryProcessors);
+                long currentMatchWorkers = Interlocked.Read(ref matchProcessors);
+
+                // Calculate throughput from parameters (avoid reading non-atomic fields)
+                double currentDirThroughput = dirsDelta / secondsElapsed;
+                double currentMatchThroughput = matchesDelta / secondsElapsed;
+
+                if (currentDirThroughput > 0 && dirQueueSize > 0)
                 {
-                    newRecommendedDirWorkers = Math.Min(
-                        baseTargetWorkerCount * 2,
-                        currentDirWorkers + Math.Max(1, (long)(timeToClearDirs / 10.0))
-                    );
-                }
-                else if (timeToClearDirs < 2.0 && currentDirWorkers > 1)
-                {
-                    newRecommendedDirWorkers = Math.Max(1, currentDirWorkers - 1);
+                    // Estimate time to clear queue at current rate
+                    double timeToClearDirs = dirQueueSize / currentDirThroughput;
+
+                    // If it would take > 10 seconds, increase workers
+                    // If it would take < 2 seconds, decrease workers
+                    if (timeToClearDirs > 10.0 && currentDirWorkers < baseTargetWorkerCount * 2)
+                    {
+                        newRecommendedDirWorkers = Math.Min(
+                            baseTargetWorkerCount * 2,
+                            currentDirWorkers + Math.Max(1, (long)(timeToClearDirs / 10.0))
+                        );
+                    }
+                    else if (timeToClearDirs < 2.0 && currentDirWorkers > 1)
+                    {
+                        newRecommendedDirWorkers = Math.Max(1, currentDirWorkers - 1);
+                    }
+                    else
+                    {
+                        newRecommendedDirWorkers = Math.Max(baseTargetWorkerCount, currentDirWorkers);
+                    }
                 }
                 else
                 {
-                    newRecommendedDirWorkers = Math.Max(baseTargetWorkerCount, currentDirWorkers);
+                    // No throughput data, use baseline
+                    newRecommendedDirWorkers = baseTargetWorkerCount;
                 }
-            }
-            else
-            {
-                // No throughput data, use baseline
-                newRecommendedDirWorkers = baseTargetWorkerCount;
-            }
 
-            // Calculate match worker recommendations
-            long newRecommendedMatchWorkers;
-            if (currentMatchThroughput > 0 && matchQueueSize > 0)
-            {
-                // Estimate time to clear queue at current rate
-                double timeToClearMatches = matchQueueSize / currentMatchThroughput;
+                // Calculate match worker recommendations
 
-                // If it would take > 10 seconds, increase workers
-                // If it would take < 2 seconds, decrease workers
-                if (timeToClearMatches > 10.0 && currentMatchWorkers < baseTargetWorkerCount * 3)
+                if (currentMatchThroughput > 0 && matchQueueSize > 0)
                 {
-                    newRecommendedMatchWorkers = Math.Min(
-                        baseTargetWorkerCount * 3,
-                        currentMatchWorkers + Math.Max(1, (long)(timeToClearMatches / 10.0))
-                    );
-                }
-                else if (timeToClearMatches < 2.0 && currentMatchWorkers > 1)
-                {
-                    newRecommendedMatchWorkers = Math.Max(1, currentMatchWorkers - 1);
+                    // Estimate time to clear queue at current rate
+                    double timeToClearMatches = matchQueueSize / currentMatchThroughput;
+
+                    // If it would take > 10 seconds, increase workers
+                    // If it would take < 2 seconds, decrease workers
+                    if (timeToClearMatches > 10.0 && currentMatchWorkers < baseTargetWorkerCount * 3)
+                    {
+                        newRecommendedMatchWorkers = Math.Min(
+                            baseTargetWorkerCount * 3,
+                            currentMatchWorkers + Math.Max(1, (long)(timeToClearMatches / 10.0))
+                        );
+                    }
+                    else if (timeToClearMatches < 2.0 && currentMatchWorkers > 1)
+                    {
+                        newRecommendedMatchWorkers = Math.Max(1, currentMatchWorkers - 1);
+                    }
+                    else
+                    {
+                        newRecommendedMatchWorkers = Math.Max(baseTargetWorkerCount, currentMatchWorkers);
+                    }
                 }
                 else
                 {
-                    newRecommendedMatchWorkers = Math.Max(baseTargetWorkerCount, currentMatchWorkers);
+                    // No throughput data, use baseline
+                    newRecommendedMatchWorkers = baseTargetWorkerCount;
                 }
-            }
-            else
-            {
-                // No throughput data, use baseline
-                newRecommendedMatchWorkers = baseTargetWorkerCount;
-            }
 
-            // Apply output pressure feedback
-            // If output rate is very low compared to processing, something is bottlenecked
-            double outputThroughput = Interlocked.Read(ref filesFound) / secondsElapsed;
-            if (outputThroughput > 0 && currentDirThroughput > 0)
-            {
-                double outputRatio = outputThroughput / Math.Max(currentDirThroughput, currentMatchThroughput);
-
-                // If output ratio is very low, reduce workers to prevent queue buildup
-                if (outputRatio < 0.1)
+                // Apply throttling to directory workers based on match queue clearance time
+                if (currentMatchThroughput > 0 && matchQueueSize > 0)
                 {
-                    newRecommendedDirWorkers = Math.Max(1, newRecommendedDirWorkers / 2);
-                    newRecommendedMatchWorkers = Math.Max(1, newRecommendedMatchWorkers / 2);
+                    double timeToClearMatches = matchQueueSize / currentMatchThroughput;
+                    if (timeToClearMatches > 35.0)
+                        newRecommendedDirWorkers = 0;
+                    else if (timeToClearMatches > 30.0)
+                        newRecommendedDirWorkers = (long)(newRecommendedDirWorkers * 0.25);
+                    else if (timeToClearMatches > 20.0)
+                        newRecommendedDirWorkers = (long)(newRecommendedDirWorkers * 0.50);
+                    else if (timeToClearMatches > 15.0)
+                        newRecommendedDirWorkers = (long)(newRecommendedDirWorkers * 0.75);
                 }
             }
 
@@ -208,172 +210,6 @@ namespace GenXdev.FileSystem
             Interlocked.Exchange(ref recommendedMatchWorkers, newRecommendedMatchWorkers);
         }
 
-        /// <summary>
-        /// Normalizes paths by removing long path prefixes for non-filesystem use.
-        /// </summary>
-        /// <param name="path">The path to normalize.</param>
-        /// <returns>The normalized path.</returns>
-        protected string NormalizePathForNonFileSystemUse(string path)
-        {
-            // force paths internally to have backslashes
-            path = path.Replace("/", "\\");
-
-            // path references user home directory?
-            if (path == "~" || path.StartsWith("~\\"))
-            {
-                string home = this.SessionState.Path.GetResolvedPSPathFromPSPath("~")[0].Path;
-                path = path == "~" ? home : Path.Combine(home, path.Substring(2));
-            }
-
-            // check for unc long path prefix
-            if (path.StartsWith(@"\\?\UNC\", StringComparison.InvariantCultureIgnoreCase))
-            {
-
-                // remove prefix and adjust
-                string result = @"\\" + path.Substring(8);
-
-                return result;
-            }
-
-            // check for local long path prefix
-            if (path.StartsWith(@"\\?\"))
-            {
-                // remove prefix
-                string result = path.Substring(4);
-
-                return result;
-            }
-
-            // check for alternate unc prefix
-            if (path.StartsWith(@"\??\UNC\", StringComparison.InvariantCultureIgnoreCase))
-            {
-
-                // remove prefix and adjust
-                string result = @"\\" + path.Substring(8);
-
-                return result;
-            }
-
-            // check for alternate local prefix
-            if (path.StartsWith(@"\??\"))
-            {
-
-                // remove prefix
-                string result = path.Substring(4);
-
-                return result;
-            }
-
-            // return unchanged if no prefix
-            return path;
-        }
-
-        /// <summary>
-        /// Gets the number of physical cores for default parallelism
-        /// </summary>
-        /// <returns>The count of physical cores.</returns>
-        public int GetCoreCount()
-        {
-            // initialize core count accumulator
-            int totalPhysicalCores = 0;
-
-            // query WMI for accurate physical core counts per processor
-            using (var searcher = new ManagementObjectSearcher("SELECT NumberOfCores FROM Win32_Processor"))
-            {
-                // iterate through each processor and sum physical cores
-                // handles multi-socket systems correctly
-                foreach (var item in searcher.Get())
-                {
-                    totalPhysicalCores += Convert.ToInt32(item["NumberOfCores"]);
-                }
-            }
-
-            // return total physical cores across all processors
-            return totalPhysicalCores;
-        }
-
-        /// <summary>
-        /// Gets available RAM in bytes for resource calculations
-        /// </summary>
-        /// <returns>Available bytes of RAM.</returns>
-        protected long GetFreeRamInBytes()
-        {
-            try
-            {
-                // Use direct Windows API call for better performance
-                if (NativeMethods.GlobalMemoryStatusEx(out MEMORYSTATUSEX memStatus))
-                {
-                    return (long)memStatus.ullAvailPhys;
-                }
-            }
-            catch
-            {
-                // Fall back to managed approach if P/Invoke fails
-            }
-
-            // Fallback: Use GC for approximate available memory
-            // This is less accurate but has no external dependencies
-            try
-            {
-                GC.Collect(0, GCCollectionMode.Optimized);
-                long totalMemory = GC.GetTotalMemory(false);
-                
-                // Estimate available memory based on process working set
-                using (var process = Process.GetCurrentProcess())
-                {
-                    long workingSet = process.WorkingSet64;
-                    long maxWorkingSet = process.MaxWorkingSet.ToInt64();
-                    
-                    // Conservative estimate: assume we can use up to 80% of remaining working set
-                    return (long)((maxWorkingSet - workingSet) * 0.8);
-                }
-            }
-            catch
-            {
-                // Ultimate fallback: return conservative estimate
-                return 1024 * 1024 * 512; // 512 MB
-            }
-        }
-
-        /// <summary>
-        /// Native Windows API methods for memory information.
-        /// </summary>
-        private static class NativeMethods
-        {
-            [DllImport("kernel32.dll", SetLastError = true)]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            internal static extern bool GlobalMemoryStatusEx(out MEMORYSTATUSEX lpBuffer);
-        }
-
-        /// <summary>
-        /// Memory status structure for Windows API calls.
-        /// </summary>
-        [StructLayout(LayoutKind.Sequential)]
-        private struct MEMORYSTATUSEX
-        {
-            public uint dwLength;
-            public uint dwMemoryLoad;
-            public ulong ullTotalPhys;
-            public ulong ullAvailPhys;
-            public ulong ullTotalPageFile;
-            public ulong ullAvailPageFile;
-            public ulong ullTotalVirtual;
-            public ulong ullAvailVirtual;
-            public ulong ullAvailExtendedVirtual;
-
-            public MEMORYSTATUSEX()
-            {
-                dwLength = (uint)Marshal.SizeOf<MEMORYSTATUSEX>();
-                dwMemoryLoad = 0;
-                ullTotalPhys = 0;
-                ullAvailPhys = 0;
-                ullTotalPageFile = 0;
-                ullAvailPageFile = 0;
-                ullTotalVirtual = 0;
-                ullAvailVirtual = 0;
-                ullAvailExtendedVirtual = 0;
-            }
-        }
         /// <summary>
         /// Lists disk shares on a machine using UNC paths.
         /// </summary>
@@ -463,7 +299,7 @@ namespace GenXdev.FileSystem
         protected IEnumerable<string> GetRootsToSearch()
         {
             // handle -AllDrives parameter which searches all available drives
-            if (this.AllDrives.IsPresent)
+            if (this.AllDrives.ToBool())
             {
                 // combine all drive sources: system drives, explicit search drives, and drive letters
                 // deduplicate and normalize to uppercase drive letters
@@ -511,6 +347,9 @@ namespace GenXdev.FileSystem
         {
             // exit if operation is being cancelled
             if (ctx.IsCancellationRequested) return;
+
+            // Trigger throughput measurement for adaptive scaling
+            MeasureThroughputAndAdjustWorkers();
 
             // increase thread pool size if needed
             ThreadPool.SetMaxThreads(
@@ -618,18 +457,16 @@ namespace GenXdev.FileSystem
                                 }
                             }
 
-                            // dynamic throttling: check at end of iteration if we should exit
-                            var currentMatchers = Interlocked.Read(ref matchProcessors);
-                            var maxMatchers = maxMatchersFunc();
-                            if (currentMatchers > maxMatchers)
+                            lock (WorkersLock)
                             {
-                                // if (UseVerboseOutput)
-                                // {
-                                //     VerboseQueue.Enqueue($"Content matcher exiting: {currentMatchers} > {maxMatchers}");
-                                // }
-                                // ensure other workers can be spawned when needed
-                                AddWorkerTasksIfNeeded(ctx);
-                                break;
+                                // dynamic throttling: check at end of iteration if we should exit
+                                var currentMatchers = Interlocked.Read(ref matchProcessors);
+                                var maxMatchers = maxMatchersFunc();
+                                if (currentMatchers > maxMatchers)
+                                {
+                                    AddWorkerTasksIfNeeded(ctx);
+                                    break;
+                                }
                             }
                         }
                     }
@@ -698,35 +535,6 @@ namespace GenXdev.FileSystem
 
                 return result;
             }
-        }
-
-        /// <summary>
-        /// Executes a PowerShell script and returns the result of type T, handling
-        /// any errors that occur.
-        /// </summary>
-        /// <param name="script">The script to execute.</param>
-        /// <returns>The result as type T.</returns>
-        protected T InvokeScript<T>(string script)
-        {
-            // execute the PowerShell script and collect all output objects
-            Collection<PSObject> results = InvokeCommand.InvokeScript(script);
-
-            // check if the entire results collection is of type T
-            // handles cases where script returns a single collection
-            if (results is T)
-            {
-                return (T)(object)results;
-            }
-
-            // check if first result's base object is of type T
-            // handles cases where script returns wrapped PSObjects
-            if (results.Count > 0 && results[0].BaseObject is T)
-            {
-                return (T)results[0].BaseObject;
-            }
-
-            // return default value if no matching type found
-            return default(T);
         }
 
         /// <summary>
@@ -809,7 +617,7 @@ namespace GenXdev.FileSystem
             Interlocked.Exchange(ref lastProgress, lastProgress);
 
             // determine output mode based on parameters
-            bool outputtingFiles = FilesAndDirectories.IsPresent || !Directory.IsPresent;
+            bool outputtingFiles = FilesAndDirectories.ToBool() || !Directory.ToBool();
 
             // check if we're doing content matching (Select-String like behavior)
             bool matchingContent = outputtingFiles && matchingFileContent;
@@ -851,7 +659,7 @@ namespace GenXdev.FileSystem
             statusBuilder.Append("Folders: ")
             .Append(formatStat(dirsDone, true))
             .Append("/")
-            .Append(formatStat(DirQueue.Count+UpwardsDirQueue.Count, false))
+            .Append(formatStat(DirQueue.Count + UpwardsDirQueue.Count, false))
             .Append(" [")
             .Append(formatStat(directoryProcessorsCount, false))
             .Append("] | Found: ")
@@ -923,9 +731,9 @@ namespace GenXdev.FileSystem
                     Interlocked.Increment(ref filesFound);
                 }
 
-                bool outputtingMatches = matchingFileContent && !Quiet.IsPresent;
+                bool outputtingMatches = matchingFileContent && !Quiet.ToBool();
                 bool userIsWatching = !UnattendedMode;
-                bool notDisabledByUser = !PassThru.IsPresent;
+                bool notDisabledByUser = !PassThru.ToBool();
                 bool outputRelative = (isFile || isDirectory) && notDisabledByUser;
 
                 // handle non-PassThru mode (formatted output)
@@ -965,7 +773,7 @@ namespace GenXdev.FileSystem
                     return;
                 }
 
-                if (item is MatchInfo && Raw.IsPresent)
+                if (item is MatchInfo && Raw.ToBool())
                 {
                     // in raw mode, output only the matched line text
                     var match = (MatchInfo)item;

@@ -2,7 +2,7 @@
 Part of PowerShell module : GenXdev.FileSystem
 Original cmdlet filename  : ReadJsonWithRetry.ps1
 Original author           : René Vaessen / GenXdev
-Version                   : 1.300.2025
+Version                   : 1.302.2025
 ################################################################################
 Copyright (c)  René Vaessen / GenXdev
 
@@ -32,6 +32,9 @@ file doesn't exist.
 .PARAMETER FilePath
 The path to the JSON file to read.
 
+.PARAMETER AsHashtable
+Return the parsed JSON as a hashtable instead of PSCustomObject. Defaults to true.
+
 .PARAMETER MaxRetries
 Maximum number of retry attempts. Defaults to 10.
 
@@ -48,12 +51,20 @@ function ReadJsonWithRetry {
         [int]$MaxRetries = 10,
 
         [Parameter(Mandatory = $false)]
-        [int]$RetryDelayMs = 200
+        [int]$RetryDelayMs = 200,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$AsHashtable
     )
 
     # return empty hashtable if file doesn't exist
     if (-not (Microsoft.PowerShell.Management\Test-Path -LiteralPath $FilePath)) {
-        return @{}
+        if ($AsHashtable) {
+            return @{}
+        }
+        else {
+            return
+        }
     }
 
     # construct lock file path
@@ -84,12 +95,23 @@ function ReadJsonWithRetry {
                 -ErrorAction Stop
 
             if ([string]::IsNullOrWhiteSpace($content)) {
-                return @{}
+                if ($AsHashtable) {
+                    return @{}
+                }
+                else {
+                    return
+                }
             }
 
-            $data = $content | Microsoft.PowerShell.Utility\ConvertFrom-Json `
-                -AsHashtable `
-                -ErrorAction Stop
+            if ($AsHashtable) {
+                $data = $content | Microsoft.PowerShell.Utility\ConvertFrom-Json `
+                    -AsHashtable `
+                    -ErrorAction Stop
+            }
+            else {
+                $data = $content | Microsoft.PowerShell.Utility\ConvertFrom-Json `
+                    -ErrorAction Stop
+            }
 
             return $data
         }

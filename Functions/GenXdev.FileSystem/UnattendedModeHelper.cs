@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : UnattendedModeHelper.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.300.2025
+// Version                   : 1.302.2025
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -21,6 +21,8 @@
 
 
 
+using System;
+using System.Linq;
 using System.Management.Automation;
 
 namespace GenXdev.FileSystem

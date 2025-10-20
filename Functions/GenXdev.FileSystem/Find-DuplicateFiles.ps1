@@ -2,7 +2,7 @@
 Part of PowerShell module : GenXdev.FileSystem
 Original cmdlet filename  : Find-DuplicateFiles.ps1
 Original author           : René Vaessen / GenXdev
-Version                   : 1.300.2025
+Version                   : 1.302.2025
 ################################################################################
 Copyright (c)  René Vaessen / GenXdev
 
@@ -19,6 +19,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ################################################################################>
 ###############################################################################
+
+# don't remove this line [dontrefactor]
+
 <#
 .SYNOPSIS
 Find duplicate files across multiple directories based on configurable criteria.

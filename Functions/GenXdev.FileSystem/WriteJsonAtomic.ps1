@@ -2,7 +2,7 @@
 Part of PowerShell module : GenXdev.FileSystem
 Original cmdlet filename  : WriteJsonAtomic.ps1
 Original author           : René Vaessen / GenXdev
-Version                   : 1.300.2025
+Version                   : 1.302.2025
 ################################################################################
 Copyright (c)  René Vaessen / GenXdev
 
@@ -18,6 +18,31 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ################################################################################>
+###############################################################################
+<#
+.SYNOPSIS
+    Writes data to a JSON file atomically to prevent corruption.
+
+.DESCRIPTION
+    This function writes a hashtable to a JSON file using atomic operations
+    to ensure data integrity even if the process is interrupted. It uses
+    temporary files and locking to prevent corruption.
+
+.PARAMETER FilePath
+    The path to the JSON file to write.
+
+.PARAMETER Data
+    The hashtable data to serialize to JSON.
+
+.PARAMETER MaxRetries
+    The maximum number of retry attempts for the atomic write operation.
+
+.PARAMETER RetryDelayMs
+    The delay in milliseconds between retry attempts.
+
+.EXAMPLE
+    WriteJsonAtomic -FilePath "config.json" -Data @{setting="value"}
+#>
 function WriteJsonAtomic {
     [CmdletBinding()]
     param(
@@ -81,7 +106,7 @@ function WriteJsonAtomic {
                     -Compress:$false
 
                 [System.IO.File]::WriteAllText($tmpFile, $jsonContent, `
-                    [System.Text.Encoding]::UTF8)
+                        [System.Text.Encoding]::UTF8)
 
                 # perform atomic rename operation
                 if (Microsoft.PowerShell.Management\Test-Path `

@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Copy-IdenticalParamValues.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.300.2025
+// Version                   : 1.302.2025
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -21,53 +21,6 @@
 
 
 
-/*
-<#
-.SYNOPSIS
-Copies parameter values from bound parameters to a new hashtable based on
-another function's possible parameters.
-
-.DESCRIPTION
-This function creates a new hashtable containing only the parameter values that
-match the parameters defined in the specified target function.
-This can then be used to invoke the function using splatting.
-
-Switch parameters are only included in the result if they were explicitly provided
-and set to $true in the bound parameters. Non-present switch parameters are
-excluded from the result to maintain proper parameter semantics.
-
-.PARAMETER BoundParameters
-The bound parameters from which to copy values, typically $PSBoundParameters.
-
-.PARAMETER FunctionName
-The name of the function whose parameter set will be used as a filter.
-
-.PARAMETER DefaultValues
-Default values for non-switch parameters that are not present in BoundParameters.
-
-.EXAMPLE
-function Test-Function {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory = $true)]
-        [string] $Path,
-        [Parameter(Mandatory = $false)]
-        [switch] $Recurse
-    )
-
-    $params = GenXdev.FileSystem\Copy-IdenticalParamValues -BoundParameters $PSBoundParameters `
-        -FunctionName 'Get-ChildItem'
-
-    Get-ChildItem @params
-}
-
-.NOTES
-- Switch parameters are only included if explicitly set to $true
-- Default values are only applied to non-switch parameters
-- Common PowerShell parameters are automatically filtered out
-#>
-*/
-
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Management.Automation;
@@ -76,10 +29,39 @@ using System.Management.Automation;
 /// Copies parameter values from bound parameters to a new hashtable based on
 /// another function's possible parameters.
 /// </summary>
+/// <remarks>
+/// This function creates a new hashtable containing only the parameter values
+/// that match the parameters defined in the specified target function.
+/// This can then be used to invoke the function using splatting.
+///
+/// Switch parameters are only included in the result if they were explicitly
+/// provided and set to $true in the bound parameters. Non-present switch
+/// parameters are excluded from the result to maintain proper parameter
+/// semantics.
+/// </remarks>
+/// <example>
+/// <code>
+/// function Test-Function {
+///     [CmdletBinding()]
+///     param(
+///         [Parameter(Mandatory = $true)]
+///         [string] $Path,
+///         [Parameter(Mandatory = $false)]
+///         [switch] $Recurse
+///     )
+///
+///     $params = GenXdev.FileSystem\Copy-IdenticalParamValues `
+///         -BoundParameters $PSBoundParameters `
+///         -FunctionName 'Get-ChildItem'
+///
+///     Get-ChildItem @params
+/// }
+/// </code>
+/// </example>
 [Cmdlet(VerbsCommon.Copy, "IdenticalParamValues")]
 [OutputType(typeof(Hashtable))]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-public class CopyIdenticalParamValuesCommand : PSCmdlet
+public class CopyIdenticalParamValuesCommand : PSGenXdevCmdlet
 {
     #region Parameters
 
@@ -105,12 +87,13 @@ public class CopyIdenticalParamValuesCommand : PSCmdlet
 
     /// <summary>
     /// Default values for non-switch parameters that are not present in BoundParameters.
+    /// Accepts PSVariable[], Hashtable, PSCmdlet instances, or other dictionary types.
     /// </summary>
     [Parameter(
         Mandatory = false,
         Position = 2,
         HelpMessage = "Default values for parameters")]
-    public PSVariable[] DefaultValues { get; set; } = new PSVariable[0];
+    public object DefaultValues { get; set; }
 
     #endregion
 
@@ -120,12 +103,6 @@ public class CopyIdenticalParamValuesCommand : PSCmdlet
     /// Common PowerShell parameters to filter out when copying parameters
     /// </summary>
     private static readonly string[] CommonParameterFilter;
-
-    /// <summary>
-    /// Cache for command info to avoid repeated PowerShell invocations
-    /// Key: Function name, Value: CommandInfo object or null if not found
-    /// </summary>
-    private static readonly ConcurrentDictionary<string, CommandInfo> CommandInfoCache;
 
     #endregion
 
@@ -165,8 +142,7 @@ public class CopyIdenticalParamValuesCommand : PSCmdlet
                 "PassThru"
         };
 
-        // Initialize command info cache
-        CommandInfoCache = new ConcurrentDictionary<string, CommandInfo>(StringComparer.OrdinalIgnoreCase);
+        // CommandInfoCache is now shared with GenXdevCmd
     }
 
     #endregion
@@ -190,7 +166,7 @@ public class CopyIdenticalParamValuesCommand : PSCmdlet
         _results = new Hashtable();
 
         // Create hashtable of default parameter values
-        _defaults = CreateDefaultsHashtable();
+        _defaults = CreateDefaultsHashtable2();
 
         // Get function info for parameter validation (with caching)
         _functionInfo = GetCachedCommandInfo(FunctionName);
@@ -234,6 +210,8 @@ public class CopyIdenticalParamValuesCommand : PSCmdlet
             var paramName = parameterKvp.Key;
             var paramInfo = parameterKvp.Value;
 
+            if (Array.IndexOf(CommonParameterFilter, paramName) >= 0) continue;
+
             // Check if parameter exists in bound parameters
             if (boundParamsDict.ContainsKey(paramName))
             {
@@ -245,12 +223,8 @@ public class CopyIdenticalParamValuesCommand : PSCmdlet
                 {
                     if (IsTrue(paramValue))
                     {
-                        _results[paramName] = paramValue;
+                        _results[paramName] = true;
                         WriteVerbose($"Including switch parameter '{paramName}' (explicitly set to true)");
-                    }
-                    else
-                    {
-                        WriteVerbose($"Excluding switch parameter '{paramName}' (not set or false)");
                     }
                 }
                 else
@@ -258,22 +232,10 @@ public class CopyIdenticalParamValuesCommand : PSCmdlet
                     _results[paramName] = paramValue;
                 }
             }
-            else
+            else if (_defaults.ContainsKey(paramName) && _defaults[paramName] != null)
             {
                 // Only add default values for non-switch parameters
-                if (paramInfo.ParameterType != typeof(SwitchParameter))
-                {
-                    var defaultValue = _defaults[paramName];
-                    if (defaultValue != null)
-                    {
-                        _results[paramName] = defaultValue;
-
-                        // Convert to JSON for verbose output, matching PowerShell behavior
-                        var jsonValue = ConvertToJsonString(defaultValue);
-                        WriteVerbose($"Using default value for '{paramName}': {jsonValue}");
-                    }
-                }
-                else
+                if (paramInfo.ParameterType == typeof(SwitchParameter))
                 {
                     var defaultValue = _defaults[paramName];
                     if (IsTrue(defaultValue))
@@ -281,6 +243,15 @@ public class CopyIdenticalParamValuesCommand : PSCmdlet
                         _results[paramName] = true;
                         WriteVerbose($"Using default value for '{paramName}': $True");
                     }
+                }
+                else
+                {
+                    var defaultValue = _defaults[paramName];
+                    _results[paramName] = defaultValue;
+
+                    // Convert to JSON for verbose output, matching PowerShell behavior
+                    var jsonValue = ConvertToJsonString(defaultValue);
+                    WriteVerbose($"Using default value for '{paramName}': {jsonValue}");
                 }
             }
         }
@@ -307,7 +278,7 @@ public class CopyIdenticalParamValuesCommand : PSCmdlet
     private CommandInfo GetCachedCommandInfo(string functionName)
     {
         // Try to get from cache first
-        if (CommandInfoCache.TryGetValue(functionName, out var cachedInfo))
+        if (PSGenXdevCmdlet.CommandInfoCache.TryGetValue(functionName, out var cachedInfo))
         {
             WriteVerbose($"Using cached command info for function '{functionName}'");
             return cachedInfo;
@@ -326,7 +297,7 @@ public class CopyIdenticalParamValuesCommand : PSCmdlet
         }
 
         // Cache the result (even if null) to avoid repeated lookups for non-existent functions
-        CommandInfoCache.TryAdd(functionName, commandInfo);
+        PSGenXdevCmdlet.CommandInfoCache.TryAdd(functionName, commandInfo);
 
         return commandInfo;
     }
@@ -334,30 +305,103 @@ public class CopyIdenticalParamValuesCommand : PSCmdlet
     /// <summary>
     /// Creates the defaults hashtable from DefaultValues parameter
     /// </summary>
-    private Hashtable CreateDefaultsHashtable()
+    private Hashtable CreateDefaultsHashtable2()
     {
         var defaultsHash = new Hashtable();
 
-        if (DefaultValues != null)
+        if (DefaultValues == null)
+            return defaultsHash;
+
+        if (DefaultValues is PSObject dv)
         {
-            foreach (var variable in DefaultValues)
+            DefaultValues = dv.BaseObject;
+        }
+
+        if (DefaultValues is Hashtable hash)
+        {
+            foreach (DictionaryEntry entry in hash)
             {
-                // Filter out variables with Options != None (matching PowerShell behavior)
-                if (variable.Options == ScopedItemOptions.None)
+                if (entry.Key is string key)
                 {
-                    // Check if variable name is in filter list
-                    if (Array.IndexOf(CommonParameterFilter, variable.Name) < 0)
+                    defaultsHash[key] = entry.Value;
+                }
+            }
+        }
+        // Handle PSCmdlet instances
+        else if (DefaultValues is PSCmdlet cmdlet)
+        {
+            var cmdletType = cmdlet.GetType();
+
+            try
+            {
+                // Create a new instance to get default values
+                var newInstance = System.Activator.CreateInstance(cmdletType);
+
+                foreach (var property in cmdletType.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+                {
+                    // Only consider properties that are cmdlet parameters
+                    if (property.CanRead && property.CanWrite &&
+                        System.Attribute.IsDefined(property, typeof(ParameterAttribute)))
                     {
-                        // Skip null or whitespace string values
-                        if (!(variable.Value is string strValue && string.IsNullOrWhiteSpace(strValue)))
+                        try
                         {
-                            if (variable.Value != null)
+                            var value = property.GetValue(newInstance);
+                            // Only include non-null values for default parameters
+                            if (value != null)
                             {
-                                defaultsHash[variable.Name] = variable.Value;
+                                defaultsHash[property.Name] = value;
                             }
+                        }
+                        catch (Exception ex)
+                        {
+                            WriteVerbose($"Failed to get value for parameter property {property.Name}: {ex.Message}");
                         }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                WriteWarning($"Failed to extract default values from cmdlet {cmdletType.Name}: {ex.Message}");
+            }
+        }
+        // Handle other dictionary types
+        else if (DefaultValues is IDictionary dict)
+        {
+            foreach (DictionaryEntry entry in dict)
+            {
+                if (entry.Key is string key)
+                {
+                    defaultsHash[key] = entry.Value;
+                }
+            }
+        }
+        else if (DefaultValues is IEnumerable variables && !(DefaultValues is string))
+        {
+            foreach (var variable in variables)
+            {
+                var v = variable;
+                if (variable is PSObject) { v = ((PSObject)v).BaseObject; }
+
+                PSVariable psv = v as PSVariable;
+
+                if (psv == null || psv.Value == null) continue;
+
+                // Filter out variables with Options != None (matching PowerShell behavior)
+                if (psv.Options == ScopedItemOptions.None)
+                {
+                    // Check if variable name is in filter list
+                    if (Array.IndexOf(CommonParameterFilter, psv.Name) < 0)
+                    {
+                        // Skip null or whitespace string values
+                        if (!(psv.Value is string strValue && string.IsNullOrWhiteSpace(strValue)))
+                        {
+                            if (psv.Value != null)
+                            {
+                                defaultsHash[psv.Name] = psv.Value;
+                            }
+                        }
+                    }
+				}
             }
         }
 
@@ -393,37 +437,14 @@ public class CopyIdenticalParamValuesCommand : PSCmdlet
     }
 
     /// <summary>
-    /// Checks if a value represents boolean true (matching PowerShell semantics)
-    /// </summary>
-    private bool IsTrue(object value)
-    {
-        if (value == null)
-            return false;
-
-        if (value is bool boolValue)
-            return boolValue;
-
-        if (value is SwitchParameter switchParam)
-            return switchParam.IsPresent;
-
-        return false;
-    }
-
-    /// <summary>
     /// Converts object to JSON string for verbose output (mimicking PowerShell ConvertTo-Json behavior)
     /// </summary>
     private string ConvertToJsonString(object value)
     {
         try
         {
-            // Use PowerShell's ConvertTo-Json for consistency
-            var jsonScript = $"$input | Microsoft.PowerShell.Utility\\ConvertTo-Json -Depth 1 -WarningAction SilentlyContinue -ErrorAction SilentlyContinue";
-            var jsonResults = InvokeCommand.InvokeScript(jsonScript, new object[] { value });
-
-            if (jsonResults?.Any() == true)
-            {
-                return jsonResults.FirstOrDefault()?.ToString() ?? value?.ToString() ?? "null";
-            }
+            // Use base class ConvertToJson method
+            return ConvertToJson(value, 1);
         }
         catch
         {
