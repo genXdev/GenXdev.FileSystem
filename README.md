@@ -2234,18 +2234,56 @@ WriteJsonAtomic [-FilePath] <string> [-Data] <hashtable> [[-MaxRetries] <int>] [
    Copy-IdenticalParamValues  
 ``` 
 
-### SYNOPSIS 
-
 ### SYNTAX 
 ```PowerShell 
- 
+Copy-IdenticalParamValues [-BoundParameters] <Object[]>
+    [-FunctionName] <string> [[-DefaultValues] <Object>]
+    [<CommonParameters>] 
 ``` 
-
-### DESCRIPTION 
 
 ### PARAMETERS 
 ```yaml 
  
+``` 
+```yaml 
+    -BoundParameters <Object[]>  
+        Source bound parameters to copy from  
+        Required?                    true  
+        Position?                    0  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -DefaultValues <Object>  
+        Default values for parameters  
+        Required?                    false  
+        Position?                    2  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -FunctionName <string>  
+        Target function name to filter parameters  
+        Required?                    true  
+        Position?                    1  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    <CommonParameters>  
+        This cmdlet supports the common parameters: Verbose, Debug,  
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 ``` 
 
 <br/><hr/><br/>
@@ -2257,18 +2295,528 @@ WriteJsonAtomic [-FilePath] <string> [-Data] <hashtable> [[-MaxRetries] <int>] [
    Find-Item                            --> l  
 ``` 
 
-### SYNOPSIS 
-
 ### SYNTAX 
 ```PowerShell 
- 
+Find-Item [[-Name] <string[]>] [[-RelativeBasePath]
+    <string>] [-Input <Object>] [-Category {Pictures |
+    Videos | Music | Documents | Spreadsheets |
+    Presentations | Archives | Installers | Executables |
+    Databases | DesignFiles | Ebooks | Subtitles | Fonts |
+    EmailFiles | 3DModels | GameAssets | MedicalFiles |
+    FinancialFiles | LegalFiles | SourceCode | Scripts |
+    MarkupAndData | Configuration | Logs | TextFiles |
+    WebFiles | MusicLyricsAndChords | CreativeWriting |
+    Recipes | ResearchFiles}] [-MaxDegreeOfParallelism
+    <int>] [-TimeoutSeconds <int>] [-AllDrives] [-Directory]
+    [-FilesAndDirectories] [-PassThru]
+    [-IncludeAlternateFileStreams] [-NoRecurse]
+    [-FollowSymlinkAndJunctions] [-IncludeOpticalDiskDrives]
+    [-SearchDrives <string[]>] [-DriveLetter <char[]>]
+    [-Root <string[]>] [-IncludeNonTextFileMatching]
+    [-NoLinks] [-CaseNameMatching {PlatformDefault |
+    CaseSensitive | CaseInsensitive}] [-SearchADSContent]
+    [-MaxRecursionDepth <int>] [-MaxSearchUpDepth <int>]
+    [-MaxFileSize <long>] [-MinFileSize <long>]
+    [-ModifiedAfter <datetime>] [-ModifiedBefore <datetime>]
+    [-AttributesToSkip {None | ReadOnly | Hidden | System |
+    Directory | Archive | Device | Normal | Temporary |
+    SparseFile | ReparsePoint | Compressed | Offline |
+    NotContentIndexed | Encrypted | IntegrityStream |
+    NoScrubData}] [-Exclude <string[]>] [<CommonParameters>]
+Find-Item [[-Name] <string[]>] [[-Content] <string[]>]
+    [[-RelativeBasePath] <string>] [-Input <Object>]
+    [-Category {Pictures | Videos | Music | Documents |
+    Spreadsheets | Presentations | Archives | Installers |
+    Executables | Databases | DesignFiles | Ebooks |
+    Subtitles | Fonts | EmailFiles | 3DModels | GameAssets |
+    MedicalFiles | FinancialFiles | LegalFiles | SourceCode
+    | Scripts | MarkupAndData | Configuration | Logs |
+    TextFiles | WebFiles | MusicLyricsAndChords |
+    CreativeWriting | Recipes | ResearchFiles}]
+    [-MaxDegreeOfParallelism <int>] [-TimeoutSeconds <int>]
+    [-AllDrives] [-Directory] [-FilesAndDirectories]
+    [-PassThru] [-IncludeAlternateFileStreams] [-NoRecurse]
+    [-FollowSymlinkAndJunctions] [-IncludeOpticalDiskDrives]
+    [-SearchDrives <string[]>] [-DriveLetter <char[]>]
+    [-Root <string[]>] [-IncludeNonTextFileMatching]
+    [-NoLinks] [-CaseNameMatching {PlatformDefault |
+    CaseSensitive | CaseInsensitive}] [-SearchADSContent]
+    [-MaxRecursionDepth <int>] [-MaxSearchUpDepth <int>]
+    [-MaxFileSize <long>] [-MinFileSize <long>]
+    [-ModifiedAfter <datetime>] [-ModifiedBefore <datetime>]
+    [-AttributesToSkip {None | ReadOnly | Hidden | System |
+    Directory | Archive | Device | Normal | Temporary |
+    SparseFile | ReparsePoint | Compressed | Offline |
+    NotContentIndexed | Encrypted | IntegrityStream |
+    NoScrubData}] [-Exclude <string[]>] [-AllMatches]
+    [-CaseSensitive] [-Context <int[]>] [-Culture <string>]
+    [-Encoding {ASCII | ANSI | BigEndianUnicode |
+    BigEndianUTF32 | OEM | Unicode | UTF7 | UTF8 | UTF8BOM |
+    UTF8NoBOM | UTF32 | Default}] [-List] [-NoEmphasis]
+    [-NotMatch] [-Quiet] [-Raw] [-SimpleMatch]
+    [<CommonParameters>] 
 ``` 
-
-### DESCRIPTION 
 
 ### PARAMETERS 
 ```yaml 
  
+``` 
+```yaml 
+    -AllDrives  
+        Search across all available drives  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -AllMatches  
+        Indicates that the cmdlet searches for more than one match in each line of text. Without this parameter, Select-String finds only the first match in each line of text.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -AttributesToSkip <FileAttributes>  
+        File attributes to skip (e.g., System, Hidden or None).  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      skipattr  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -CaseNameMatching <MatchCasing>  
+        Gets or sets the case-sensitivity for files and directories  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      casing, CaseSearchMaskMatching   
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -CaseSensitive  
+        Indicates that the cmdlet matches are case-sensitive. By default, matches aren't case-sensitive.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -Category <string[]>  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      filetype  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -Content <string[]>  
+        Regular expression pattern to search within content  
+        Required?                    false  
+        Position?                    1  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      mc, matchcontent, regex, Pattern  
+        Dynamic?                     false  
+        Accept wildcard characters?  true  
+``` 
+```yaml 
+    -Context <int[]>  
+        Captures the specified number of lines before and after the line that matches the pattern.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -Culture <string>  
+        Specifies a culture name to match the specified pattern. The Culture parameter must be used with the SimpleMatch parameter. The default behavior uses the culture of the current PowerShell runspace (session).  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -Directory  
+        Search for directories only  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      dir  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -DriveLetter <char[]>  
+        Optional: search specific drives  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -Encoding <string>  
+        Specifies the type of encoding for the target file. Supports Select-String compatible values and extended .NET encodings.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -Exclude <string[]>  
+        Exclude files or directories matching these wildcard patterns (e.g., *.tmp, *\bin\*).  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      skiplike  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -FilesAndDirectories  
+        Include both files and directories  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      both, DirectoriesAndFiles  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -FollowSymlinkAndJunctions  
+        Follow symlinks and junctions during directory traversal  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      symlinks, sl  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -IncludeAlternateFileStreams  
+        Include alternate data streams in search results  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      ads  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -IncludeNonTextFileMatching  
+        Include non-text files when searching file contents  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      binary  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -IncludeOpticalDiskDrives  
+        Include optical disk drives  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -Input <Object>  
+        File name or pattern to search for. Default is '*'  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       true (ByValue, ByPropertyName)  
+        Parameter set name           (All)  
+        Aliases                      FullName  
+        Dynamic?                     false  
+        Accept wildcard characters?  true  
+``` 
+```yaml 
+    -List  
+        Only the first instance of matching text is returned from each input file. This is the most efficient way to retrieve a list of files that have contents matching the regular expression.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -MaxDegreeOfParallelism <int>  
+        Maximum degree of parallelism for directory tasks  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      threads  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -MaxFileSize <long>  
+        Maximum file size in bytes to include in results. 0 means unlimited.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      maxlength, maxsize  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -MaxRecursionDepth <int>  
+        Maximum recursion depth for directory traversal. 0 means unlimited.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      md, depth, maxdepth  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -MaxSearchUpDepth <int>  
+        Maximum recursion depth for continuing searching upwards the tree for relative searches, while no items are found. 0 means disabled.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      maxupward  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -MinFileSize <long>  
+        Minimum file size in bytes to include in results. 0 means no minimum.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      minsize, minlength  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -ModifiedAfter <datetime>  
+        Only include files modified after this date/time (UTC).  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      ma, after  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -ModifiedBefore <datetime>  
+        Only include files modified before this date/time (UTC).  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      before, mb  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -Name <string[]>  
+        File name or pattern to search for. Default is '*'  
+        Required?                    false  
+        Position?                    0  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      like, Path, LiteralPath, Query, SearchMask, Include  
+        Dynamic?                     false  
+        Accept wildcard characters?  true  
+``` 
+```yaml 
+    -NoEmphasis  
+        Disables highlighting of matching strings in output.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -NoLinks  
+        Forces unattended mode and will not generate links  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      nl, ForceUnattenedMode  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -NoRecurse  
+        Do not recurse into subdirectories  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      nr  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -NotMatch  
+        The NotMatch parameter finds text that doesn't match the specified pattern.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -PassThru  
+        Output matched items as objects  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      pt  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -Quiet  
+        Indicates that the cmdlet returns a simple response instead of a MatchInfo object. The returned value is $true if the pattern is found or $null if the pattern is not found.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      NoMatchOutput  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -Raw  
+        Causes the cmdlet to output only the matching strings, rather than MatchInfo objects. This is the results in behavior that's the most similar to the Unix grep or Windows findstr.exe commands.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -RelativeBasePath <string>  
+        Base path for resolving relative paths in output  
+        Required?                    false  
+        Position?                    2  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      base  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -Root <string[]>  
+        Optional: search specific directories  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -SearchADSContent  
+        When set, performs content search within alternate data streams (ADS). When not set, outputs ADS file info without searching their content.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      sads  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -SearchDrives <string[]>  
+        Optional: search specific drives  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      drives  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -SimpleMatch  
+        Indicates that the cmdlet uses a simple match rather than a regular expression match. In a simple match, Select-String searches the input for the text in the Pattern parameter. It doesn't interpret the value of the Pattern parameter as a regular expression statement.  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           WithPattern  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -TimeoutSeconds <int>  
+        Optional: cancellation timeout in seconds  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      maxseconds  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    <CommonParameters>  
+        This cmdlet supports the common parameters: Verbose, Debug,  
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 ``` 
 
 <br/><hr/><br/>
@@ -2280,18 +2828,55 @@ WriteJsonAtomic [-FilePath] <string> [-Data] <hashtable> [[-MaxRetries] <int>] [
    Move-ItemWithTracking  
 ``` 
 
-### SYNOPSIS 
-
 ### SYNTAX 
 ```PowerShell 
- 
+Move-ItemWithTracking [-Path] <string> [-Destination]
+    <string> [-Force] [<CommonParameters>] 
 ``` 
-
-### DESCRIPTION 
 
 ### PARAMETERS 
 ```yaml 
  
+``` 
+```yaml 
+    -Destination <string>  
+        Destination path to move to  
+        Required?                    true  
+        Position?                    1  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -Force  
+        Overwrite destination if it exists  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -Path <string>  
+        Source path of file/directory to move  
+        Required?                    true  
+        Position?                    0  
+        Accept pipeline input?       true (ByValue, ByPropertyName)  
+        Parameter set name           (All)  
+        Aliases                      FullName  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    <CommonParameters>  
+        This cmdlet supports the common parameters: Verbose, Debug,  
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 ``` 
 
 <br/><hr/><br/>
@@ -2303,18 +2888,32 @@ WriteJsonAtomic [-FilePath] <string> [-Data] <hashtable> [[-MaxRetries] <int>] [
    Move-ToRecycleBin  
 ``` 
 
-### SYNOPSIS 
-
 ### SYNTAX 
 ```PowerShell 
- 
+Move-ToRecycleBin [-Path] <string[]> [<CommonParameters>] 
 ``` 
-
-### DESCRIPTION 
 
 ### PARAMETERS 
 ```yaml 
  
+``` 
+```yaml 
+    -Path <string[]>  
+        Specify the path(s) to move to the recycle bin  
+        Required?                    true  
+        Position?                    0  
+        Accept pipeline input?       true (ByValue, ByPropertyName)  
+        Parameter set name           (All)  
+        Aliases                      FullName  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    <CommonParameters>  
+        This cmdlet supports the common parameters: Verbose, Debug,  
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 ``` 
 
 <br/><hr/><br/>
@@ -2326,18 +2925,44 @@ WriteJsonAtomic [-FilePath] <string> [-Data] <hashtable> [[-MaxRetries] <int>] [
    Remove-OnReboot  
 ``` 
 
-### SYNOPSIS 
-
 ### SYNTAX 
 ```PowerShell 
- 
+Remove-OnReboot [-Path] <string[]> [-MarkInPlace]
+    [<CommonParameters>] 
 ``` 
-
-### DESCRIPTION 
 
 ### PARAMETERS 
 ```yaml 
  
+``` 
+```yaml 
+    -MarkInPlace  
+        Marks files for deletion without renaming  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      None  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -Path <string[]>  
+        Path(s) to files/directories to mark for deletion  
+        Required?                    true  
+        Position?                    0  
+        Accept pipeline input?       true (ByValue)  
+        Parameter set name           (All)  
+        Aliases                      FullName  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    <CommonParameters>  
+        This cmdlet supports the common parameters: Verbose, Debug,  
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 ``` 
 
 <br/><hr/><br/>
@@ -2349,18 +2974,41 @@ WriteJsonAtomic [-FilePath] <string> [-Data] <hashtable> [[-MaxRetries] <int>] [
    Set-LocationParent                   --> ..  
 ``` 
 
-### SYNOPSIS 
-
 ### SYNTAX 
 ```PowerShell 
- 
+Set-LocationParent [-WhatIf] [-Confirm] [<CommonParameters>] 
 ``` 
-
-### DESCRIPTION 
 
 ### PARAMETERS 
 ```yaml 
  
+``` 
+```yaml 
+    -Confirm  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      cf  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -WhatIf  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      wi  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    <CommonParameters>  
+        This cmdlet supports the common parameters: Verbose, Debug,  
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 ``` 
 
 <br/><hr/><br/>
@@ -2372,18 +3020,42 @@ WriteJsonAtomic [-FilePath] <string> [-Data] <hashtable> [[-MaxRetries] <int>] [
    Set-LocationParent2                  --> ...  
 ``` 
 
-### SYNOPSIS 
-
 ### SYNTAX 
 ```PowerShell 
- 
+Set-LocationParent2 [-WhatIf] [-Confirm]
+    [<CommonParameters>] 
 ``` 
-
-### DESCRIPTION 
 
 ### PARAMETERS 
 ```yaml 
  
+``` 
+```yaml 
+    -Confirm  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      cf  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -WhatIf  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      wi  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    <CommonParameters>  
+        This cmdlet supports the common parameters: Verbose, Debug,  
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 ``` 
 
 <br/><hr/><br/>
@@ -2395,18 +3067,42 @@ WriteJsonAtomic [-FilePath] <string> [-Data] <hashtable> [[-MaxRetries] <int>] [
    Set-LocationParent3                  --> ....  
 ``` 
 
-### SYNOPSIS 
-
 ### SYNTAX 
 ```PowerShell 
- 
+Set-LocationParent3 [-WhatIf] [-Confirm]
+    [<CommonParameters>] 
 ``` 
-
-### DESCRIPTION 
 
 ### PARAMETERS 
 ```yaml 
  
+``` 
+```yaml 
+    -Confirm  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      cf  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -WhatIf  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      wi  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    <CommonParameters>  
+        This cmdlet supports the common parameters: Verbose, Debug,  
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 ``` 
 
 <br/><hr/><br/>
@@ -2418,18 +3114,42 @@ WriteJsonAtomic [-FilePath] <string> [-Data] <hashtable> [[-MaxRetries] <int>] [
    Set-LocationParent4                  --> .....  
 ``` 
 
-### SYNOPSIS 
-
 ### SYNTAX 
 ```PowerShell 
- 
+Set-LocationParent4 [-WhatIf] [-Confirm]
+    [<CommonParameters>] 
 ``` 
-
-### DESCRIPTION 
 
 ### PARAMETERS 
 ```yaml 
  
+``` 
+```yaml 
+    -Confirm  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      cf  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -WhatIf  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      wi  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    <CommonParameters>  
+        This cmdlet supports the common parameters: Verbose, Debug,  
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 ``` 
 
 <br/><hr/><br/>
@@ -2441,18 +3161,42 @@ WriteJsonAtomic [-FilePath] <string> [-Data] <hashtable> [[-MaxRetries] <int>] [
    Set-LocationParent5                  --> ......  
 ``` 
 
-### SYNOPSIS 
-
 ### SYNTAX 
 ```PowerShell 
- 
+Set-LocationParent5 [-WhatIf] [-Confirm]
+    [<CommonParameters>] 
 ``` 
-
-### DESCRIPTION 
 
 ### PARAMETERS 
 ```yaml 
  
+``` 
+```yaml 
+    -Confirm  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      cf  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    -WhatIf  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      wi  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
+``` 
+```yaml 
+    <CommonParameters>  
+        This cmdlet supports the common parameters: Verbose, Debug,  
+        ErrorAction, ErrorVariable, WarningAction, WarningVariable,  
+        OutBuffer, PipelineVariable, and OutVariable. For more information, see  
+        about_CommonParameters     (https://go.microsoft.com/fwlink/?LinkID=113216).   
 ``` 
 
 <br/><hr/><br/>
