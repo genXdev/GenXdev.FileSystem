@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Initialization.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.308.2025
+// Version                   : 2.1.2025
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -28,16 +28,15 @@ using static System.Net.Mime.MediaTypeNames;
 namespace GenXdev.FileSystem
 {
 
-    /// <summary>
-    /// Handles initialization for the FindItem cmdlet.
-    /// </summary>
     public partial class FindItem : PSGenXdevCmdlet
     {
         /// <summary>
-        /// set up parallelism based on user input or defaults
+        /// Sets up parallelism configuration based on user input or system defaults,
+        /// including thread pool sizing and dynamic worker scaling.
         /// </summary>
         private void InitializeParallelismConfiguration()
         {
+
             // determine actions
             matchingFileContent = Content != null && Content.Length > 0 && (
                 (Content.Any(c => c != ".*" && !SimpleMatch.ToBool()) ||
@@ -68,7 +67,9 @@ namespace GenXdev.FileSystem
                 if (!initialWorkerStarted)
                 {
                     return Math.Max(minDirectoryProcessors, Math.Min(
-                        DirQueue.Count + (DirQueue.Count > 0 ? 0 : Interlocked.Read(ref filesFound) > 0 ? 0 : UpwardsDirQueue.Count),
+                        DirQueue.Count + (DirQueue.Count > 0 ? 0 :
+                            Interlocked.Read(ref filesFound) > 0 ? 0 :
+                            UpwardsDirQueue.Count),
                         Math.Max(
                             baseTargetWorkerCount,
                             (int)Interlocked.Read(ref recommendedDirectoryWorkers)
@@ -80,7 +81,9 @@ namespace GenXdev.FileSystem
                 return Math.Max(minDirectoryProcessors,
                     buffersFull() ? 0 :
                     Math.Min(
-                        DirQueue.Count + (DirQueue.Count > 0 ? 0 : Interlocked.Read(ref filesFound) > 0 ? 0 : UpwardsDirQueue.Count),
+                        DirQueue.Count + (DirQueue.Count > 0 ? 0 :
+                            Interlocked.Read(ref filesFound) > 0 ? 0 :
+                            UpwardsDirQueue.Count),
                         Math.Max(
                             baseTargetWorkerCount,
                             (int)Interlocked.Read(ref recommendedDirectoryWorkers)
@@ -129,10 +132,13 @@ namespace GenXdev.FileSystem
             };
 
             // we will only temporarily change the thread pool size
-            ThreadPool.GetMaxThreads(out this.oldMaxWorkerThread, out this.oldMaxCompletionPorts);
+            ThreadPool.GetMaxThreads(out this.oldMaxWorkerThread,
+                out this.oldMaxCompletionPorts);
 
-            int workerThreads = Math.Max(1, Math.Max(this.oldMaxWorkerThread, maxDirectoryWorkersInParallel() * 2));
-            int completionPortThreads = Math.Max(1, Math.Max(this.oldMaxCompletionPorts, maxMatchWorkersInParallel()));
+            int workerThreads = Math.Max(1,
+                Math.Max(this.oldMaxWorkerThread, maxDirectoryWorkersInParallel() * 2));
+            int completionPortThreads = Math.Max(1,
+                Math.Max(this.oldMaxCompletionPorts, maxMatchWorkersInParallel()));
 
             // increase thread pool size if needed
             ThreadPool.SetMaxThreads(
@@ -147,15 +153,20 @@ namespace GenXdev.FileSystem
 
             if (UseVerboseOutput)
             {
-                VerboseQueue.Enqueue($"Max worker threads set to {workerThreads}, completion port threads set to {completionPortThreads}");
+                VerboseQueue.Enqueue(
+                    $"Max worker threads set to {workerThreads}, " +
+                    $"completion port threads set to {completionPortThreads}");
                 VerboseQueue.Enqueue($"Base target worker count: {baseTargetWorkerCount}");
                 VerboseQueue.Enqueue($"Using content matching: {matchingFileContent}");
                 if (matchingFileContent)
                 {
-                    VerboseQueue.Enqueue($"Max match workers in parallel: {maxMatchWorkersInParallel()}");
+                    VerboseQueue.Enqueue(
+                        $"Max match workers in parallel: {maxMatchWorkersInParallel()}");
                 }
-                VerboseQueue.Enqueue($"Max directory workers in parallel: {maxDirectoryWorkersInParallel()}");
-                VerboseQueue.Enqueue($"Throughput-based adaptive scaling enabled with 1000ms measurement intervals");
+                VerboseQueue.Enqueue(
+                    $"Max directory workers in parallel: {maxDirectoryWorkersInParallel()}");
+                VerboseQueue.Enqueue(
+                    $"Throughput-based adaptive scaling enabled with 1000ms measurement intervals");
             }
 
             // Initialize throughput-based recommendations with baseline values (thread-safe)
@@ -165,10 +176,12 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
-        ///  initialize provided names for searching
+        /// Initializes the search by processing provided name patterns and preparing
+        /// search directories, including support for multiple masks and upward searches.
         /// </summary>
         private void InitializeProvidedNames()
         {
+
             // process each unique search mask provided
             if (Name != null && Name.Length > 0)
             {
@@ -203,7 +216,8 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
-        /// Sets up cancellation token with optional timeout.
+        /// Sets up a cancellation token source with optional timeout configuration
+        /// to allow graceful termination of long-running search operations.
         /// </summary>
         protected void InitializeCancellationToken()
         {
@@ -230,7 +244,8 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
-        /// Configures buffering for pattern matching.
+        /// Configures memory buffering limits based on available system RAM to prevent
+        /// memory exhaustion during large file searches while maintaining performance.
         /// </summary>
         protected void InitializeBufferingConfiguration()
         {
@@ -260,12 +275,14 @@ namespace GenXdev.FileSystem
 
             if (UseVerboseOutput)
             {
-                VerboseQueue.Enqueue($"Base memory per worker set to {baseMemoryPerWorker / (1024 * 1024)} MB");
+                VerboseQueue.Enqueue(
+                    $"Base memory per worker set to {baseMemoryPerWorker / (1024 * 1024)} MB");
             }
         }
 
         /// <summary>
-        /// Resolves the relative base directory.
+        /// Resolves and normalizes the relative base directory path for search operations,
+        /// handling both absolute and relative path specifications.
         /// </summary>
         protected void InitializeRelativeBaseDir()
         {
@@ -306,10 +323,12 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
-        /// Sets the current directory safely.
+        /// Safely determines and validates the current working directory by querying
+        /// PowerShell's location, with fallback to user profile if invalid.
         /// </summary>
         protected void InitializeCurrentDirectory()
         {
+
             // get powershell location
             // Get current PowerShell location for base directory
             var psLocation = InvokeScript<string>("(Get-Location).Path");
@@ -377,7 +396,8 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
-        /// Sets up exclude patterns for wildcards.
+        /// Sets up wildcard patterns for excluding files and directories from the search,
+        /// with platform-aware case sensitivity and default exclusions.
         /// </summary>
         protected void InitializeExcludePatterns()
         {
@@ -406,12 +426,15 @@ namespace GenXdev.FileSystem
             // default git exclusion if none
             if (DirectoryExcludePatterns.Length == 0)
             {
-                DirectoryExcludePatterns = new WildcardPattern[1] { new WildcardPattern(EscapeBracketsInPattern("*\\.git"), CurrentWildCardOptions) };
+                DirectoryExcludePatterns = new WildcardPattern[1] {
+                    new WildcardPattern(EscapeBracketsInPattern("*\\.git"), CurrentWildCardOptions) };
             }
 
             if (UseVerboseOutput)
             {
-                VerboseQueue.Enqueue($"Using {FileExcludePatterns.Length} file exclude patterns and {DirectoryExcludePatterns.Length} directory exclude patterns.");
+                VerboseQueue.Enqueue(
+                    $"Using {FileExcludePatterns.Length} file exclude patterns and " +
+                    $"{DirectoryExcludePatterns.Length} directory exclude patterns.");
                 foreach (var pattern in Exclude)
                 {
                     VerboseQueue.Enqueue($" Exclude pattern: '{pattern}'");
@@ -424,13 +447,16 @@ namespace GenXdev.FileSystem
 
                 if (matchingFileContent && !IncludeNonTextFileMatching.ToBool())
                 {
-                    VerboseQueue.Enqueue($"Skipping non text file content based ono file-extensions, use -IncludeNonTextFileMatching to disable");
+                    VerboseQueue.Enqueue(
+                        $"Skipping non text file content based on file-extensions, " +
+                        $"use -IncludeNonTextFileMatching to disable");
                 }
             }
         }
 
         /// <summary>
-        /// Initializes wildcard matcher and deduplicates excludes.
+        /// Initializes the wildcard matching system by deduplicating exclude patterns
+        /// and preparing for efficient pattern matching operations.
         /// </summary>
         protected void InitializeWildcardMatcher()
         {
@@ -449,7 +475,8 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
-        /// Sets up visited nodes dictionary with appropriate comparer.
+        /// Sets up the visited nodes tracking dictionary with appropriate string comparer
+        /// based on case sensitivity settings to prevent duplicate processing.
         /// </summary>
         protected void InitializeVisitedNodes()
         {
@@ -474,7 +501,8 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
-        /// Initializes verbose output setting
+        /// Initializes the verbose output setting by checking both explicit -Verbose
+        /// switch and $VerbosePreference to determine logging level.
         /// </summary>
         protected void InitializeVerboseOutput()
         {
@@ -512,11 +540,14 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
-        /// Prepares search directory from mask.
+        /// Prepares a search directory from the provided name mask, handling path normalization,
+        /// upward searches, and multiple root configurations.
         /// </summary>
-        /// <param name="name">The search mask.</param>
+        /// <param name="name">The search mask to process.</param>
+        /// <param name="allowUpwardsSearch">Whether to enable upward directory searching.</param>
         protected void InitializeSearchDirectory(string name, bool allowUpwardsSearch)
         {
+
             // normalize separators
             // Normalize separators to backslashes for consistency
             name = name.Replace("/", "\\");
@@ -550,7 +581,10 @@ namespace GenXdev.FileSystem
             bool isRelative = !isRooted && !isUncPath && !normPath.StartsWith("~");
 
             // add it
-            if (UseVerboseOutput) { VerboseQueue.Enqueue($"Adding name: '{name}'"); }
+            if (UseVerboseOutput)
+            {
+                VerboseQueue.Enqueue($"Adding name: '{name}'");
+            }
 
             AddToSearchQueue(name);
 
@@ -565,7 +599,10 @@ namespace GenXdev.FileSystem
             {
                 foreach (string path in Root)
                 {
-                    if (UseVerboseOutput) { VerboseQueue.Enqueue($"Adding for path '{path}' with name: '{name}'"); }
+                    if (UseVerboseOutput)
+                    {
+                        VerboseQueue.Enqueue($"Adding for path '{path}' with name: '{name}'");
+                    }
                     AddToSearchQueue(Path.Combine(path, name));
                 }
             }
@@ -573,7 +610,10 @@ namespace GenXdev.FileSystem
             // Process search for each specified drive
             foreach (var root in GetRootsToSearch())
             {
-                if (UseVerboseOutput) { VerboseQueue.Enqueue($"Adding for root '{root}' with name: '{name}'"); }
+                if (UseVerboseOutput)
+                {
+                    VerboseQueue.Enqueue($"Adding for root '{root}' with name: '{name}'");
+                }
                 AddToSearchQueue(Path.Combine(root, name));
             }
         }

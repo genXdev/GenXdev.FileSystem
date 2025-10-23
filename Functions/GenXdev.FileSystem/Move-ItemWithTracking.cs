@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Move-ItemWithTracking.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.308.2025
+// Version                   : 2.1.2025
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -244,7 +244,7 @@ namespace GenXdev.FileSystem
         /// </summary>
         private bool IsGitAvailable()
         {
-            return InvokeScript<bool>("if (git.exe --version) { $true } else { $false }");
+            return InvokeScript<bool>("if (gcm git -erroraction SilentlyContinue) { $true } else { $false }");
         }
 
         /// <summary>
@@ -253,25 +253,20 @@ namespace GenXdev.FileSystem
         private bool IsGitRepository(string path)
         {
             string sourceDir = System.IO.Path.GetDirectoryName(path);
-            string originalDir = Directory.GetCurrentDirectory();
 
             try
             {
-                Directory.SetCurrentDirectory(sourceDir);
-
-                using (Process process = new Process())
-                {
-                    bool r = InvokeScript<string>("git.exe rev-parse --is-inside-work-tree").Trim() == "true";
-                    return process.ExitCode == 0 && r;
-                }
+                string script = $@"
+                param ($sourceDir)
+cd $sourceDir
+$result = git.exe rev-parse --is-inside-work-tree 2>$null
+$LASTEXITCODE -eq 0 -and $result.Trim() -eq 'true'
+";
+                return InvokeScript<bool>(script, sourceDir);
             }
             catch
             {
                 return false;
-            }
-            finally
-            {
-                Directory.SetCurrentDirectory(originalDir);
             }
         }
 
@@ -282,10 +277,10 @@ namespace GenXdev.FileSystem
         {
             try
             {
-                var script = ScriptBlock.Create("param($sourcePath, $destPath) git.exe mv -f $sourcePath $destPath");
-                script.Invoke(sourcePath, destPath);
-                return !System.IO.File.Exists(sourcePath) &&
-                    System.IO.File.Exists(destPath);
+                string script = "param($sourcePath, $destPath, $force) git.exe mv \"$(if ($force) { '-f' } else { '' })\" $sourcePath $destPath";
+                InvokeScript<string>(script, sourcePath, destPath, force);
+                return !System.IO.File.Exists(sourcePath) && !System.IO.Directory.Exists(sourcePath) &&
+                    (System.IO.File.Exists(destPath) || System.IO.Directory.Exists(destPath));
             }
             catch
             {

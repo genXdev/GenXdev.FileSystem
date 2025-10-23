@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Processing.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.308.2025
+// Version                   : 2.1.2025
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -32,8 +32,17 @@ namespace GenXdev.FileSystem
     public partial class FindItem : PSGenXdevCmdlet
     {
         /// <summary>
-        /// Processes search tasks until completion.
+        /// Processes search tasks until completion using a producer-consumer pattern.
         /// </summary>
+        /// <remarks>
+        /// This method implements the main search loop that coordinates between:
+        /// - Directory processing workers (consumers)
+        /// - Output and verbose message queues
+        /// - Progress tracking and cancellation handling
+        ///
+        /// The loop continues until all workers are complete and all queues are empty,
+        /// ensuring no results are lost during parallel processing.
+        /// </remarks>
         protected void ProcessSearchTasks()
         {
 
@@ -69,29 +78,32 @@ namespace GenXdev.FileSystem
                 }
             }
 
+            // Ensure all remaining queued items are processed after search completion
             EmptyQueues();
         }
 
         /// <summary>
         /// Worker task that processes directories from the work queue, performing
-        /// file and directory
-        /// enumeration according to search criteria.
+        /// file and directory enumeration according to search criteria.
         /// </summary>
         /// <remarks>
         /// The method implements a producer/consumer pattern where:
         /// - It consumes directories from the DirQueue
-        /// - It produces both files (OutputQueue) and subdirectories (back to
-        ///   DirQueue)
+        /// - It produces both files (OutputQueue) and subdirectories (back to DirQueue)
         ///
         /// The search logic handles:
-        /// - Complex path patterns with wildcards
-        /// - UNC and local paths differently
-        /// - Directory-only or file-only searches
-        /// - Pattern-based recursion
+        /// - Complex path patterns with wildcards (** for recursion)
+        /// - UNC and local paths with different enumeration strategies
+        /// - Directory-only, file-only, or combined searches
+        /// - Pattern-based recursion with configurable depth limits
+        /// - Dynamic worker scaling based on system load
+        /// - Upward searching for relative path patterns
+        ///
+        /// Error handling includes specific catches for access denied and I/O errors,
+        /// with verbose logging for troubleshooting.
         /// </remarks>
         /// <param name="token">Cancellation token to support stopping the search
         /// operation</param>
-
         protected void DirectoryProcessor(CancellationToken token)
         {
 
@@ -403,8 +415,20 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
-        /// Gets parameters for current workload.
+        /// Gets parameters for current workload, parsing path patterns and determining
+        /// enumeration settings.
         /// </summary>
+        /// <remarks>
+        /// This method analyzes the provided location string to extract:
+        /// - Current directory location for enumeration
+        /// - File name patterns with wildcards
+        /// - Recursion settings based on ** patterns
+        /// - UNC path detection and machine name extraction
+        /// - Long path prefix handling
+        ///
+        /// The method coordinates with EnsureFullProvidedLocationAndNamePart and
+        /// AdvanceNamePartToNextSearchLocation to fully parse complex paths.
+        /// </remarks>
         /// <param name="ProvidedLocation">The provided location string.</param>
         /// <param name="CurrentRecursionDepth">Outputs the current recursion
         /// depth.</param>
@@ -544,27 +568,29 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
-        /// Empties all queues and handles output.
+        /// Empties all queues and handles output processing.
         /// </summary>
+        /// <remarks>
+        /// This method processes all pending items in the output queues:
+        /// - VerboseQueue: Writes verbose messages to the host
+        /// - OutputQueue: Writes search results to the pipeline
+        /// - Triggers worker task scaling based on current load
+        /// - Updates progress status for user feedback
+        ///
+        /// Called repeatedly during the main search loop to ensure timely
+        /// processing of results and prevent queue overflow.
+        /// </remarks>
         private void EmptyQueues()
         {
-            // process verbose queue for messages
-
-            bool hadOutput = false;
-
             // dequeue and write verbose messages
             while (VerboseQueue.TryDequeue(out string msg))
             {
-                hadOutput = true;
-
                 WriteVerbose(msg);
             }
 
             // dequeue and write output
             while (OutputQueue.TryDequeue(out object result))
             {
-                hadOutput = true;
-
                 WriteObject(result);
             }
 
@@ -578,6 +604,19 @@ namespace GenXdev.FileSystem
         /// Ensures full provided location and name, handling prefixes and
         /// expansions.
         /// </summary>
+        /// <remarks>
+        /// This method normalizes and expands the input path by:
+        /// - Converting separators to backslashes
+        /// - Handling long path prefixes (\\?\)
+        /// - Expanding tilde (~) to user home directory
+        /// - Detecting and processing UNC paths
+        /// - Resolving relative paths to absolute
+        /// - Handling drive-relative paths
+        /// - Adding default wildcards for directory paths
+        ///
+        /// The method modifies the ProvidedLocation in place and outputs
+        /// path characteristics for further processing.
+        /// </remarks>
         /// <param name="ProvidedLocation">The provided location, passed by
         /// reference.</param>
         /// <param name="HasLongPathPrefix">Outputs if has long path
@@ -816,8 +855,16 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
-        /// Determines and strips recurse pattern.
+        /// Determines and strips recurse pattern from path components.
         /// </summary>
+        /// <remarks>
+        /// This method identifies and removes recursive patterns (**)
+        /// from file name masks. It handles nested recursive patterns
+        /// by iteratively stripping them until no more are found.
+        ///
+        /// The method modifies the RemainingNamePart and CurrentFileName
+        /// by reference to prepare them for further processing.
+        /// </remarks>
         /// <param name="RemainingNamePart">Remaining namePart by
         /// ref.</param>
         /// <param name="CurrentFileName">Current filename by
@@ -877,8 +924,18 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
-        /// Advances namePart to next search location.
+        /// Advances namePart to next search location based on wildcards.
         /// </summary>
+        /// <remarks>
+        /// This method coordinates the parsing of complex path patterns by:
+        /// - Determining the remaining wildcard portions of the path
+        /// - Extracting the current directory location for enumeration
+        /// - Setting up recursion flags based on pattern analysis
+        /// - Preparing file name masks for matching
+        ///
+        /// It delegates to DetermineRemainingNamePart and DetermineCurrentNamePart
+        /// for detailed parsing logic.
+        /// </remarks>
         /// <param name="ProvidedLocation">Provided location.</param>
         /// <param name="IsUncPath">If UNC path.</param>
         /// <param name="RecurseSubDirectories">Outputs recurse
@@ -928,8 +985,18 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
-        /// Determines remaining namePart.
+        /// Determines remaining namePart by separating fixed and wildcard portions.
         /// </summary>
+        /// <remarks>
+        /// This method splits the path into:
+        /// - CurrentLocation: The fixed directory path to enumerate
+        /// - RemainingNamePart: The wildcard portions for further processing
+        ///
+        /// It optimizes search start position by skipping non-wildcard directory
+        /// components, improving performance for deep path patterns.
+        ///
+        /// Handles both UNC and local paths with different root structures.
+        /// </remarks>
         /// <param name="ProvidedLocation">Provided location.</param>
         /// <param name="IsUncPath">If UNC path.</param>
         /// <param name="RemainingNamePart">Outputs remaining search
@@ -1033,8 +1100,18 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
-        /// Determines current namePart.
+        /// Determines current namePart and sets recursion flags.
         /// </summary>
+        /// <remarks>
+        /// This method extracts the current directory level's file pattern and
+        /// determines recursion behavior based on:
+        /// - Presence of ** recursive wildcards
+        /// - Remaining path components with wildcards
+        /// - NoRecurse parameter settings
+        ///
+        /// It modifies RemainingNamePart by reference to prepare for the next
+        /// iteration of path processing.
+        /// </remarks>
         /// <param name="RemainingNamePart">Remaining namePart by
         /// ref.</param>
         /// <param name="RemainingNameToRepeatWhenFound">Outputs repeat mask
@@ -1168,8 +1245,16 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
-        /// Checks if currentlocation + name already visited.
+        /// Checks if current location + name already visited to prevent duplicates.
         /// </summary>
+        /// <remarks>
+        /// This method maintains a thread-safe set of visited paths to avoid
+        /// redundant processing in recursive searches. It combines the current
+        /// location and file name pattern to create a unique key.
+        ///
+        /// Returns true if the path was already processed, with optional
+        /// verbose logging for debugging.
+        /// </remarks>
         /// <param name="CurrentLocation">Current location.</param>
         /// <param name="CurrentFileName">Current filename.</param>
         /// <param name="token">Cancellation token.</param>
@@ -1207,8 +1292,19 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
-        /// Enumerates directory files.
+        /// Enumerates directory files matching patterns and applying filters.
         /// </summary>
+        /// <remarks>
+        /// This method performs the core file enumeration with:
+        /// - Wildcard pattern matching
+        /// - Size and date filtering
+        /// - Alternate data stream handling
+        /// - Content-based searching queueing
+        /// - Thread-safe output queuing
+        ///
+        /// Handles both regular files and alternate data streams,
+        /// with comprehensive exclusion logic for performance.
+        /// </remarks>
         /// <param name="StartLocation">Start location.</param>
         /// <param name="CurrentFileName">Current filename.</param>
         /// <param name="HasLongPathPrefix">Has long path prefix.</param>
@@ -1395,7 +1491,7 @@ namespace GenXdev.FileSystem
                 // process alternate data streams if the switch is set
 
                 // if include or only ads
-                if (IncludeAlternateFileStreams.ToBool() || onlyAds)
+                if (IncludeAlternateFileStreams.ToBool() || SearchADSContent.ToBool() || onlyAds)
                 {
 
                     // get streams
@@ -1405,6 +1501,21 @@ namespace GenXdev.FileSystem
             }
         }
 
+        /// <summary>
+        /// Determines if a file should be excluded based on size, date, and pattern filters.
+        /// </summary>
+        /// <remarks>
+        /// This method applies multiple exclusion criteria:
+        /// - File size limits (MinFileSize/MaxFileSize)
+        /// - Modification date ranges (ModifiedAfter/ModifiedBefore)
+        /// - Pattern-based exclusions (FileExcludePatterns)
+        /// - Category-based filtering
+        ///
+        /// Returns true if the file should be skipped, with verbose logging
+        /// for each exclusion reason.
+        /// </remarks>
+        /// <param name="fileInfo">File information to check.</param>
+        /// <returns>True if file should be excluded.</returns>
         private bool ShouldFileBeExcluded(FileInfo fileInfo)
         {
             bool haveExclusion = false;
@@ -1514,8 +1625,18 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
-        /// Gets file alternate data streams.
+        /// Gets file alternate data streams using Windows API.
         /// </summary>
+        /// <remarks>
+        /// This method enumerates NTFS alternate data streams using:
+        /// - FindFirstStreamW/FindNextStreamW Windows API calls
+        /// - Pattern matching for stream names
+        /// - Content searching within streams if enabled
+        /// - Thread-safe output queuing
+        ///
+        /// Handles both regular ADS enumeration and content-based searching
+        /// within alternate streams.
+        /// </remarks>
         /// <param name="FilePath">File path.</param>
         /// <param name="token">Cancellation token.</param>
         /// <param name="StreamName">Stream name optional.</param>
@@ -1703,8 +1824,19 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
-        /// Processes file content for pattern matching.
+        /// Processes file content for pattern matching asynchronously.
         /// </summary>
+        /// <remarks>
+        /// This method performs content-based searching using:
+        /// - Asynchronous stream processing for performance
+        /// - Regex or simple pattern matching
+        /// - Configurable encoding and context display
+        /// - Thread-safe result queuing
+        /// - Memory-efficient processing with object pooling
+        ///
+        /// Handles both match and not-match modes, with special logic
+        /// for Quiet mode file-level inversion.
+        /// </remarks>
         /// <param name="fileInfo">File path to process.</param>
         /// <param name="token">Cancellation token.</param>
         protected async Task FileContentProcessor(
@@ -1756,6 +1888,9 @@ namespace GenXdev.FileSystem
                         break;
                     }
                 }
+
+                // Apply NotMatch inversion at file level for Quiet mode
+                found = NotMatch.ToBool() ? !selectString.HasMatched : selectString.HasMatched;
             }
             catch (Exception e)
             {
@@ -1794,8 +1929,19 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
-        /// Enumerates subdirectories matching patterns.
+        /// Enumerates subdirectories matching patterns and handles recursion.
         /// </summary>
+        /// <remarks>
+        /// This method manages subdirectory enumeration with:
+        /// - Pattern-based filtering of directory names
+        /// - Recursive pattern handling (**)
+        /// - UNC share enumeration for network paths
+        /// - Thread-safe directory queuing
+        /// - Dynamic worker scaling
+        ///
+        /// Supports both local directory enumeration and UNC network share
+        /// discovery, with comprehensive error handling.
+        /// </remarks>
         /// <param name="CurrentLocation">Location.</param>
         /// <param name="CurrentFileName">File mask.</param>
         /// <param name="RemainingNamePart">Remaining mask.</param>

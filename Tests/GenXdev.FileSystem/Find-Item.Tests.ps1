@@ -1,16 +1,16 @@
 Pester\Describe 'Find-Item 1' {
 
     Pester\BeforeAll {
-        $testRoot = GenXdev.FileSystem\Expand-Path ([System.IO.Path]::GetTempPath()+"\$([DateTime]::UtcNow.Ticks.ToString())\") -CreateDirectory
+        $testRoot = GenXdev.FileSystem\Expand-Path ([System.IO.Path]::GetTempPath() + "\$([DateTime]::UtcNow.Ticks.ToString())\") -CreateDirectory
         $testDir = Microsoft.PowerShell.Management\Join-Path $testRoot ([DateTime]::UtcNow.Ticks.ToString()) 'Find-Item-tests'
         $testDir = GenXdev.FileSystem\Expand-Path "$testDir\tests\" -CreateDirectory
         Microsoft.PowerShell.Management\Set-Content -LiteralPath "$testDir\test1.txt" -Value 'test content'
         Microsoft.PowerShell.Management\Set-Content -LiteralPath "$testDir\test2.txt" -Value 'different content'
         Microsoft.PowerShell.Management\New-Item -Path "$testDir\subdir" -ItemType Directory -ErrorAction SilentlyContinue
         Microsoft.PowerShell.Management\Set-Content -LiteralPath "$testDir\subdir\test3.txt" -Value 'test content'
-       $encodingTestDir = GenXdev.FileSystem\Expand-Path "$testRoot\encoding-tests\" -CreateDirectory
+        $encodingTestDir = GenXdev.FileSystem\Expand-Path "$testRoot\encoding-tests\" -CreateDirectory
 
-         # Find a free drive letter (start from Z downward)
+        # Find a free drive letter (start from Z downward)
         $usedDrives = (Microsoft.PowerShell.Management\Get-PSDrive -PSProvider FileSystem).Name
         $freeLetter = $null
         for ($i = [int][char]'Z'; $i -ge [int][char]'A'; $i--) {
@@ -45,7 +45,7 @@ Pester\Describe 'Find-Item 1' {
         # cleanup test folder
         GenXdev.FileSystem\Remove-AllItems $testRoot -DeleteFolder
 
-       # Remove the temporary drive
+        # Remove the temporary drive
         if ($freeLetter) {
             subst "$($freeLetter):" /D
         }
@@ -81,7 +81,7 @@ Pester\Describe 'Find-Item 1' {
 
     Pester\It 'Should work with wildcard in the holding directory' {
 
-        $pattern = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\Genx*\1*\functions\genxdev.*\*.ps1"
+        $pattern = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\Genx*\2*\functions\genxdev.*\*.ps1"
         $found = @(GenXdev.FileSystem\Find-Item -SearchMask $pattern)
 
         $found.Count | Pester\Should -GT 0
@@ -416,7 +416,7 @@ Pester\Describe 'Find-Item 1' {
 
     Pester\It 'Should match the pattern' {
 
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\1.308.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\2.1.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
 
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Expand-Path.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Start-RoboCopy.ps1")
@@ -437,7 +437,7 @@ Pester\Describe 'Find-Item 1' {
     Pester\It 'Should only show ADS when IncludeAlternateFileStreams is specified' {
         # Create a file with an alternate data stream
         $testFile = "$testDir\test-ads.txt"
-        'Main content' | Microsoft.PowerShell.Utility\Out-File  $testFile
+        'Main content' | Microsoft.PowerShell.Utility\Out-File $testFile
         'Stream content' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile -Stream 'test-stream'
 
         # Without the -IncludeAlternateFileStreams switch, only the base file should be returned
@@ -455,7 +455,7 @@ Pester\Describe 'Find-Item 1' {
     Pester\It 'Should find specific named streams when using streammask' {
         # Create a file with multiple alternate data streams
         $testFile = "$testDir\stream-test.txt"
-        'Main content' | Microsoft.PowerShell.Utility\Out-File  $testFile
+        'Main content' | Microsoft.PowerShell.Utility\Out-File $testFile
         'Stream1 content' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile -Stream 'stream1'
         'Stream2 content' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile -Stream 'stream2'
         'Zone content' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile -Stream 'Zone.Identifier'
@@ -483,7 +483,7 @@ Pester\Describe 'Find-Item 1' {
     Pester\It 'Should filter streams with pattern matching' {
         # Create a file with multiple alternate data streams with different content
         $testFile = "$testDir\pattern-stream.txt"
-        'Main content' | Microsoft.PowerShell.Utility\Out-File  $testFile
+        'Main content' | Microsoft.PowerShell.Utility\Out-File $testFile
         'Content with password123' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile -Stream 'secret'
         'Content with no match' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile -Stream 'normal'
 
@@ -495,6 +495,14 @@ Pester\Describe 'Find-Item 1' {
         # Verify no match returns empty
         $noMatch = @(GenXdev.FileSystem\Find-Item -SearchMask "${testFile}:*" -SearchADSContent -Content 'nonexistent' -Quiet)
         $noMatch.Count | Pester\Should -Be 0
+
+        # Verify no match returns normal files
+        $notMatch = @(GenXdev.FileSystem\Find-Item -SearchMask "${testFile}" -Content 'nonexistent' -Quiet -NotMatch)
+        $notMatch.Count | Pester\Should -BeGreaterThan 0
+
+        # Verify no match returns ads files
+        $notMatch = @(GenXdev.FileSystem\Find-Item -SearchMask "${testFile}:*" -SearchADSContent -Content 'nonexistent' -Quiet -NotMatch)
+        $notMatch.Count | Pester\Should -BeGreaterThan 0
     }
 
     Pester\It 'Finds files by name pattern' {
@@ -516,7 +524,7 @@ Pester\Describe 'Find-Item 1' {
 
     Pester\It 'Should work with wildcard in the holding directory' {
 
-        $pattern = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\Genx*\1*\functions\genxdev.*\*.ps1"
+        $pattern = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\Genx*\2*\functions\genxdev.*\*.ps1"
         $found = @(GenXdev.FileSystem\Find-Item -SearchMask $pattern)
 
         $found.Count | Pester\Should -GT 0
@@ -554,8 +562,8 @@ Pester\Describe 'Find-Item 1' {
         $testFile1 = "$testDir\wildcard1.dat"
         $testFile2 = "$testDir\wildcard2.dat"
 
-        'File1 content' | Microsoft.PowerShell.Utility\Out-File  $testFile1
-        'File2 content' | Microsoft.PowerShell.Utility\Out-File  $testFile2
+        'File1 content' | Microsoft.PowerShell.Utility\Out-File $testFile1
+        'File2 content' | Microsoft.PowerShell.Utility\Out-File $testFile2
 
         'Stream data 1' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile1 -Stream 'data'
         'Stream meta 1' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile1 -Stream 'meta'
@@ -565,7 +573,7 @@ Pester\Describe 'Find-Item 1' {
         $found1 = @(GenXdev.FileSystem\Find-Item -SearchMask "$testDir\wildcard*.dat:data")
         $found1.Count | Pester\Should -Be 2
         $found1 | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -LiteralPath $testFile1 -Relative)):data"
-        $found1 | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -LiteralPath  $testFile2 -Relative)):data"
+        $found1 | Pester\Should -Contain "$((Microsoft.PowerShell.Management\Resolve-Path -LiteralPath $testFile2 -Relative)):data"
 
         # Test wildcard file with wildcard stream
         $found2 = @(GenXdev.FileSystem\Find-Item -SearchMask "$testDir\wildcard1*:m*")
@@ -576,7 +584,7 @@ Pester\Describe 'Find-Item 1' {
     Pester\It 'Should correctly handle -ads flag vs explicit stream masks' {
         # Create a file with streams
         $testFile = "$testDir\ads-vs-mask.txt"
-        'Main content' | Microsoft.PowerShell.Utility\Out-File  $testFile
+        'Main content' | Microsoft.PowerShell.Utility\Out-File $testFile
         'Stream content' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile -Stream 'test1'
         'Another stream' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $testFile -Stream 'test2'
 
@@ -603,8 +611,8 @@ Pester\Describe 'Find-Item 1' {
         $file1 = "$subDir\file1.jpg"
         $file2 = "$subDir\file2.jpg"
 
-        'File1' | Microsoft.PowerShell.Utility\Out-File  $file1
-        'File2' | Microsoft.PowerShell.Utility\Out-File  $file2
+        'File1' | Microsoft.PowerShell.Utility\Out-File $file1
+        'File2' | Microsoft.PowerShell.Utility\Out-File $file2
 
         'Description 1' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $file1 -Stream 'description.json'
         'Description 2' | Microsoft.PowerShell.Management\Set-Content -LiteralPath $file2 -Stream 'description.json'
@@ -759,7 +767,7 @@ Pester\Describe 'Find-Item 1' {
         $testContent | Microsoft.PowerShell.Utility\Out-File $testFile -Force
 
         # Test with Context [2,3] - 2 lines before, 3 lines after
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -Content 'target' -Context 2,3 -NoRecurse)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -Content 'target' -Context 2, 3 -NoRecurse)
         $found.Count | Pester\Should -BeGreaterThan 0
 
         # Verify context lines are included in output
@@ -787,7 +795,7 @@ Pester\Describe 'Find-Item 1' {
         $testContent | Microsoft.PowerShell.Utility\Out-File $testFile -Force
 
         # Test with Context [2,0] - 2 lines before, 0 lines after
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -Content 'keyword' -Context 2,0 -NoRecurse)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -Content 'keyword' -Context 2, 0 -NoRecurse)
         $found.Count | Pester\Should -BeGreaterThan 0
 
         $contextOutput = $found -join "`n"
@@ -813,7 +821,7 @@ Pester\Describe 'Find-Item 1' {
         $testContent | Microsoft.PowerShell.Utility\Out-File $testFile -Force
 
         # Test with Context [0,3] - 0 lines before, 3 lines after
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -Content 'findme' -Context 0,3 -NoRecurse)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -Content 'findme' -Context 0, 3 -NoRecurse)
         $found.Count | Pester\Should -BeGreaterThan 0
 
         $contextOutput = $found -join "`n"
@@ -869,7 +877,7 @@ Pester\Describe 'Find-Item 1' {
         $foundNormal.Count | Pester\Should -BeGreaterThan 0
 
         # Test with Context parameter - should also work
-        $foundWithContext = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -Content 'special' -Context 1,1 -NoRecurse)
+        $foundWithContext = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -Content 'special' -Context 1, 1 -NoRecurse)
         $foundWithContext.Count | Pester\Should -BeGreaterThan 0
 
         # Both should find the same file
@@ -901,11 +909,11 @@ Pester\Describe 'Find-Item 1' {
         $testContent2 | Microsoft.PowerShell.Utility\Out-File $testFile2 -Force
 
         # Test match at beginning with context [2,2]
-        $foundBeginning = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile1 -Content 'target' -Context 2,2 -NoRecurse)
+        $foundBeginning = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile1 -Content 'target' -Context 2, 2 -NoRecurse)
         $foundBeginning.Count | Pester\Should -BeGreaterThan 0
 
         # Test match at end with context [2,2]
-        $foundEnd = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile2 -Content 'target' -Context 2,2 -NoRecurse)
+        $foundEnd = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile2 -Content 'target' -Context 2, 2 -NoRecurse)
         $foundEnd.Count | Pester\Should -BeGreaterThan 0
 
         # Both should succeed even with limited context available
@@ -931,7 +939,8 @@ Pester\Describe 'Find-Item 1' {
             $found = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -Content 'world' -Encoding 'BigEndianUTF32' -PassThru -Quiet)
             # If BigEndianUTF32 is supported, should find content; if not, should not crash
             $found.Count | Pester\Should -BeGreaterOrEqual 0
-        } catch {
+        }
+        catch {
             # If BigEndianUTF32 is not supported, skip this part
             Microsoft.PowerShell.Utility\Write-Host "BigEndianUTF32 encoding not fully supported: $($_.Exception.Message)"
         }
@@ -1091,7 +1100,8 @@ Pester\Describe 'Find-Item 1' {
                 $found = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -Content 'AAAA' -Encoding 'UTF32' -PassThru -Quiet)
             }
             $found.Count | Pester\Should -BeGreaterOrEqual 0  # Should not crash even if no match
-        } catch {
+        }
+        catch {
             # If UTF32 encoding fails completely, test basic functionality
             [System.IO.File]::WriteAllText($testFile, $expandingContent, [System.Text.UTF8Encoding]::new($false))
             $found = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -Content 'AAAAAAAAAA' -Encoding 'UTF8' -PassThru -Quiet)
@@ -1178,7 +1188,7 @@ Pester\Describe 'Find-Item 1' {
         [System.IO.File]::WriteAllLines($testFile, $testContent, [System.Text.UTF8Encoding]::new($false))
 
         # Test finding special characters with context
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -Content '测试' -Encoding 'UTF8' -Context 1,1 -NoRecurse)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -Content '测试' -Encoding 'UTF8' -Context 1, 1 -NoRecurse)
         $found.Count | Pester\Should -BeGreaterThan 0
 
         # Verify context includes the surrounding lines with special characters
@@ -1301,7 +1311,7 @@ Pester\Describe 'Find-Item 1' {
         @('Line 1: before', 'Line 2: contains target word', 'Line 3: after') -join "`n" | Microsoft.PowerShell.Utility\Out-File 'withpattern.txt'
 
         # Test -NotMatch with -Context to show context of non-matching files
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask '*.txt' -Content 'target' -NotMatch -Context 1,1 -NoRecurse)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask '*.txt' -Content 'target' -NotMatch -Context 1, 1 -NoRecurse)
         $found.Count | Pester\Should -BeGreaterThan 0
 
         # Should find the file without the pattern and show its content with context
@@ -1527,7 +1537,8 @@ Pester\Describe 'Find-Item 1' {
             $result = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -Content 'Simple' -SimpleMatch -Culture 'invalid-XX' -PassThru -Quiet)
             # Should not crash - if it gets here, the invalid culture was handled gracefully
             $result.Count | Pester\Should -BeGreaterOrEqual 0
-        } catch {
+        }
+        catch {
             # If it throws, the error should be informative
             $_.Exception.Message | Pester\Should -Match 'culture|Culture' -Because "Error should mention culture parameter"
         }
@@ -1617,7 +1628,7 @@ Pester\Describe 'Find-Item 1' {
         [System.IO.File]::WriteAllText($testFile, $testContent, [System.Text.UTF8Encoding]::new($false))
 
         # Test culture with context lines - use content that will actually match
-        $foundWithContext = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -Content 'istanbul' -SimpleMatch -Culture 'tr-TR' -Context 1,2 -NoRecurse)
+        $foundWithContext = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -Content 'istanbul' -SimpleMatch -Culture 'tr-TR' -Context 1, 2 -NoRecurse)
 
         # Should find matches (Turkish culture should find 'istanbul' in 'Istanbul city center')
         $foundWithContext.Count | Pester\Should -BeGreaterThan 0 -Because "Turkish culture with context should find content"
@@ -1674,7 +1685,8 @@ Pester\Describe 'Find-Item 1' {
             $foundInvalidCulture = @(GenXdev.FileSystem\Find-Item -SearchMask $testFile -Content 'ASCII' -SimpleMatch -Culture 'zz-ZZ' -PassThru -Quiet)
             # If it doesn't throw, it should still work or return empty
             $foundInvalidCulture.Count | Pester\Should -BeGreaterOrEqual 0
-        } catch {
+        }
+        catch {
             # If it throws, that's also acceptable behavior for invalid culture
             $_.Exception | Pester\Should -Not -BeNullOrEmpty
         }

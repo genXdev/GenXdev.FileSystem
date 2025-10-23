@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Cmdlet.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.308.2025
+// Version                   : 2.1.2025
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -909,7 +909,6 @@ namespace GenXdev.FileSystem
         /// <para type="description">Indicates that the cmdlet returns a simple response instead of a MatchInfo object. The returned value is $true if the pattern is found or $null if the pattern is not found.</para>
         /// </summary>
         [Parameter(Mandatory = false, ParameterSetName = "WithPattern", HelpMessage = "Indicates that the cmdlet returns a simple response instead of a MatchInfo object. The returned value is $true if the pattern is found or $null if the pattern is not found.")]
-        [Alias("NoMatchOutput")]
         public SwitchParameter Quiet { get; set; }
 
         /// <summary>

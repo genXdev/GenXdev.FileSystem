@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : PSGenXdevCmdlet.Preferences.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.308.2025
+// Version                   : 2.1.2025
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -30,6 +30,16 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
 {
     protected string GetGenXdevPreference(string Name, string DefaultValue, string PreferencesDatabasePath, bool SessionOnly, bool ClearSession, bool SkipSession)
     {
+        /// <summary>
+        /// Retrieves a GenXdev preference value by checking session storage first, then persistent stores.
+        /// </summary>
+        /// <param name="Name">The name of the preference to retrieve.</param>
+        /// <param name="DefaultValue">The default value to return if the preference is not found.</param>
+        /// <param name="PreferencesDatabasePath">Optional path to the preferences database.</param>
+        /// <param name="SessionOnly">If true, only check session storage.</param>
+        /// <param name="ClearSession">If true, clear the session preference.</param>
+        /// <param name="SkipSession">If true, skip checking session storage.</param>
+        /// <returns>The preference value or the default value if not found.</returns>
         string globalVariableName = "GenXdevPreference_" + Name;
 
         if (ClearSession)
@@ -52,7 +62,8 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
             var getVarScript = ScriptBlock.Create("param($VarName) Microsoft.PowerShell.Utility\\Get-Variable -Name $VarName -Scope Global -ValueOnly -ErrorAction SilentlyContinue");
             var globalResult = getVarScript.Invoke(globalVariableName);
 
-            if (globalResult.Count > 0 && globalResult[0] != null && !string.IsNullOrWhiteSpace(globalResult[0].ToString()))
+            if (globalResult.Count > 0 && globalResult[0] != null &&
+                !string.IsNullOrWhiteSpace(globalResult[0].ToString()))
             {
                 string value = globalResult[0].ToString();
                 WriteVerbose("Returning session value: " + value);
@@ -99,6 +110,15 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
 
     protected void SetGenXdevPreference(string Name, string Value, string PreferencesDatabasePath, bool SessionOnly, bool ClearSession, bool SkipSession)
     {
+        /// <summary>
+        /// Sets a GenXdev preference value in session or persistent storage.
+        /// </summary>
+        /// <param name="Name">The name of the preference to set.</param>
+        /// <param name="Value">The value to set for the preference.</param>
+        /// <param name="PreferencesDatabasePath">Optional path to the preferences database.</param>
+        /// <param name="SessionOnly">If true, only set in session storage.</param>
+        /// <param name="ClearSession">If true, clear the session preference.</param>
+        /// <param name="SkipSession">If true, skip session storage operations.</param>
         string globalVariableName = "GenXdevPreference_" + Name;
 
         if (ClearSession)
@@ -148,6 +168,15 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
 
     protected void RemoveGenXdevPreference(string Name, bool RemoveDefault, string PreferencesDatabasePath, bool SessionOnly, bool ClearSession, bool SkipSession)
     {
+        /// <summary>
+        /// Removes a GenXdev preference from session and/or persistent storage.
+        /// </summary>
+        /// <param name="Name">The name of the preference to remove.</param>
+        /// <param name="RemoveDefault">If true, also remove from default storage.</param>
+        /// <param name="PreferencesDatabasePath">Optional path to the preferences database.</param>
+        /// <param name="SessionOnly">If true, only remove from session storage.</param>
+        /// <param name="ClearSession">If true, clear the session preference.</param>
+        /// <param name="SkipSession">If true, skip session storage operations.</param>
         string globalVariableName = "GenXdevPreference_" + Name;
 
         PreferencesDatabasePath = GetPreferencesDatabasePath(PreferencesDatabasePath, SessionOnly, ClearSession, SkipSession);
@@ -199,6 +228,14 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
 
     protected string GetPreferencesDatabasePath(string PreferencesDatabasePath, bool SessionOnly, bool ClearSession, bool SkipSession)
     {
+        /// <summary>
+        /// Determines the path to the preferences database, checking provided path, session, or using defaults.
+        /// </summary>
+        /// <param name="PreferencesDatabasePath">Optional explicit path to the database.</param>
+        /// <param name="SessionOnly">If true, only consider session settings.</param>
+        /// <param name="ClearSession">If true, clear session database path.</param>
+        /// <param name="SkipSession">If true, skip session checks.</param>
+        /// <returns>The resolved database path.</returns>
         if (ClearSession)
         {
             if (ShouldProcess("GenXdev.Data Module Configuration", "Clear session database path setting (Global variable)"))
@@ -231,7 +268,8 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
             var getVarScript = ScriptBlock.Create("Microsoft.PowerShell.Utility\\Get-Variable -Name 'PreferencesDatabasePath' -Scope Global -ValueOnly -ErrorAction SilentlyContinue");
             var globalResult = getVarScript.Invoke();
 
-            if (globalResult.Count > 0 && globalResult[0] != null && !string.IsNullOrWhiteSpace(globalResult[0].ToString()))
+            if (globalResult.Count > 0 && globalResult[0] != null &&
+                !string.IsNullOrWhiteSpace(globalResult[0].ToString()))
             {
                 resolvedDatabasePath = ExpandPath(globalResult[0].ToString(), true);
                 WriteVerbose("Using session database path: " + resolvedDatabasePath);
@@ -255,6 +293,13 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
 
     protected void SetPreferencesDatabasePath(string PreferencesDatabasePath, bool SkipSession, bool SessionOnly, bool ClearSession)
     {
+        /// <summary>
+        /// Sets the path to the preferences database in session storage.
+        /// </summary>
+        /// <param name="PreferencesDatabasePath">The path to set for the database.</param>
+        /// <param name="SkipSession">If true, skip session operations.</param>
+        /// <param name="SessionOnly">If true, only affect session.</param>
+        /// <param name="ClearSession">If true, clear the session path.</param>
         if (ClearSession)
         {
             if (ShouldProcess("GenXdev.Data Module Configuration", "Clear session database path setting (Global variable)"))
@@ -288,6 +333,15 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
 
     protected void SetGenXdevDefaultPreference(string Name, string Value, string PreferencesDatabasePath, bool SessionOnly, bool ClearSession, bool SkipSession)
     {
+        /// <summary>
+        /// Sets a default preference value in the persistent defaults store.
+        /// </summary>
+        /// <param name="Name">The name of the default preference to set.</param>
+        /// <param name="Value">The default value to set.</param>
+        /// <param name="PreferencesDatabasePath">Optional path to the preferences database.</param>
+        /// <param name="SessionOnly">If true, only affect session.</param>
+        /// <param name="ClearSession">If true, clear session settings.</param>
+        /// <param name="SkipSession">If true, skip session operations.</param>
         PreferencesDatabasePath = GetPreferencesDatabasePath(PreferencesDatabasePath, SessionOnly, ClearSession, SkipSession);
 
         WriteVerbose("Using database path: " + PreferencesDatabasePath);
@@ -316,6 +370,14 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
 
     protected string[] GetGenXdevPreferenceNames(string PreferencesDatabasePath, bool SessionOnly, bool ClearSession, bool SkipSession)
     {
+        /// <summary>
+        /// Retrieves all available GenXdev preference names from session and persistent stores.
+        /// </summary>
+        /// <param name="PreferencesDatabasePath">Optional path to the preferences database.</param>
+        /// <param name="SessionOnly">If true, only check session storage.</param>
+        /// <param name="ClearSession">If true, clear session preferences.</param>
+        /// <param name="SkipSession">If true, skip session checks.</param>
+        /// <returns>An array of unique preference names.</returns>
         var allKeys = new System.Collections.Generic.List<string>();
 
         if (ClearSession)

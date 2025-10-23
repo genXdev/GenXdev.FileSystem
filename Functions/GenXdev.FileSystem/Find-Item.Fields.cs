@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Fields.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.308.2025
+// Version                   : 2.1.2025
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -33,40 +33,62 @@ namespace GenXdev.FileSystem
     public partial class FindItem : PSGenXdevCmdlet
     {
 
-        // current wildcard options for matching
+        /// <summary>
+        /// Current wildcard options for matching file and directory names.
+        /// </summary>
         protected WildcardOptions CurrentWildCardOptions;
 
-        // patterns to exclude files
+        /// <summary>
+        /// Patterns to exclude files from the search results.
+        /// </summary>
         protected WildcardPattern[] FileExcludePatterns;
 
-        // patterns to exclude directories
+        /// <summary>
+        /// Patterns to exclude directories from the search traversal.
+        /// </summary>
         protected WildcardPattern[] DirectoryExcludePatterns;
 
-        // Tracks visited paths to prevent duplicate processing and avoid infinite
-        // loops during traversal
+        /// <summary>
+        /// Tracks visited paths to prevent duplicate processing and avoid infinite
+        /// loops during traversal.
+        /// </summary>
         protected ConcurrentDictionary<string, bool> VisitedNodes;
 
-        // Stores the current working directory for resolving relative paths
+        /// <summary>
+        /// Stores the current working directory for resolving relative paths.
+        /// </summary>
         protected string CurrentDirectory = "";
 
-        // Indicates if the cmdlet is running in unattended mode, which affects how
-        // output is formatted
+        /// <summary>
+        /// Indicates if the cmdlet is running in unattended mode, which affects how
+        /// output is formatted.
+        /// </summary>
         protected bool UnattendedMode = false;
 
-        // Regex to detect recursive search patterns like **
+        /// <summary>
+        /// Regex to detect recursive search patterns like **.
+        /// </summary>
         protected Regex RecursePatternMatcher = new Regex("^\\*\\*\\**$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-        // Regex to detect recursive patterns ending with a slash
+        /// <summary>
+        /// Regex to detect recursive patterns ending with a slash.
+        /// </summary>
         protected Regex RecursePatternWithSlashAtEndMatcher = new Regex("^\\*\\*\\**\\\\$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-        // Regex to detect recursive patterns starting with **
+        /// <summary>
+        /// Regex to detect recursive patterns starting with **.
+        /// </summary>
         protected Regex RecurseStartPatternWithSlashMatcher = new Regex("^\\*\\*\\**\\\\", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-        // Regex to detect recursive patterns ending with **
+        /// <summary>
+        /// Regex to detect recursive patterns ending with **.
+        /// </summary>
         protected Regex RecurseEndPatternWithSlashAtStartMatcher = new Regex("\\\\\\*\\*\\**$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-        // Set of file extensions to skip during content search to avoid processing
-        // non-text files
+        /// <summary>
+        /// Set of file extensions to skip during content search to avoid processing
+        /// non-text files.
+        /// </summary>
         protected static HashSet<string> ExtensionsToSkip = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
         // Image formats (expanded with more common and specialized types)
         ".gif", ".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".tif", ".webp",
@@ -169,85 +191,259 @@ namespace GenXdev.FileSystem
          * directory processing
          * and coordinated output handling.
          */
+        /// <summary>
+        /// Queue for directories to be processed in parallel.
+        /// </summary>
         protected readonly ConcurrentQueue<string> DirQueue = new();
+
+        /// <summary>
+        /// Dictionary for tracking upward directory traversal.
+        /// </summary>
         protected readonly ConcurrentDictionary<string, int> UpwardsDirQueue = new();
+
+        /// <summary>
+        /// Queue for output objects to be written to the pipeline.
+        /// </summary>
         protected readonly ConcurrentQueue<object> OutputQueue = new();
+
+        /// <summary>
+        /// Queue for verbose messages to be displayed.
+        /// </summary>
         protected readonly ConcurrentQueue<string> VerboseQueue = new();
+
+        /// <summary>
+        /// Queue for files that match content search criteria.
+        /// </summary>
         protected readonly ConcurrentQueue<FileInfo> FileContentMatchQueue = new();
+
+        /// <summary>
+        /// Queue for content match processors.
+        /// </summary>
         private readonly ConcurrentQueue<MatchContentProcessor> MatchContentProcessors = new();
 
+        /// <summary>
+        /// List of worker tasks for parallel processing.
+        /// </summary>
         protected readonly List<Task> Workers = new List<Task>();
+
+        /// <summary>
+        /// Lock object for synchronizing access to the workers list.
+        /// </summary>
         protected readonly object WorkersLock = new object();
+
+        /// <summary>
+        /// String builder for constructing status messages.
+        /// </summary>
         protected readonly StringBuilder statusBuilder = new StringBuilder(256);
 
-
-        // Cancellation source to handle timeouts and user interruptions gracefully
+        /// <summary>
+        /// Cancellation source to handle timeouts and user interruptions gracefully.
+        /// </summary>
         protected CancellationTokenSource cts;
 
-        // only show progress after at least 2 seconds of search activity
+        /// <summary>
+        /// Timestamp for last progress display, delayed by 2 seconds from start.
+        /// </summary>
         protected long lastProgress = DateTime.UtcNow.AddSeconds(2).ToBinary();
 
-        // Counters for tracking progress: number of files found and directories
-        // queued
+        /// <summary>
+        /// Counters for tracking progress: number of files found and directories queued.
+        /// </summary>
         protected long directoryProcessors;
+
+        /// <summary>
+        /// Counter for match processors.
+        /// </summary>
         protected long matchProcessors;
+
+        /// <summary>
+        /// Counter for total files found.
+        /// </summary>
         protected long filesFound;
+
+        /// <summary>
+        /// Counter for active file content matches.
+        /// </summary>
         protected long fileMatchesActive;
+
+        /// <summary>
+        /// Counter for started file content matches.
+        /// </summary>
         protected long fileMatchesStarted;
+
+        /// <summary>
+        /// Counter for completed file content matches.
+        /// </summary>
         protected long fileMatchesCompleted;
+
+        /// <summary>
+        /// Counter for directories queued for processing.
+        /// </summary>
         protected long dirsQueued;
+
+        /// <summary>
+        /// Counter for matches queued.
+        /// </summary>
         protected long matchesQueued;
+
+        /// <summary>
+        /// Counter for directories completed.
+        /// </summary>
         protected long dirsCompleted;
 
-        // Throughput measurement fields for adaptive scaling (thread-safe)
+        /// <summary>
+        /// Throughput measurement fields for adaptive scaling (thread-safe).
+        /// </summary>
         protected long lastThroughputMeasurement = DateTime.UtcNow.Ticks;
-        protected long lastDirsCompleted = 0;
-        protected long lastMatchesCompleted = 0;
-        protected long lastOutputCount = 0;
-        protected long currentDirThroughputx100 = 0;    // directories/second * 100 (for precision)
-        protected long currentMatchThroughputx100 = 0;  // matches/second * 100 (for precision)
-        protected long currentOutputThroughputx100 = 0; // outputs/second * 100 (for precision)
-        protected long recommendedDirectoryWorkers = 0;
-        protected long recommendedMatchWorkers = 0;
-        protected readonly object throughputLock = new object(); // Lock for measurement updates
 
-        // Store original thread pool settings to restore after cmdlet execution
+        /// <summary>
+        /// Last count of directories completed for throughput calculation.
+        /// </summary>
+        protected long lastDirsCompleted = 0;
+
+        /// <summary>
+        /// Last count of matches completed for throughput calculation.
+        /// </summary>
+        protected long lastMatchesCompleted = 0;
+
+        /// <summary>
+        /// Last count of output items for throughput calculation.
+        /// </summary>
+        protected long lastOutputCount = 0;
+
+        /// <summary>
+        /// Current directory processing throughput (directories/second * 100 for precision).
+        /// </summary>
+        protected long currentDirThroughputx100 = 0;
+
+        /// <summary>
+        /// Current match processing throughput (matches/second * 100 for precision).
+        /// </summary>
+        protected long currentMatchThroughputx100 = 0;
+
+        /// <summary>
+        /// Current output throughput (outputs/second * 100 for precision).
+        /// </summary>
+        protected long currentOutputThroughputx100 = 0;
+
+        /// <summary>
+        /// Recommended number of directory workers based on throughput.
+        /// </summary>
+        protected long recommendedDirectoryWorkers = 0;
+
+        /// <summary>
+        /// Recommended number of match workers based on throughput.
+        /// </summary>
+        protected long recommendedMatchWorkers = 0;
+
+        /// <summary>
+        /// Lock for measurement updates to ensure thread safety.
+        /// </summary>
+        protected readonly object throughputLock = new object();
+
+        /// <summary>
+        /// Store original thread pool settings to restore after cmdlet execution.
+        /// </summary>
         protected int oldMaxWorkerThread;
+
+        /// <summary>
+        /// Original completion ports setting.
+        /// </summary>
         protected int oldMaxCompletionPorts;
 
-        // constraints for workers
+        /// <summary>
+        /// Base memory allocation per worker thread.
+        /// </summary>
         protected int baseMemoryPerWorker;
+
+        /// <summary>
+        /// Base target number of worker threads.
+        /// </summary>
         protected int baseTargetWorkerCount;
+
+        /// <summary>
+        /// Function to check if processing buffers are full.
+        /// </summary>
         protected Func<bool> buffersFull;
+
+        /// <summary>
+        /// Function to get maximum directory workers in parallel.
+        /// </summary>
         protected Func<int> maxDirectoryWorkersInParallel;
+
+        /// <summary>
+        /// Function to get maximum match workers in parallel.
+        /// </summary>
         protected Func<int> maxMatchWorkersInParallel;
 
+        /// <summary>
+        /// Original maximum worker threads setting.
+        /// </summary>
         protected int oldMaxWorkerThreads;
+
+        /// <summary>
+        /// Flag indicating if the cmdlet has started processing.
+        /// </summary>
         protected bool isStarted;
+
+        /// <summary>
+        /// Start time of the cmdlet execution.
+        /// </summary>
         protected DateTime startTime = DateTime.UtcNow;
+
+        /// <summary>
+        /// Flag indicating if the cmdlet has received input.
+        /// </summary>
         protected bool hadInput;
+
+        /// <summary>
+        /// Flag indicating if content matching is enabled.
+        /// </summary>
         protected bool matchingFileContent;
+
+        /// <summary>
+        /// Flag indicating if the initial worker has been started.
+        /// </summary>
         protected bool initialWorkerStarted;
 
         /// <summary>
-        /// Flag for enabling verbose output based on user preferences
+        /// Flag for enabling verbose output based on user preferences.
         /// </summary>
         protected bool UseVerboseOutput;
 
+        /// <summary>
+        /// Windows API function to find the first stream in a file.
+        /// </summary>
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         protected static extern IntPtr FindFirstStreamW(string lpFileName, uint dwStreamInfoLevel, ref WIN32_FIND_STREAM_DATA lpFindStreamData, uint dwFlags);
 
+        /// <summary>
+        /// Windows API function to find the next stream in a file.
+        /// </summary>
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         protected static extern bool FindNextStreamW(IntPtr hFindStream, ref WIN32_FIND_STREAM_DATA lpFindStreamData);
 
+        /// <summary>
+        /// Windows API function to close a find stream handle.
+        /// </summary>
         [DllImport("kernel32.dll", SetLastError = true)]
         protected static extern bool FindClose(IntPtr hFindFile);
 
+        /// <summary>
+        /// Structure for Windows find stream data.
+        /// </summary>
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         protected struct WIN32_FIND_STREAM_DATA
         {
 
+            /// <summary>
+            /// Size of the stream in bytes.
+            /// </summary>
             public long StreamSize;
+
+            /// <summary>
+            /// Name of the stream.
+            /// </summary>
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 296)]
             public string StreamName;
         }

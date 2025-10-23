@@ -125,7 +125,7 @@ Update-Module
 | Command | Aliases | Description |
 | :--- | :--- | :--- |
 | [Confirm-InstallationConsent](#confirm-installationconsent) | &nbsp; | &nbsp; |
-| [Copy-IdenticalParamValues](#copy-identicalparamvalues) | &nbsp; | &nbsp; |
+| [Copy-IdenticalParamValues](#copy-identicalparamvalues) | &nbsp; | Copies parameter values from bound parameters to a new hashtable based on another function's possible parameters. |
 | [EnsurePester](#ensurepester) | &nbsp; | &nbsp; |
 | [Expand-Path](#expand-path) | ep | Expands any given file reference to a full pathname. |
 | [Find-DuplicateFiles](#find-duplicatefiles) | fdf | Find duplicate files across multiple directories based on configurable criteria. |
@@ -2730,7 +2730,7 @@ Find-Item [[-Name] <string[]>] [[-Content] <string[]>]
         Position?                    Named  
         Accept pipeline input?       false  
         Parameter set name           WithPattern  
-        Aliases                      NoMatchOutput  
+        Aliases                      None  
         Dynamic?                     false  
         Accept wildcard characters?  false  
 ``` 

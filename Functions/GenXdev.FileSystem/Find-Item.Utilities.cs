@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Utilities.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.308.2025
+// Version                   : 2.1.2025
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -47,6 +47,7 @@ namespace GenXdev.FileSystem
         /// </summary>
         private void MeasureThroughputAndAdjustWorkers()
         {
+
             // Early exit if not enough time has passed (thread-safe read)
             long now = DateTime.UtcNow.Ticks;
             long lastMeasurement = Interlocked.Read(ref lastThroughputMeasurement);
@@ -111,6 +112,7 @@ namespace GenXdev.FileSystem
         /// </summary>
         private void CalculateRecommendedWorkerCounts(long dirsDelta, long matchesDelta, double secondsElapsed)
         {
+
             bool started = this.isStarted &&
                 (DateTime.UtcNow - this.startTime).TotalSeconds > 10;
 
@@ -217,6 +219,7 @@ namespace GenXdev.FileSystem
         /// <returns>Array of share names.</returns>
         public static string[] ListDiskSharesUNC(string machineName)
         {
+
             // attempt to query remote machine shares via WMI
             try
             {
@@ -241,6 +244,7 @@ namespace GenXdev.FileSystem
                 // iterate through each share to filter disk shares
                 foreach (ManagementObject share in shares)
                 {
+
                     // extract share type value (bitmask indicating share type)
                     uint typeValue = Convert.ToUInt32(share["Type"]);
 
@@ -263,6 +267,7 @@ namespace GenXdev.FileSystem
             }
             catch
             {
+
                 // silently handle connection/permission failures
                 // network issues or access denied return empty results
             }
@@ -277,6 +282,7 @@ namespace GenXdev.FileSystem
         /// <param name="path">The path to enqueue.</param>
         protected void AddToSearchQueue(string path)
         {
+
             if (UseVerboseOutput) { VerboseQueue.Enqueue($"AddToSearchQueue: '{path}'"); }
 
             // add to directory queue
@@ -298,6 +304,7 @@ namespace GenXdev.FileSystem
         /// <returns>Enumerable of drives.</returns>
         protected IEnumerable<string> GetRootsToSearch()
         {
+
             // handle -AllDrives parameter which searches all available drives
             if (this.AllDrives.ToBool())
             {
@@ -345,6 +352,7 @@ namespace GenXdev.FileSystem
         /// </summary>
         protected void AddWorkerTasksIfNeeded(CancellationToken ctx)
         {
+
             // exit if operation is being cancelled
             if (ctx.IsCancellationRequested) return;
 
@@ -416,6 +424,7 @@ namespace GenXdev.FileSystem
         /// </summary>
         protected void AddWorkerTask(List<Task> workers, bool contentMatcher, CancellationToken ctx)
         {
+
             // log worker creation if verbose output enabled
             if (UseVerboseOutput)
             {
@@ -525,6 +534,7 @@ namespace GenXdev.FileSystem
         /// <returns>True if all completed.</returns>
         protected bool AllWorkersCompleted()
         {
+
             // use lock to ensure thread-safe access to workers list
             // prevents race conditions when checking completion status
             lock (WorkersLock)
@@ -547,6 +557,7 @@ namespace GenXdev.FileSystem
         /// <param name="CurrentRecursionLimit">Output parameter: maximum allowed depth with path-specific offsets</param>
         void GetCurrentDepthParameters(string CurrentLocation, bool IsUncPath, out int CurrentRecursionDepth, out int CurrentRecursionLimit)
         {
+
             // calculate relative path from the base search directory
             // this gives us the path components below our starting point
             var relativePath = Path.GetRelativePath(RelativeBasePath, CurrentLocation);
@@ -945,6 +956,11 @@ namespace GenXdev.FileSystem
         /// Optimizes position computation by avoiding repeated culture setup.
         /// </summary>
         private readonly Func<string, string, int, int> indexOfFunc;
+
+        /// <summary>
+        /// Indicates whether any line in the file matched the pattern.
+        /// </summary>
+        public bool HasMatched { get; set; } = false;
         /// <summary>
         /// Reusable byte buffer pool for file reading operations to reduce memory allocations.
         /// Buffers are shared across all MatchContentProcessor instances for efficiency.
@@ -1138,6 +1154,7 @@ namespace GenXdev.FileSystem
             bool useTracking = !noEmphasis && !quiet;
             ContextTracker contextTracker = useTracking ? new ContextTracker(preContext, postContext) : null;
             ulong lineNumber = 0;
+            HasMatched = false;
 
             // open file with specified encoding for reading
             await using var stream = file.OpenRead();
@@ -1700,6 +1717,7 @@ namespace GenXdev.FileSystem
                 // find all matches in the line when requested
                 if (regExPattern.IsMatch(subject))
                 {
+                    HasMatched = true;
                     return true ^ notMatch;
                 }
             }
@@ -1736,6 +1754,7 @@ namespace GenXdev.FileSystem
                     var coll = regExPattern.Matches(subject);
                     if (coll.Count > 0)
                     {
+                        HasMatched = true;
                         found = new Match[coll.Count];
                         coll.CopyTo(found, 0);
                         success = true;
@@ -1756,6 +1775,7 @@ namespace GenXdev.FileSystem
                     var m = regExPattern.Match(subject);
                     if (m.Success)
                     {
+                        HasMatched = true;
                         found = new[] { m };
                         success = true;
                         if (!this.notMatch)

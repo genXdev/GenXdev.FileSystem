@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : PSGenXdevCmdlet.KeyValueStore.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 1.308.2025
+// Version                   : 2.1.2025
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -28,10 +28,46 @@ using Microsoft.PowerShell.Commands;
 
 public abstract partial class PSGenXdevCmdlet : PSCmdlet
 {
-    protected string[] GetKeyValueStoreNames(string SynchronizationKey = "%", string DatabasePath = null)
+    /// <summary>
+    /// <para type="synopsis">
+    /// Provides key-value store functionality for PowerShell cmdlets in the GenXdev framework.
+    /// </para>
+    ///
+    /// <para type="description">
+    /// This partial class extends the base PSGenXdevCmdlet to include methods for managing
+    /// persistent key-value stores. It supports local storage and synchronization across
+    /// devices via OneDrive. Stores are organized by synchronization keys and store names,
+    /// with automatic conflict resolution based on timestamps.
+    /// </para>
+    ///
+    /// <para type="description">
+    /// Key features include:
+    /// - Persistent storage of key-value pairs with metadata (last modified, user, deletion status)
+    /// - Synchronization across devices using OneDrive shadow copies
+    /// - Automatic initialization of store directories
+    /// - Thread-safe operations with atomic writes
+    /// - Support for wildcard queries and store enumeration
+    /// </para>
+    /// </summary>
+
+    /// <summary>
+    /// Retrieves an array of store names matching the specified synchronization key pattern.
+    /// </summary>
+    /// <param name="SynchronizationKey">
+    /// The synchronization key pattern to filter stores. Use "%" for all stores,
+    /// "Local" for local-only stores, or a specific key for synchronized stores.
+    /// </param>
+    /// <param name="DatabasePath">
+    /// Optional custom path for the key-value store database. If not provided,
+    /// uses the default GenXdev application data path.
+    /// </param>
+    /// <returns>An array of unique store names matching the synchronization key pattern.</returns>
+    protected string[] GetKeyValueStoreNames(string SynchronizationKey = "%",
+        string DatabasePath = null)
     {
         // Determine base path
-        string basePath = string.IsNullOrWhiteSpace(DatabasePath) ? GetGenXdevAppDataPath("KeyValueStore") : DatabasePath;
+        string basePath = string.IsNullOrWhiteSpace(DatabasePath) ?
+            GetGenXdevAppDataPath("KeyValueStore") : DatabasePath;
 
         WriteVerbose($"Using KeyValueStore directory: {basePath}");
 
@@ -73,7 +109,8 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
         foreach (var fileName in jsonFiles)
         {
             // Filename format: SyncKey_StoreName.json
-            var match = System.Text.RegularExpressions.Regex.Match(fileName, @"^(.+?)_(.+?)\.json$");
+            var match = System.Text.RegularExpressions.Regex.Match(fileName,
+                @"^(.+?)_(.+?)\.json$");
             if (match.Success)
             {
                 // Extract the synchronization key from the filename
@@ -98,7 +135,21 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
         return storeNames.Keys.OrderBy(name => name).ToArray();
     }
 
-    protected string GetKeyValueStorePath(string SynchronizationKey, string StoreName, string BasePath = null)
+    /// <summary>
+    /// Constructs the full file path for a key-value store based on synchronization key and store name.
+    /// </summary>
+    /// <param name="SynchronizationKey">
+    /// The synchronization key for the store (e.g., "Local", "Global").
+    /// </param>
+    /// <param name="StoreName">
+    /// The name of the key-value store.
+    /// </param>
+    /// <param name="BasePath">
+    /// Optional base path for the store. If not provided, uses the default GenXdev app data path.
+    /// </param>
+    /// <returns>The full file path to the JSON store file.</returns>
+    protected string GetKeyValueStorePath(string SynchronizationKey, string StoreName,
+        string BasePath = null)
     {
         // Use default path if not provided
         if (string.IsNullOrWhiteSpace(BasePath))
@@ -106,13 +157,16 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
             BasePath = GetGenXdevAppDataPath("KeyValueStore");
         }
 
-        WriteVerbose($"Constructing store file path for store '{StoreName}' with sync key '{SynchronizationKey}'");
+        WriteVerbose($"Constructing store file path for store '{StoreName}' with sync key " +
+            $"'{SynchronizationKey}'");
 
         // Sanitize the sync key to remove invalid filename characters
-        string safeSyncKey = System.Text.RegularExpressions.Regex.Replace(SynchronizationKey, @"[\\/:*?""<>|]", "_");
+        string safeSyncKey = System.Text.RegularExpressions.Regex.Replace(SynchronizationKey,
+            @"[\\/:*?""<>|]", "_");
 
         // Sanitize the store name to remove invalid filename characters
-        string safeStoreName = System.Text.RegularExpressions.Regex.Replace(StoreName, @"[\\/:*?""<>|]", "_");
+        string safeStoreName = System.Text.RegularExpressions.Regex.Replace(StoreName,
+            @"[\\/:*?""<>|]", "_");
 
         // Construct the filename by combining safe sync key and store name
         string filename = $"{safeSyncKey}_{safeStoreName}.json";
@@ -121,10 +175,26 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
         return System.IO.Path.Combine(BasePath, filename);
     }
 
-    protected string[] GetStoreKeys(string StoreName, string SynchronizationKey = "%", string DatabasePath = null)
+    /// <summary>
+    /// Retrieves all active (non-deleted) keys from a key-value store.
+    /// </summary>
+    /// <param name="StoreName">
+    /// The name of the key-value store to query.
+    /// </param>
+    /// <param name="SynchronizationKey">
+    /// The synchronization key. Use "%" to search all stores with the given name,
+    /// "Local" for local-only, or a specific key for synchronized stores.
+    /// </param>
+    /// <param name="DatabasePath">
+    /// Optional custom database path. Uses default if not specified.
+    /// </param>
+    /// <returns>An array of active key names in the store.</returns>
+    protected string[] GetStoreKeys(string StoreName, string SynchronizationKey = "%",
+        string DatabasePath = null)
     {
         // Determine base path
-        string basePath = string.IsNullOrWhiteSpace(DatabasePath) ? GetGenXdevAppDataPath("KeyValueStore") : DatabasePath;
+        string basePath = string.IsNullOrWhiteSpace(DatabasePath) ?
+            GetGenXdevAppDataPath("KeyValueStore") : DatabasePath;
 
         WriteVerbose($"Using KeyValueStore directory: {basePath}");
 
@@ -147,7 +217,8 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
         if (SynchronizationKey == "%")
         {
             // Handle wildcard synchronization key - search all matching files
-            string safeStoreName = System.Text.RegularExpressions.Regex.Replace(StoreName, @"[\\/:*?""<>|]", "_");
+            string safeStoreName = System.Text.RegularExpressions.Regex.Replace(StoreName,
+                @"[\\/:*?""<>|]", "_");
             string filePattern = $"*{safeStoreName}.json";
 
             WriteVerbose($"Searching for files matching pattern: {filePattern}");
@@ -226,10 +297,32 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
         return keys.ToArray();
     }
 
-    protected object GetValueByKeyFromStore(string StoreName, string KeyName, string DefaultValue = null, string SynchronizationKey = "Local", string DatabasePath = null)
+    /// <summary>
+    /// Retrieves the value associated with a specific key from a key-value store.
+    /// </summary>
+    /// <param name="StoreName">
+    /// The name of the key-value store.
+    /// </param>
+    /// <param name="KeyName">
+    /// The key whose value to retrieve.
+    /// </param>
+    /// <param name="DefaultValue">
+    /// The default value to return if the key is not found or is deleted.
+    /// </param>
+    /// <param name="SynchronizationKey">
+    /// The synchronization key for the store. Defaults to "Local".
+    /// </param>
+    /// <param name="DatabasePath">
+    /// Optional custom database path.
+    /// </param>
+    /// <returns>The value associated with the key, or the default value if not found.</returns>
+    protected object GetValueByKeyFromStore(string StoreName, string KeyName,
+        string DefaultValue = null, string SynchronizationKey = "Local",
+        string DatabasePath = null)
     {
         // Determine base path
-        string basePath = string.IsNullOrWhiteSpace(DatabasePath) ? GetGenXdevAppDataPath("KeyValueStore") : DatabasePath;
+        string basePath = string.IsNullOrWhiteSpace(DatabasePath) ?
+            GetGenXdevAppDataPath("KeyValueStore") : DatabasePath;
 
         WriteVerbose($"Using KeyValueStore directory: {basePath}");
 
@@ -273,7 +366,8 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
                     // Return the value from the entry
                     return hashtable["value"];
                 }
-            } else if (entry is Hashtable hashtable2)
+            }
+            else if (entry is Hashtable hashtable2)
             {
                 // Return the value from the entry
                 return hashtable2["value"];
@@ -293,10 +387,17 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
         return DefaultValue;
     }
 
+    /// <summary>
+    /// Initializes the key-value store directory structure, including OneDrive synchronization paths.
+    /// </summary>
+    /// <param name="DatabasePath">
+    /// Optional custom database path. Uses default if not specified.
+    /// </param>
     protected void InitializeKeyValueStores(string DatabasePath = null)
     {
         // Determine base path using provided path or default
-        string basePath = string.IsNullOrWhiteSpace(DatabasePath) ? GetGenXdevAppDataPath("KeyValueStore") : DatabasePath;
+        string basePath = string.IsNullOrWhiteSpace(DatabasePath) ?
+            GetGenXdevAppDataPath("KeyValueStore") : DatabasePath;
 
         // Expand the base path using ExpandPath
         basePath = ExpandPath(basePath);
@@ -336,10 +437,27 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
         }
     }
 
-    protected void RemoveKeyFromStore(string StoreName, string KeyName, string SynchronizationKey = "Local", string DatabasePath = null)
+    /// <summary>
+    /// Removes a key from a key-value store by marking it as deleted.
+    /// </summary>
+    /// <param name="StoreName">
+    /// The name of the key-value store.
+    /// </param>
+    /// <param name="KeyName">
+    /// The key to remove.
+    /// </param>
+    /// <param name="SynchronizationKey">
+    /// The synchronization key for the store. Defaults to "Local".
+    /// </param>
+    /// <param name="DatabasePath">
+    /// Optional custom database path.
+    /// </param>
+    protected void RemoveKeyFromStore(string StoreName, string KeyName,
+        string SynchronizationKey = "Local", string DatabasePath = null)
     {
         // Determine base path
-        string basePath = string.IsNullOrWhiteSpace(DatabasePath) ? GetGenXdevAppDataPath("KeyValueStore") : DatabasePath;
+        string basePath = string.IsNullOrWhiteSpace(DatabasePath) ?
+            GetGenXdevAppDataPath("KeyValueStore") : DatabasePath;
 
         WriteVerbose($"Using KeyValueStore directory: {basePath}");
 
@@ -407,10 +525,24 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
         }
     }
 
-    protected void RemoveKeyValueStore(string StoreName, string SynchronizationKey = "Local", string DatabasePath = null)
+    /// <summary>
+    /// Removes an entire key-value store.
+    /// </summary>
+    /// <param name="StoreName">
+    /// The name of the store to remove.
+    /// </param>
+    /// <param name="SynchronizationKey">
+    /// The synchronization key. Defaults to "Local".
+    /// </param>
+    /// <param name="DatabasePath">
+    /// Optional custom database path.
+    /// </param>
+    protected void RemoveKeyValueStore(string StoreName, string SynchronizationKey = "Local",
+        string DatabasePath = null)
     {
         // Determine base path
-        string basePath = string.IsNullOrWhiteSpace(DatabasePath) ? GetGenXdevAppDataPath("KeyValueStore") : DatabasePath;
+        string basePath = string.IsNullOrWhiteSpace(DatabasePath) ?
+            GetGenXdevAppDataPath("KeyValueStore") : DatabasePath;
 
         WriteVerbose($"Using KeyValueStore directory: {basePath}");
 
@@ -478,10 +610,30 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
         }
     }
 
-    protected void SetValueByKeyInStore(string StoreName, string KeyName, string Value, string SynchronizationKey = "Local", string DatabasePath = null)
+    /// <summary>
+    /// Sets or updates a value for a specific key in a key-value store.
+    /// </summary>
+    /// <param name="StoreName">
+    /// The name of the key-value store.
+    /// </param>
+    /// <param name="KeyName">
+    /// The key to set or update.
+    /// </param>
+    /// <param name="Value">
+    /// The value to store.
+    /// </param>
+    /// <param name="SynchronizationKey">
+    /// The synchronization key. Defaults to "Local".
+    /// </param>
+    /// <param name="DatabasePath">
+    /// Optional custom database path.
+    /// </param>
+    protected void SetValueByKeyInStore(string StoreName, string KeyName, string Value,
+        string SynchronizationKey = "Local", string DatabasePath = null)
     {
         // Determine base path
-        string basePath = string.IsNullOrWhiteSpace(DatabasePath) ? GetGenXdevAppDataPath("KeyValueStore") : DatabasePath;
+        string basePath = string.IsNullOrWhiteSpace(DatabasePath) ?
+            GetGenXdevAppDataPath("KeyValueStore") : DatabasePath;
 
         WriteVerbose("Using KeyValueStore directory: " + basePath);
 
@@ -527,10 +679,21 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
         }
     }
 
-    protected void SyncKeyValueStore(string SynchronizationKey = "Local", string DatabasePath = null)
+    /// <summary>
+    /// Synchronizes key-value stores between local and OneDrive shadow directories.
+    /// </summary>
+    /// <param name="SynchronizationKey">
+    /// The synchronization key to sync. "Local" skips synchronization.
+    /// </param>
+    /// <param name="DatabasePath">
+    /// Optional custom database path.
+    /// </param>
+    protected void SyncKeyValueStore(string SynchronizationKey = "Local",
+        string DatabasePath = null)
     {
         // Determine base path
-        string basePath = string.IsNullOrWhiteSpace(DatabasePath) ? GetGenXdevAppDataPath("KeyValueStore") : DatabasePath;
+        string basePath = string.IsNullOrWhiteSpace(DatabasePath) ?
+            GetGenXdevAppDataPath("KeyValueStore") : DatabasePath;
 
         // Construct path to onedrive shadow directory for synchronization
         string shadowPath = ExpandPath(@"~\OneDrive\GenXdev.PowerShell.SyncObjects\KeyValueStore");
@@ -557,7 +720,8 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
         }
 
         // Get all JSON files from both directories matching the sync key pattern
-        string safeSyncKey = System.Text.RegularExpressions.Regex.Replace(SynchronizationKey, @"[\\/:*?""<>|]", "_");
+        string safeSyncKey = System.Text.RegularExpressions.Regex.Replace(SynchronizationKey,
+            @"[\\/:*?""<>|]", "_");
         string filePattern = $"{safeSyncKey}_*.json";
 
         WriteVerbose("Syncing files matching pattern: " + filePattern);
@@ -618,14 +782,16 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
                 DateTime? shadowDeletedDate = null;
                 if (shadowEntry is Hashtable shadHashtable)
                 {
-                    if (shadHashtable.ContainsKey("deletedDate") && shadHashtable["deletedDate"] is DateTime shaddeletedDate)
+                    if (shadHashtable.ContainsKey("deletedDate") &&
+                        shadHashtable["deletedDate"] is DateTime shaddeletedDate)
                     {
                         shadowDeletedDate = shaddeletedDate;
                     }
                     else
                     {
                         DateTime d;
-                        if (DateTime.TryParse((string)shadHashtable["deletedDate"], System.Globalization.CultureInfo.InvariantCulture, out d))
+                        if (DateTime.TryParse((string)shadHashtable["deletedDate"],
+                            System.Globalization.CultureInfo.InvariantCulture, out d))
                         {
                             shadowDeletedDate = d;
                         }
@@ -639,14 +805,16 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
                     DateTime? localDeletedDate = null;
                     if (localEntry is Hashtable locHashtable)
                     {
-                        if (locHashtable.ContainsKey("deletedDate") && locHashtable["deletedDate"] is DateTime locdeletedDate)
+                        if (locHashtable.ContainsKey("deletedDate") &&
+                            locHashtable["deletedDate"] is DateTime locdeletedDate)
                         {
                             localDeletedDate = locdeletedDate;
                         }
                         else
                         {
                             DateTime d;
-                            if (DateTime.TryParse((string)locHashtable["deletedDate"], System.Globalization.CultureInfo.InvariantCulture, out d))
+                            if (DateTime.TryParse((string)locHashtable["deletedDate"],
+                                System.Globalization.CultureInfo.InvariantCulture, out d))
                             {
                                 localDeletedDate = d;
                             }
@@ -665,7 +833,10 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
                         // Handle both string and DateTime types for lastModified
                         if (localHashtable["lastModified"] is string localTimeStr)
                         {
-                            localTime = DateTime.Parse(localTimeStr, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal);
+                            localTime = DateTime.Parse(localTimeStr,
+                                System.Globalization.CultureInfo.InvariantCulture,
+                                System.Globalization.DateTimeStyles.AssumeUniversal |
+                                System.Globalization.DateTimeStyles.AdjustToUniversal);
                         }
                         else if (localHashtable["lastModified"] is DateTime localDateTime)
                         {
@@ -680,7 +851,10 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
 
                         if (shadowHashtable["lastModified"] is string shadowTimeStr)
                         {
-                            shadowTime = DateTime.Parse(shadowTimeStr, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal);
+                            shadowTime = DateTime.Parse(shadowTimeStr,
+                                System.Globalization.CultureInfo.InvariantCulture,
+                                System.Globalization.DateTimeStyles.AssumeUniversal |
+                                System.Globalization.DateTimeStyles.AdjustToUniversal);
                         }
                         else if (shadowHashtable["lastModified"] is DateTime shadowDateTime)
                         {
@@ -693,8 +867,12 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
                             continue;
                         }
 
-                        localTime = !localDeletedDate.HasValue ? localTime : DateTime.FromBinary(Math.Max(localTime.ToBinary(), localDeletedDate.Value.ToBinary()));
-                        shadowTime = !shadowDeletedDate.HasValue ? shadowTime : DateTime.FromBinary(Math.Max(shadowTime.ToBinary(), shadowDeletedDate.Value.ToBinary()));
+                        localTime = !localDeletedDate.HasValue ? localTime :
+                            DateTime.FromBinary(Math.Max(localTime.ToBinary(),
+                            localDeletedDate.Value.ToBinary()));
+                        shadowTime = !shadowDeletedDate.HasValue ? shadowTime :
+                            DateTime.FromBinary(Math.Max(shadowTime.ToBinary(),
+                            shadowDeletedDate.Value.ToBinary()));
 
                         // Keep newer version
                         if (shadowTime > localTime)
