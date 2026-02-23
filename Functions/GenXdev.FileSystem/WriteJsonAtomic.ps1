@@ -2,7 +2,7 @@
 Part of PowerShell module : GenXdev.FileSystem
 Original cmdlet filename  : WriteJsonAtomic.ps1
 Original author           : René Vaessen / GenXdev
-Version                   : 2.1.2025
+Version                   : 2.3.2026
 ################################################################################
 Copyright (c)  René Vaessen / GenXdev
 
@@ -102,7 +102,7 @@ function WriteJsonAtomic {
             try {
                 # write json content to temporary file
                 $jsonContent = $Data | Microsoft.PowerShell.Utility\ConvertTo-Json `
-                    -Depth 10 `
+                    -Depth 30 `
                     -Compress:$false
 
                 [System.IO.File]::WriteAllText($tmpFile, $jsonContent, `

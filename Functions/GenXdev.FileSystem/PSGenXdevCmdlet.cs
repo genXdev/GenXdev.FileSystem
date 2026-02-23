@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : PSGenXdevCmdlet.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 2.1.2025
+// Version                   : 2.3.2026
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -25,11 +25,8 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Management.Automation;
-using System.Net;
-using Microsoft.PowerShell.Commands;
 using System.Text.Json;
 using System.Text;
-using System.IO;
 
 /// <summary>
 /// <para type="synopsis">

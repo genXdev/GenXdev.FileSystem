@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : PSGenXdevCmdlet.Utilities.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 2.1.2025
+// Version                   : 2.3.2026
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -21,14 +21,10 @@
 
 
 
-using System.Collections;
-using System.Collections.Concurrent;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Management;
 using System.Management.Automation;
 using System.Runtime.InteropServices;
-using Microsoft.PowerShell.Commands;
 
 public abstract partial class PSGenXdevCmdlet : PSCmdlet
 {
@@ -197,4 +193,6 @@ public abstract partial class PSGenXdevCmdlet : PSCmdlet
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool GlobalMemoryStatusEx(out MEMORYSTATUSEX lpBuffer);
     }
+
+
 }

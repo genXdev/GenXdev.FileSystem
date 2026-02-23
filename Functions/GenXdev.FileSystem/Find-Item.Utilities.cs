@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Utilities.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 2.1.2025
+// Version                   : 2.3.2026
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -22,16 +22,11 @@
 
 
 using Microsoft.PowerShell.Commands;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using System.Management;
 using System.Management.Automation;
 using System.Management.Automation.Host;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -529,6 +524,27 @@ namespace GenXdev.FileSystem
         }
 
         /// <summary>
+        /// Checks if a path is within allowed roots when LimitToRoot is enabled
+        /// </summary>
+        private bool IsPathAllowed(string path)
+        {
+            if (!LimitToRoot.ToBool() || allowedRootPaths == null) return true;
+
+            var normalizedPath = Path.GetFullPath(path).TrimEnd('\\');
+
+            return allowedRootPaths.Any(root =>
+                normalizedPath.StartsWith(root + "\\",
+                    CaseNameMatching == MatchCasing.CaseSensitive
+                        ? StringComparison.Ordinal
+                        : StringComparison.OrdinalIgnoreCase) ||
+                normalizedPath.Equals(root,
+                    CaseNameMatching == MatchCasing.CaseSensitive
+                        ? StringComparison.Ordinal
+                        : StringComparison.OrdinalIgnoreCase)
+            );
+        }
+
+        /// <summary>
         /// Checks if all workers are completed.
         /// </summary>
         /// <returns>True if all completed.</returns>
@@ -734,6 +750,23 @@ namespace GenXdev.FileSystem
                 // determine item type for appropriate handling
                 bool isFile = item is FileInfo;
                 bool isDirectory = item is DirectoryInfo;
+
+                // Validate path against allowed roots when LimitToRoot is enabled
+                if ((isFile || isDirectory) && LimitToRoot.ToBool())
+                {
+                    string fullPath = isFile
+                        ? ((FileInfo)item).FullName
+                        : ((DirectoryInfo)item).FullName;
+
+                    if (!IsPathAllowed(fullPath))
+                    {
+                        if (UseVerboseOutput)
+                        {
+                            VerboseQueue.Enqueue($"LimitToRoot: Blocked output '{fullPath}'");
+                        }
+                        return; // Skip this item
+                    }
+                }
 
                 // increment counters for found items
                 if (isFile || isDirectory)

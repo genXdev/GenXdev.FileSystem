@@ -2312,9 +2312,10 @@ Find-Item [[-Name] <string[]>] [[-RelativeBasePath]
     [-IncludeAlternateFileStreams] [-NoRecurse]
     [-FollowSymlinkAndJunctions] [-IncludeOpticalDiskDrives]
     [-SearchDrives <string[]>] [-DriveLetter <char[]>]
-    [-Root <string[]>] [-IncludeNonTextFileMatching]
-    [-NoLinks] [-CaseNameMatching {PlatformDefault |
-    CaseSensitive | CaseInsensitive}] [-SearchADSContent]
+    [-Root <string[]>] [-LimitToRoot]
+    [-IncludeNonTextFileMatching] [-NoLinks]
+    [-CaseNameMatching {PlatformDefault | CaseSensitive |
+    CaseInsensitive}] [-SearchADSContent]
     [-MaxRecursionDepth <int>] [-MaxSearchUpDepth <int>]
     [-MaxFileSize <long>] [-MinFileSize <long>]
     [-ModifiedAfter <datetime>] [-ModifiedBefore <datetime>]
@@ -2338,9 +2339,10 @@ Find-Item [[-Name] <string[]>] [[-Content] <string[]>]
     [-PassThru] [-IncludeAlternateFileStreams] [-NoRecurse]
     [-FollowSymlinkAndJunctions] [-IncludeOpticalDiskDrives]
     [-SearchDrives <string[]>] [-DriveLetter <char[]>]
-    [-Root <string[]>] [-IncludeNonTextFileMatching]
-    [-NoLinks] [-CaseNameMatching {PlatformDefault |
-    CaseSensitive | CaseInsensitive}] [-SearchADSContent]
+    [-Root <string[]>] [-LimitToRoot]
+    [-IncludeNonTextFileMatching] [-NoLinks]
+    [-CaseNameMatching {PlatformDefault | CaseSensitive |
+    CaseInsensitive}] [-SearchADSContent]
     [-MaxRecursionDepth <int>] [-MaxSearchUpDepth <int>]
     [-MaxFileSize <long>] [-MinFileSize <long>]
     [-ModifiedAfter <datetime>] [-ModifiedBefore <datetime>]
@@ -2568,6 +2570,17 @@ Find-Item [[-Name] <string[]>] [[-Content] <string[]>]
         Aliases                      FullName  
         Dynamic?                     false  
         Accept wildcard characters?  true  
+``` 
+```yaml 
+    -LimitToRoot  
+        Enforces searching only within Root directories by stripping directory components from Name inputs  
+        Required?                    false  
+        Position?                    Named  
+        Accept pipeline input?       false  
+        Parameter set name           (All)  
+        Aliases                      limit  
+        Dynamic?                     false  
+        Accept wildcard characters?  false  
 ``` 
 ```yaml 
     -List  

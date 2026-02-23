@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Cmdlet.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 2.1.2025
+// Version                   : 2.3.2026
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -23,11 +23,7 @@
 
 using Microsoft.PowerShell.Commands;
 using System.Collections;
-using System.IO;
 using System.Management.Automation;
-using System.Text.RegularExpressions;
-using System.Xml.Linq;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace GenXdev.FileSystem
 {
@@ -166,6 +162,12 @@ namespace GenXdev.FileSystem
     /// -Root &lt;String[]&gt;<br/>
     /// Optional: search specific base folders combined with provided Names<br/>
     /// - <b>Default</b>: Empty array<br/>
+    /// </para>
+
+    /// <para type="description">
+    /// -LimitToRoot &lt;SwitchParameter&gt;<br/>
+    /// Enforces searching only within Root directories by stripping directory components from Name inputs, preventing absolute or relative path escapes<br/>
+    /// - <b>Aliases</b>: limit<br/>
     /// </para>
 
     /// <para type="description">
@@ -755,6 +757,13 @@ namespace GenXdev.FileSystem
         public string[] Root { get; set; } = Array.Empty<string>();
 
         /// <summary>
+        /// <para type="description">Enforces searching only within Root directories by stripping directory components from Name inputs, preventing absolute or relative path escapes</para>
+        /// </summary>
+        [Parameter(Mandatory = false, HelpMessage = "Enforces searching only within Root directories by stripping directory components from Name inputs")]
+        [Alias("limit")]
+        public SwitchParameter LimitToRoot { get; set; }
+
+        /// <summary>
         /// <para type="description">Include non-text files (binaries, images, etc.)
         /// when searching file contents</para>
         /// </summary>
@@ -953,6 +962,9 @@ namespace GenXdev.FileSystem
             // resolve base path for relative output
             InitializeRelativeBaseDir();
 
+            // initialize LimitToRoot allowed paths
+            InitializeLimitToRoot();
+
             // set up cancellation with optional timeout
             InitializeCancellationToken();
 
@@ -1026,6 +1038,17 @@ namespace GenXdev.FileSystem
                 if (VisitedNodes.TryAdd("start;" + namePart, true))
                 {
                     string name = namePart;
+
+                    // Strip directory components when LimitToRoot is enabled
+                    if (LimitToRoot.ToBool())
+                    {
+                        name = Path.GetFileName(name.Replace("/", "\\"));
+                        if (UseVerboseOutput)
+                        {
+                            VerboseQueue.Enqueue($"LimitToRoot: Pipeline input stripped to '{name}'");
+                        }
+                    }
+
                     bool hasLongPathPrefix;
                     bool isUncPath;
                     string UncMachineNameToEnumerate;
@@ -1052,11 +1075,11 @@ namespace GenXdev.FileSystem
                     InitializeSearchDirectory(name, false);
                 }
                 else
-                if (UseVerboseOutput)
-                {
-                    // log skipping duplicate mask
-                    WriteWarning($"Skipping duplicate name: {namePart}");
-                }
+                    if (UseVerboseOutput)
+                    {
+                        // log skipping duplicate mask
+                        WriteWarning($"Skipping duplicate name: {namePart}");
+                    }
             }
 
             return true;

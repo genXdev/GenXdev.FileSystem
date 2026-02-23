@@ -416,7 +416,7 @@ Pester\Describe 'Find-Item 1' {
 
     Pester\It 'Should match the pattern' {
 
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\2.1.2025\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\2.3.2026\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
 
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Expand-Path.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Start-RoboCopy.ps1")
@@ -747,6 +747,108 @@ Pester\Describe 'Find-Item 1' {
         $files.Count | Pester\Should -BeGreaterThan 0
         $files.Name | Pester\Should -Contain 'file1.txt'  # From -Root $testDir
         $files.Name | Pester\Should -Contain 'tempFile.txt'  # From temp drive (via multiple params)
+    }
+
+    Pester\It 'LimitToRoot prevents directory traversal attacks with ..\..\' {
+        # Setup: Create a restricted root directory and a file outside it
+        $restrictedRoot = GenXdev.FileSystem\Expand-Path "$testRoot\restricted-zone\" -CreateDirectory
+        $outsideRoot = GenXdev.FileSystem\Expand-Path "$testRoot\outside-zone\" -CreateDirectory
+
+        # Create target file inside restricted zone
+        'restricted content' | Microsoft.PowerShell.Utility\Out-File "$restrictedRoot\allowed.txt" -Force
+        # Create file outside restricted zone that attacker might try to reach
+        'secret content' | Microsoft.PowerShell.Utility\Out-File "$outsideRoot\secret.txt" -Force
+
+        # Test 1: Attempt to escape with ..\..\
+        $result1 = @(GenXdev.FileSystem\Find-Item -Name '..\..\outside-zone\secret.txt' -Root $restrictedRoot -LimitToRoot -PassThru -NoRecurse)
+        # Should strip directory parts and only search for 'secret.txt' in $restrictedRoot
+        $result1.Count | Pester\Should -Be 0 -Because "File doesn't exist in restricted root, path traversal blocked"
+
+        # Test 2: Attempt absolute path escape
+        $absolutePath = "$outsideRoot\secret.txt"
+        $result2 = @(GenXdev.FileSystem\Find-Item -Name $absolutePath -Root $restrictedRoot -LimitToRoot -PassThru -NoRecurse)
+        $result2.Count | Pester\Should -Be 0 -Because "Absolute paths stripped to filename only"
+
+        # Test 3: Attempt with multiple ..\ patterns
+        $result3 = @(GenXdev.FileSystem\Find-Item -Name '..\..\..\..\..\outside-zone\secret.txt' -Root $restrictedRoot -LimitToRoot -PassThru -NoRecurse)
+        $result3.Count | Pester\Should -Be 0 -Because "Multiple directory traversals blocked"
+
+        # Test 4: Mixed pattern like subdir\..\..\escape.txt
+        $result4 = @(GenXdev.FileSystem\Find-Item -Name 'subdir\..\..\outside-zone\secret.txt' -Root $restrictedRoot -LimitToRoot -PassThru -NoRecurse)
+        $result4.Count | Pester\Should -Be 0 -Because "Mixed directory traversal blocked"
+
+        # Test 5: UNC path attempt (if not on network, will just strip to filename)
+        $result5 = @(GenXdev.FileSystem\Find-Item -Name '\\server\share\secret.txt' -Root $restrictedRoot -LimitToRoot -PassThru -NoRecurse)
+        $result5.Count | Pester\Should -Be 0 -Because "UNC paths stripped to filename only"
+
+        # Test 6: Forward slash variant
+        $result6 = @(GenXdev.FileSystem\Find-Item -Name '../../outside-zone/secret.txt' -Root $restrictedRoot -LimitToRoot -PassThru -NoRecurse)
+        $result6.Count | Pester\Should -Be 0 -Because "Forward slash directory traversal blocked"
+
+        # Test 7: Positive case - can still find legitimate files in Root
+        $result7 = @(GenXdev.FileSystem\Find-Item -Name 'allowed.txt' -Root $restrictedRoot -LimitToRoot -PassThru -NoRecurse)
+        $result7.Count | Pester\Should -Be 1 -Because "Legitimate files in Root should be found"
+        $result7[0].Name | Pester\Should -Be 'allowed.txt'
+
+        # Test 8: Even with path in Name, only searches in Root when LimitToRoot is set
+        $result8 = @(GenXdev.FileSystem\Find-Item -Name 'subdir\somefile.txt' -Root $restrictedRoot -LimitToRoot -PassThru -NoRecurse)
+        # Should strip to 'somefile.txt' and not find it (doesn't exist)
+        $result8.Count | Pester\Should -Be 0 -Because "Directory components stripped, searches only for filename"
+
+        # Test 9: Wildcard in filename still works with LimitToRoot
+        'test1.txt content' | Microsoft.PowerShell.Utility\Out-File "$restrictedRoot\test1.txt" -Force
+        'test2.txt content' | Microsoft.PowerShell.Utility\Out-File "$restrictedRoot\test2.txt" -Force
+        $result9 = @(GenXdev.FileSystem\Find-Item -Name '*.txt' -Root $restrictedRoot -LimitToRoot -PassThru -NoRecurse)
+        $result9.Count | Pester\Should -Be 3 -Because "Wildcards work, finds allowed.txt, test1.txt, test2.txt"
+
+        # Test 10: Drive letter in path should be stripped
+        $drivePath = "$($testRoot[0]):\outside-zone\secret.txt"
+        $result10 = @(GenXdev.FileSystem\Find-Item -Name $drivePath -Root $restrictedRoot -LimitToRoot -PassThru -NoRecurse)
+        $result10.Count | Pester\Should -Be 0 -Because "Drive letter paths stripped to filename only"
+    }
+
+    Pester\It 'LimitToRoot with multiple Root directories enforces restriction for each' {
+        # Setup: Create two separate root zones
+        $zone1 = GenXdev.FileSystem\Expand-Path "$testRoot\zone1\" -CreateDirectory
+        $zone2 = GenXdev.FileSystem\Expand-Path "$testRoot\zone2\" -CreateDirectory
+        $forbidden = GenXdev.FileSystem\Expand-Path "$testRoot\forbidden\" -CreateDirectory
+
+        # Create unique files in each zone
+        'zone1 data' | Microsoft.PowerShell.Utility\Out-File "$zone1\file1.txt" -Force
+        'zone2 data' | Microsoft.PowerShell.Utility\Out-File "$zone2\file2.txt" -Force
+        'forbidden data' | Microsoft.PowerShell.Utility\Out-File "$forbidden\secret.txt" -Force
+
+        # Test: Search in both zones with LimitToRoot, attempt to escape
+        $result = @(GenXdev.FileSystem\Find-Item -Name '..\..\forbidden\secret.txt' -Root $zone1, $zone2 -LimitToRoot -PassThru -NoRecurse)
+        # Should strip to 'secret.txt' and search only in zone1 and zone2 (not found)
+        $result.Count | Pester\Should -Be 0 -Because "Cannot escape to forbidden zone from either root"
+
+        # Positive: Find legitimate files in both zones
+        $result2 = @(GenXdev.FileSystem\Find-Item -Name '*.txt' -Root $zone1, $zone2 -LimitToRoot -PassThru -NoRecurse)
+        $result2.Count | Pester\Should -Be 2 -Because "Finds file1.txt in zone1 and file2.txt in zone2"
+        $result2.Name | Pester\Should -Contain 'file1.txt'
+        $result2.Name | Pester\Should -Contain 'file2.txt'
+        $result2.Name | Pester\Should -Not -Contain 'secret.txt'
+    }
+
+    Pester\It 'LimitToRoot without Root parameter should still strip directory components' {
+        # Setup
+        $testDir = GenXdev.FileSystem\Expand-Path "$testRoot\limitroot-test\" -CreateDirectory
+        Microsoft.PowerShell.Management\Set-Location -LiteralPath $testDir
+        'current dir file' | Microsoft.PowerShell.Utility\Out-File "$testDir\current.txt" -Force
+
+        $parentDir = GenXdev.FileSystem\Expand-Path "$testRoot\"
+        'parent file' | Microsoft.PowerShell.Utility\Out-File "$parentDir\parent.txt" -Force
+
+        # Test: Even without -Root, LimitToRoot should strip directory parts
+        $result = @(GenXdev.FileSystem\Find-Item -Name '..\parent.txt' -LimitToRoot -PassThru -NoRecurse)
+        # Should strip to 'parent.txt' and search in current directory (not found there)
+        $result.Count | Pester\Should -Be 0 -Because "Directory traversal stripped, searches only current directory"
+
+        # Positive: Can find file in current directory
+        $result2 = @(GenXdev.FileSystem\Find-Item -Name 'current.txt' -LimitToRoot -PassThru -NoRecurse)
+        $result2.Count | Pester\Should -Be 1 -Because "Legitimate file in current directory found"
+        $result2[0].Name | Pester\Should -Be 'current.txt'
     }
 
     Pester\It 'Finds files with Context parameter - pre and post context' {

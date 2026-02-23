@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Initialization.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 2.1.2025
+// Version                   : 2.3.2026
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -23,7 +23,6 @@
 
 using System.Collections.Concurrent;
 using System.Management.Automation;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace GenXdev.FileSystem
 {
@@ -284,6 +283,9 @@ namespace GenXdev.FileSystem
         /// Resolves and normalizes the relative base directory path for search operations,
         /// handling both absolute and relative path specifications.
         /// </summary>
+        /// <remarks>
+        /// Ensure InitializeCurrentDirectory() is called before this method to set CurrentDirectory.
+        /// </remarks>
         protected void InitializeRelativeBaseDir()
         {
 
@@ -303,6 +305,10 @@ namespace GenXdev.FileSystem
                 {
 
                     // combine with current if relative
+                    if (string.IsNullOrEmpty(CurrentDirectory))
+                    {
+                        throw new InvalidOperationException("CurrentDirectory must be initialized before calling InitializeRelativeBaseDir. Call InitializeCurrentDirectory() first.");
+                    }
                     baseDir = Path.GetFullPath(Path.Combine(CurrentDirectory, RelativeBasePath));
                 }
             }
@@ -498,6 +504,45 @@ namespace GenXdev.FileSystem
                        )
                     )
             );
+        }
+
+        /// <summary>
+        /// Initializes allowed root paths when LimitToRoot is enabled
+        /// </summary>
+        protected void InitializeLimitToRoot()
+        {
+            if (!LimitToRoot.ToBool()) return;
+
+            // Create case-appropriate comparer
+            var comparer = CaseNameMatching == MatchCasing.CaseSensitive
+                ? StringComparer.Ordinal
+                : StringComparer.OrdinalIgnoreCase;
+
+            allowedRootPaths = new HashSet<string>(comparer);
+
+            // Add provided Root paths
+            if (Root != null && Root.Length > 0)
+            {
+                foreach (var root in Root)
+                {
+                    var normalized = Path.GetFullPath(root).TrimEnd('\\');
+                    allowedRootPaths.Add(normalized);
+                    if (UseVerboseOutput)
+                    {
+                        VerboseQueue.Enqueue($"LimitToRoot: Allowed root '{normalized}'");
+                    }
+                }
+            }
+            else
+            {
+                // Default to current directory if no Root specified
+                var normalized = CurrentDirectory.TrimEnd('\\');
+                allowedRootPaths.Add(normalized);
+                if (UseVerboseOutput)
+                {
+                    VerboseQueue.Enqueue($"LimitToRoot: Allowed root '{normalized}' (current directory)");
+                }
+            }
         }
 
         /// <summary>

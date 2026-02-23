@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Processing.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 2.1.2025
+// Version                   : 2.3.2026
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -22,8 +22,6 @@
 
 
 using Microsoft.PowerShell.Commands;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Management.Automation;
 using System.Runtime.InteropServices;
 
@@ -2107,14 +2105,22 @@ namespace GenXdev.FileSystem
                     // set found flag
                     found = true;
 
-                    // enqueue the name to dir queue
-                    DirQueue.Enqueue(name);
+                    // Validate path when LimitToRoot is enabled
+                    if (IsPathAllowed(name))
+                    {
+                        // enqueue the name to dir queue
+                        DirQueue.Enqueue(name);
 
-                    // increment queued count
-                    Interlocked.Increment(ref dirsQueued);
+                        // increment queued count
+                        Interlocked.Increment(ref dirsQueued);
 
-                    // add worker tasks if needed
-                    AddWorkerTasksIfNeeded(token);
+                        // add worker tasks if needed
+                        AddWorkerTasksIfNeeded(token);
+                    }
+                    else if (UseVerboseOutput)
+                    {
+                        VerboseQueue.Enqueue($"LimitToRoot: Blocked directory traversal to '{name}'");
+                    }
                 }
             }
             // enumerate directories matching the pattern
@@ -2200,11 +2206,21 @@ namespace GenXdev.FileSystem
                             ));
                         }
 
-                        DirQueue.Enqueue(Path.Combine(normalizedSubDir, remaining));
+                        var combinedPath = Path.Combine(normalizedSubDir, remaining);
 
-                        Interlocked.Increment(ref dirsQueued);
+                        // Validate path when LimitToRoot is enabled
+                        if (IsPathAllowed(combinedPath))
+                        {
+                            DirQueue.Enqueue(combinedPath);
 
-                        AddWorkerTasksIfNeeded(token);
+                            Interlocked.Increment(ref dirsQueued);
+
+                            AddWorkerTasksIfNeeded(token);
+                        }
+                        else if (UseVerboseOutput)
+                        {
+                            VerboseQueue.Enqueue($"LimitToRoot: Blocked directory traversal to '{combinedPath}'");
+                        }
                     }
                     else
                     {

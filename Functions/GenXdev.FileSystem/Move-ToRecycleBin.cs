@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Move-ToRecycleBin.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 2.1.2025
+// Version                   : 2.3.2026
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -21,8 +21,6 @@
 
 
 
-using System;
-using System.IO;
 using System.Management.Automation;
 using System.Runtime.InteropServices;
 

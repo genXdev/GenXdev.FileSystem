@@ -2,7 +2,7 @@
 // Part of PowerShell module : GenXdev.FileSystem
 // Original cmdlet filename  : Find-Item.Fields.cs
 // Original author           : René Vaessen / GenXdev
-// Version                   : 2.1.2025
+// Version                   : 2.3.2026
 // ################################################################################
 // Copyright (c)  René Vaessen / GenXdev
 //
@@ -53,6 +53,11 @@ namespace GenXdev.FileSystem
         /// loops during traversal.
         /// </summary>
         protected ConcurrentDictionary<string, bool> VisitedNodes;
+
+        /// <summary>
+        /// Normalized allowed root paths when LimitToRoot is enabled (null if disabled)
+        /// </summary>
+        private HashSet<string> allowedRootPaths;
 
         /// <summary>
         /// Stores the current working directory for resolving relative paths.
