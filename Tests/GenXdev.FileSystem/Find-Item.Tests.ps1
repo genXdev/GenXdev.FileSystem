@@ -81,7 +81,7 @@ Pester\Describe 'Find-Item 1' {
 
     Pester\It 'Should work with wildcard in the holding directory' {
 
-        $pattern = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\Genx*\2*\functions\genxdev.*\*.ps1"
+        $pattern = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\Genx*\*.*.*\functions\genxdev.*\*.ps1"
         $found = @(GenXdev.FileSystem\Find-Item -SearchMask $pattern)
 
         $found.Count | Pester\Should -GT 0
@@ -416,7 +416,7 @@ Pester\Describe 'Find-Item 1' {
 
     Pester\It 'Should match the pattern' {
 
-        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\2.3.2026\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
+        $found = @(GenXdev.FileSystem\Find-Item -SearchMask "$PSScriptRoot\..\..\..\..\..\**\Genx*stem\3.3.2026\Functions\GenXdev.FileSystem\*.ps1" -PassThru | Microsoft.PowerShell.Utility\Select-Object -ExpandProperty FullName)
 
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Expand-Path.ps1")
         $found | Pester\Should -Contain (GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\Functions\GenXdev.FileSystem\Start-RoboCopy.ps1")
@@ -524,7 +524,7 @@ Pester\Describe 'Find-Item 1' {
 
     Pester\It 'Should work with wildcard in the holding directory' {
 
-        $pattern = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\Genx*\2*\functions\genxdev.*\*.ps1"
+        $pattern = GenXdev.FileSystem\Expand-Path "$PSScriptRoot\..\..\..\..\Genx*\*.*.*\functions\genxdev.*\*.ps1"
         $found = @(GenXdev.FileSystem\Find-Item -SearchMask $pattern)
 
         $found.Count | Pester\Should -GT 0

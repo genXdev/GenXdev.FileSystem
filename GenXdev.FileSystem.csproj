@@ -12,8 +12,8 @@
         <PackageLicenseFile>LICENSE</PackageLicenseFile>
         <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
         <NeutralLanguage>en</NeutralLanguage>
-        <AssemblyVersion>2.3.2026</AssemblyVersion>
-        <FileVersion>2.3.2026</FileVersion>
+        <AssemblyVersion>3.3.2026</AssemblyVersion>
+        <FileVersion>3.3.2026</FileVersion>
         <Description>A Windows PowerShell module for basic and advanced file management tasks</Description>
         <Copyright>Copyright (c) 2024 GenXdev</Copyright>
         <PackageProjectUrl>https://github.com/genXdev/GenXdev.Helpers</PackageProjectUrl>
